@@ -1,0 +1,10 @@
+name = "lexgen"
+version = "0.1.0"
+defaultTargets = ["lexgen"]
+
+[[lean_lib]]
+name = "Lexgen"
+
+[[lean_exe]]
+name = "lexgen"
+root = "Main"
