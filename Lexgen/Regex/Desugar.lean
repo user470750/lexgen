@@ -14,10 +14,10 @@ def desugar : ReSyntax → RegularExprAST
     .alt (desugar left) (desugar right)
   | .concat first rest =>
     .concat (desugar first) (desugar rest)
-  | .repeatRe { min := n, max := none } re =>
+  | .repeatRe { minimum := n, maximum := none } re =>
     let desugared := desugar re
     .normalizedConcat (repeatConcat n desugared) (.repeated desugared)
-  | .repeatRe { min := n, max := some m } re =>
+  | .repeatRe { minimum := n, maximum := some m } re =>
     let desugared := desugar re
     .normalizedConcat
       (repeatConcat n desugared)

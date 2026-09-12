@@ -16,53 +16,55 @@ structure Quantity where
   /--
   Minimum number of occurrences.
   -/
-  min : Nat
+  minimum : Nat
   /--
   Optional maximum number of occurrences.
   -/
-  max : Option Nat
+  maximum : Option Nat
 
 /--
 Creates a `Quantity` without bounds.
 -/
-def zeroOrMore : Quantity := { min := 0, max := none }
+def zeroOrMore : Quantity := { minimum := 0, maximum := none }
 
 /--
 Creates a `Quantity` with a lower bound of one and no upper bound.
 -/
-def oneOrMore : Quantity := { min := 1, max := none }
+def oneOrMore : Quantity := { minimum := 1, maximum := none }
 
 /--
 Creates a `Quantity` from zero to one.
 -/
-def optionalOne : Quantity := { min := 0, max := some 1 }
+def optionalOne : Quantity := { minimum := 0, maximum := some 1 }
 
 /--
 Creates a `Quantity` with the given lower and upper bounds.
 -/
-def between (min : Nat) (max : Nat) : Quantity := { min, max }
+def between (minimum : Nat) (maximum : Nat) : Quantity :=
+  { minimum, maximum }
 
 /--
 Creates a `Quantity` with only a lower bound.
 -/
-def atLeast (min : Nat) : Quantity := { min, max := none }
+def atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
 
 /--
 Creates a `Quantity` from zero to the given upper bound.
 -/
-def atMost (max : Nat) : Quantity := { min := 0, max }
+def atMost (maximum : Nat) : Quantity := { minimum := 0, maximum }
 
 /--
 Creates a `Quantity` requiring an exact number of occurrences.
 -/
-def exactly (n : Nat) : Quantity := { min := n, max := n }
+def exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
 
 /--
-Checks whether a `Quantity`'s bounds are well-formed, i.e. `min <= max`.
+Checks whether a `Quantity`'s bounds are well-formed,
+i.e. `minimum <= maximum`.
 -/
 def inOrder : Quantity → Bool
-  | { min := _, max := none }   => true
-  | { min,      max := some m } => min <= m
+  | { minimum := _, maximum := none }   => true
+  | { minimum,      maximum := some m } => minimum <= m
 
 /--
 The CST representation of regular expressions.

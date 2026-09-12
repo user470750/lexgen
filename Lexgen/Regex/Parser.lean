@@ -50,7 +50,7 @@ private def rangeQuantifier : Parser Quantity := do
         let m ← digits
         let q := between n m
         if inOrder q then pure q
-        else fail s!"invalid range \{{n},{m}}: max less than min"
+        else fail s!"invalid range \{{n},{m}}: maximum less than minimum"
       ) <|> pure (atLeast n)
     ) <|> pure (exactly n)
   skipChar '}' <|> fail s!"missing }, unterminated quantifier"
