@@ -74,10 +74,11 @@ Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
 appears with no preceding atom to repeat.
 -/
 private def nothingToRepeat : Parser ReSyntax :=
-  (starQuantifier     <|>
-   plusQuantifier     <|>
-   questionQuantifier <|>
-   rangeQuantifier *> pure ' ') *> fail "nothing to repeat"
+  (discard starQuantifier     <|>
+   discard plusQuantifier     <|>
+   discard questionQuantifier <|>
+   discard rangeQuantifier)
+  *> fail "nothing to repeat"
 
 mutual
 /-
