@@ -16,9 +16,11 @@ private def rightBrace         : Parser Char := pchar '}'
 private def dot : Parser ReSyntax :=
   pchar '.' *> pure ReSyntax.dot
 
+private def metaChars : String := "\\|.*+?(){}"
+
 private def escapedMeta : Parser Char := do
   skipChar '\\'
-  satisfy ("|.*+?(){}".contains ·)
+  satisfy (metaChars.contains ·)
 
 private def simpleEscape : Parser Char := do
   skipChar '\\'
@@ -34,7 +36,7 @@ private def simpleEscape : Parser Char := do
     | 'e' => Char.ofNat 27   -- escape
     | _   => c               -- impossible due to satisfy predicate
 
-private def literalChar : Parser Char := satisfy (not $ "\\|.*+?(){}".contains ·)
+private def literalChar : Parser Char := satisfy (not $ metaChars.contains ·)
 
 private def symbol : Parser ReSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
