@@ -4,6 +4,16 @@ import Lexgen.Regex.Syntax
 
 open Std.Internal.Parsec Std.Internal.Parsec.String
 
+/-!
+# Regular expression parser
+
+Defines a recursive-descent parser for regular expressions,
+built using parser combinators.
+-/
+
+/-
+Parsers for special characters in the regular expression grammar.
+-/
 private def altSep             : Parser Char := pchar '|'
 private def starQuantifier     : Parser Char := pchar '*'
 private def plusQuantifier     : Parser Char := pchar '+'
@@ -13,15 +23,31 @@ private def rightParen         : Parser Char := pchar ')'
 private def leftBrace          : Parser Char := pchar '{'
 private def rightBrace         : Parser Char := pchar '}'
 
+/-
+`dot := "."`
+
+Parser for the dot metacharacter, matching any character.
+-/
 private def dot : Parser ReSyntax :=
   pchar '.' *> pure .dot
 
+/-
+String containing all metacharacters in regular expression grammar.
+-/
 private def metaChars : String := "\\|.*+?(){}"
 
+/-
+`escapedMeta := "\" metaChar`
+
+Parser for escaped metacharacters.
+-/
 private def escapedMeta : Parser Char := do
   skipChar '\\'
   satisfy (metaChars.contains ·)
 
+/-
+Parser for escape sequences.
+-/
 private def simpleEscape : Parser Char := do
   skipChar '\\'
   let c ← satisfy ("nrtfv0ae".contains ·)
@@ -36,8 +62,16 @@ private def simpleEscape : Parser Char := do
     | 'e' => Char.ofNat 27   -- escape
     | _   => c               -- impossible due to satisfy predicate
 
+/-
+Parser for literal characters (except escaped).
+-/
 private def literalChar : Parser Char := satisfy (not $ metaChars.contains ·)
 
+/-
+`symbol := escapedMeta | simpleEscape | literalChar`
+
+Parser for literal characters, escape sequences and escaped metacharacters.
+-/
 private def symbol : Parser ReSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
@@ -45,6 +79,8 @@ private def symbol : Parser ReSyntax := do
 
 /-
 `quantity := "{" digits ("," digits?)? "}"`
+
+Parser for a quantity.
 -/
 private def rangeQuantifier : Parser Quantity := do
   skipChar '{'
@@ -83,6 +119,8 @@ private def nothingToRepeat : Parser ReSyntax :=
 mutual
 /-
 `alt := concat? ("|" concat?)*`
+
+Parser for alternatives in the regular expression grammar. Top-level rule.
 -/
 private partial def altRe : Parser ReSyntax := do
   let left ← concatRe <|> (pure .ε)
@@ -91,6 +129,8 @@ private partial def altRe : Parser ReSyntax := do
 
 /-
 `concat := quantified+`
+
+Parser for concatenation in the regular expression grammar.
 -/
 private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
@@ -99,6 +139,8 @@ private partial def concatRe : Parser ReSyntax := do
 
 /-
 `quantified := atom ("*" | "+" | "?" | quantity)?`
+
+Parser for a quantified atom.
 -/
 private partial def quantified : Parser ReSyntax := do
   let re ← atom
@@ -110,6 +152,8 @@ private partial def quantified : Parser ReSyntax := do
 
 /-
 `atom := symbol | dot | subExpr`
+
+Parser for atoms in the regular expression grammar.
 -/
 private partial def atom : Parser ReSyntax :=
   symbol  <|>
@@ -119,6 +163,8 @@ private partial def atom : Parser ReSyntax :=
 
 /-
 `subExpr := "(" alt ")"`
+
+Parser for an expression in parenthesis.
 -/
 private partial def subExpr : Parser ReSyntax :=
   leftParen *> altRe <* (rightParen <|> fail "missing ), unterminated subpattern")
