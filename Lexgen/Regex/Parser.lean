@@ -62,6 +62,14 @@ private def rangeQuantifier : Parser Quantity := do
   pure spec
 
 /-
+Takes the already-parsed atom `re`, parses a `Quantity`, and produces
+a `repeatRe` CST node.
+-/
+private def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
+  let quantity ← rangeQuantifier
+  pure $ ReSyntax.repeatRe quantity re
+
+/-
 Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
 appears with no preceding atom to repeat.
 -/
@@ -87,10 +95,6 @@ private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
   let rest ← many quantified
   pure $ rest.foldl ReSyntax.concat first
-
-private partial def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
-  let quantity ← rangeQuantifier
-  pure $ ReSyntax.repeatRe quantity re
 
 /-
 `quantified := atom ("*" | "+" | "?" | quantity)?`
