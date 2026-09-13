@@ -41,6 +41,9 @@ private def symbol : Parser ReSyntax := do
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
   pure $ ReSyntax.symbol sym
 
+/-
+`quantity := "{" digits ("," digits?)? "}"`
+-/
 private def rangeQuantifier : Parser Quantity := do
   skipChar '{'
   let n ← digits
@@ -56,6 +59,10 @@ private def rangeQuantifier : Parser Quantity := do
   skipChar '}' <|> fail s!"missing }, unterminated quantifier"
   pure spec
 
+/-
+Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
+appears with no preceding atom to repeat.
+-/
 private def nothingToRepeat : Parser ReSyntax :=
   (starQuantifier     <|>
    plusQuantifier     <|>
@@ -63,11 +70,17 @@ private def nothingToRepeat : Parser ReSyntax :=
    rangeQuantifier *> pure ' ') *> fail "nothing to repeat"
 
 mutual
+/-
+`alt := concat? ("|" concat?)*`
+-/
 private partial def altRe : Parser ReSyntax := do
   let left ← concatRe <|> (pure ReSyntax.ε)
   let alts ← many (altSep *> (concatRe <|> pure ReSyntax.ε))
   pure $ alts.foldl ReSyntax.alt left
 
+/-
+`concat := quantified+`
+-/
 private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
   let rest ← many quantified
@@ -77,6 +90,9 @@ private partial def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
   let quantity ← rangeQuantifier
   pure $ ReSyntax.repeatRe quantity re
 
+/-
+`quantified := atom ("*" | "+" | "?" | quantity)?`
+-/
 private partial def quantified : Parser ReSyntax := do
   let re ← atom
   starQuantifier     *> (pure $ ReSyntax.repeatRe zeroOrMore re)  <|>
@@ -85,14 +101,25 @@ private partial def quantified : Parser ReSyntax := do
   buildQuantity re                                                <|>
   pure re
 
+/-
+`atom := symbol | dot | subExpr`
+-/
 private partial def atom : Parser ReSyntax :=
   symbol  <|>
   dot     <|>
   subExpr <|>
   nothingToRepeat
 
+/-
+`subExpr := "(" alt ")"`
+-/
 private partial def subExpr : Parser ReSyntax :=
   leftParen *> altRe <* (rightParen <|> fail "missing ), unterminated subpattern")
 end
 
+/--
+A recursive-descent parser for regular expressions.
+
+Built using parser combinators. Produces a concrete syntax tree (`ReSyntax`).
+-/
 partial def parseRe : Parser ReSyntax := altRe <* eof
