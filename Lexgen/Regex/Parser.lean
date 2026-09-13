@@ -147,7 +147,7 @@ private partial def quantified : Parser ReSyntax := do
   starQuantifier     *> (pure $ .repeatRe zeroOrMore re)  <|>
   plusQuantifier     *> (pure $ .repeatRe oneOrMore re)   <|>
   questionQuantifier *> (pure $ .repeatRe optionalOne re) <|>
-  buildQuantity re                                                <|>
+  buildQuantity re                                        <|>
   pure re
 
 /-
