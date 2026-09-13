@@ -1,6 +1,18 @@
 import Lexgen.NFA.Automaton
 import Lexgen.Regex.Ast
 
+/-!
+# Thompson's construction
+
+Defines Thompson's construction: translating a
+`RegularExprAST` into an `NFA`.
+-/
+
+/-
+Internal implementation of Thompson's algorithm.
+
+`startState` is passed explicitly at every step.
+-/
 private def translate (startState : Nat) : RegularExprAST → NFA
   | .ε =>
     {
@@ -59,4 +71,7 @@ private def translate (startState : Nat) : RegularExprAST → NFA
       accept := endState
     }
 
+/--
+Translates a `RegularExprAST` into an `NFA` using Thompson's construction.
+-/
 def reToNFA (regex : RegularExprAST) : NFA := translate 0 regex
