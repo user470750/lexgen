@@ -14,14 +14,14 @@ built using parser combinators.
 /-
 Parsers for special characters in the regular expression grammar.
 -/
-private def altSep             : Parser Char := pchar '|'
-private def starQuantifier     : Parser Char := pchar '*'
-private def plusQuantifier     : Parser Char := pchar '+'
-private def questionQuantifier : Parser Char := pchar '?'
-private def leftParen          : Parser Char := pchar '('
-private def rightParen         : Parser Char := pchar ')'
-private def leftBrace          : Parser Char := pchar '{'
-private def rightBrace         : Parser Char := pchar '}'
+private def altSep             : Parser Unit := skipChar '|'
+private def starQuantifier     : Parser Unit := skipChar '*'
+private def plusQuantifier     : Parser Unit := skipChar '+'
+private def questionQuantifier : Parser Unit := skipChar '?'
+private def leftParen          : Parser Unit := skipChar '('
+private def rightParen         : Parser Unit := skipChar ')'
+private def leftBrace          : Parser Unit := skipChar '{'
+private def rightBrace         : Parser Unit := skipChar '}'
 
 /-
 `dot := "."`
@@ -83,7 +83,7 @@ private def symbol : Parser ReSyntax := do
 Parser for a quantity.
 -/
 private def rangeQuantifier : Parser Quantity := do
-  skipChar '{'
+  leftBrace
   let n ← digits
   let spec ← (do
       skipChar ','
@@ -94,7 +94,7 @@ private def rangeQuantifier : Parser Quantity := do
         else fail s!"invalid range \{{n},{m}}: maximum less than minimum"
       ) <|> pure (atLeast n)
     ) <|> pure (exactly n)
-  skipChar '}' <|> fail s!"missing }, unterminated quantifier"
+  rightBrace <|> fail s!"missing }, unterminated quantifier"
   pure spec
 
 /-
