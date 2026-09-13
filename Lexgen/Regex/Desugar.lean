@@ -1,14 +1,39 @@
 import Lexgen.Regex.Syntax
 import Lexgen.Regex.Ast
 
+/-!
+# Regular expression desugaring
+
+Defines the `desugar` function for translating a CST into an AST.
+-/
+
+/-
+Builds a chain of `n` copies of `re` concatenated together.
+
+Produces `.ε` (the empty match) if `n` (repetitions) is zero.
+
+Used for the required part of a `{n,m}` range.
+-/
 private def repeatConcat (n : Nat) (re : RegularExprAST) : RegularExprAST :=
   match n with
   | 0     => .ε
   | m + 1 => (List.replicate m re).foldl .concat re
 
+/-
+Builds a chain of `n` optional copies of `re`, allowing to match
+at most `n` times.
+
+Used for the optional part of a `{n,m}` range.
+-/
 private def optionalTail (n : Nat) (re : RegularExprAST) : RegularExprAST :=
   repeatConcat n (.alt re .ε)
 
+/--
+Desugars CST (`ReSyntax`) to AST (`RegularExprAST`).
+
+Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
+basic AST constructors.
+-/
 def desugar : ReSyntax → RegularExprAST
   | .alt left right =>
     .alt (desugar left) (desugar right)
