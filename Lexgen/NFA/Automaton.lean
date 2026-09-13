@@ -5,7 +5,7 @@ Defines the NFA representation (`NFA`).
 -/
 
 /--
-The label type for NFA transitions.
+The label type for `NFA` transitions.
 -/
 inductive Symbol where
   /--
