@@ -14,7 +14,7 @@ private def leftBrace          : Parser Char := pchar '{'
 private def rightBrace         : Parser Char := pchar '}'
 
 private def dot : Parser ReSyntax :=
-  pchar '.' *> pure ReSyntax.dot
+  pchar '.' *> pure .dot
 
 private def metaChars : String := "\\|.*+?(){}"
 
@@ -41,7 +41,7 @@ private def literalChar : Parser Char := satisfy (not $ metaChars.contains ·)
 private def symbol : Parser ReSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
-  pure $ ReSyntax.symbol sym
+  pure $ .symbol sym
 
 /-
 `quantity := "{" digits ("," digits?)? "}"`
@@ -67,7 +67,7 @@ a `repeatRe` CST node.
 -/
 private def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
   let quantity ← rangeQuantifier
-  pure $ ReSyntax.repeatRe quantity re
+  pure $ .repeatRe quantity re
 
 /-
 Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
@@ -84,9 +84,9 @@ mutual
 `alt := concat? ("|" concat?)*`
 -/
 private partial def altRe : Parser ReSyntax := do
-  let left ← concatRe <|> (pure ReSyntax.ε)
-  let alts ← many (altSep *> (concatRe <|> pure ReSyntax.ε))
-  pure $ alts.foldl ReSyntax.alt left
+  let left ← concatRe <|> (pure .ε)
+  let alts ← many (altSep *> (concatRe <|> pure .ε))
+  pure $ alts.foldl .alt left
 
 /-
 `concat := quantified+`
@@ -94,16 +94,16 @@ private partial def altRe : Parser ReSyntax := do
 private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
   let rest ← many quantified
-  pure $ rest.foldl ReSyntax.concat first
+  pure $ rest.foldl .concat first
 
 /-
 `quantified := atom ("*" | "+" | "?" | quantity)?`
 -/
 private partial def quantified : Parser ReSyntax := do
   let re ← atom
-  starQuantifier     *> (pure $ ReSyntax.repeatRe zeroOrMore re)  <|>
-  plusQuantifier     *> (pure $ ReSyntax.repeatRe oneOrMore re)   <|>
-  questionQuantifier *> (pure $ ReSyntax.repeatRe optionalOne re) <|>
+  starQuantifier     *> (pure $ .repeatRe zeroOrMore re)  <|>
+  plusQuantifier     *> (pure $ .repeatRe oneOrMore re)   <|>
+  questionQuantifier *> (pure $ .repeatRe optionalOne re) <|>
   buildQuantity re                                                <|>
   pure re
 
