@@ -5,37 +5,37 @@ Defines the NFA representation (`NFA`).
 -/
 
 /--
-The label type for `NFA` transitions.
+A state of the `NFA`.
 -/
-inductive Symbol where
+inductive Node where
   /--
-  Matches the literal character `c`.
+  Accept state of `NFA`. There are no transitions from it.
   -/
-  | char (c : Char)
+  | done
   /--
-  Matches any single character.
+  The literal character `c` label for transition to `next` state.
   -/
-  | dot
+  | char (c : Char) (next : Nat)
   /--
-  Matches the empty string.
+  Any single character label for transition to `next` state.
   -/
-  | ε
-deriving Repr
+  | dot (next : Nat)
+  /--
+  The empty string label for transition to `next` state.
+  -/
+  | ε (next : Nat)
+  /--
+  Two ε-transition labels, to `next₁` and `next₂`.
+  -/
+  | split (next₁ next₂ : Nat)
+deriving Repr, DecidableEq
 
 /--
 The non-deterministic finite automaton representation.
 -/
 structure NFA where
   /--
-  The start state.
+  The states of the `NFA`, indexed by state id.
   -/
-  start  : Nat
-  /--
-  The transitions table.
-  -/
-  trans  : List (Nat × Symbol × Nat) -- TODO: choose better table representation
-  /--
-  The accept state.
-  -/
-  accept : Nat
-deriving Repr
+  nodes : Array Node
+deriving Repr, DecidableEq
