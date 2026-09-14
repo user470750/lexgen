@@ -55,3 +55,30 @@ Translates a `RegularExprAST` into an `NFA` using Thompson's construction.
 def reToNFA (regex : RegularExprAST) : NFA :=
   let translated := translate 0 regex
   { nodes := translated.nodes ++ #[.done] }
+
+-- "a"
+#guard
+reToNFA (.symbol 'a') = { nodes := #[.char 'a' 1, .done] }
+
+-- "."
+#guard
+reToNFA .dot = { nodes := #[.dot 1, .done] }
+
+-- ""
+#guard
+reToNFA .ε = { nodes := #[.ε 1, .done] }
+
+-- "ab"
+#guard
+reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
+{ nodes := #[.char 'a' 1, .char 'b' 2, .done] }
+
+-- "a|b"
+#guard
+reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
+{ nodes := #[.split 1 3, .char 'a' 2, .ε 5, .char 'b' 4, .ε 5, .done] }
+
+-- "a*"
+#guard
+reToNFA (.repeated (.symbol 'a')) =
+{ nodes := #[.split 1 3, .char 'a' 2, .split 1 3, .done] }
