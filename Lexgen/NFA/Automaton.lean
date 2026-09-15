@@ -28,7 +28,7 @@ inductive Node where
   Two ε-transition labels, to `next₁` and `next₂`.
   -/
   | split (next₁ next₂ : Nat)
-deriving Repr, DecidableEq
+deriving Repr, DecidableEq, Inhabited
 
 /--
 The non-deterministic finite automaton representation.
