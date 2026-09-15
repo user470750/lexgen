@@ -16,9 +16,9 @@ private partial def NFA.εClosure (nfa : NFA) (node : Nat) : Std.HashSet Nat :=
       let newVisited : Std.HashSet Nat := visited.insert node
       match state with
       | .done              => newVisited
-      | .char _ _          => newVisited
-      | .dot _             => newVisited
-      | .ε next            => closure newVisited next
+      | .edge (.char _) _          => newVisited
+      | .edge .dot _             => newVisited
+      | .edge .ε next            => closure newVisited next
       -- When constructing the ε-closure for `next₂`,
       -- the states in the ε-closure of `next₁`
       -- have already been marked as visited.

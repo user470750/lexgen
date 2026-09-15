@@ -15,11 +15,11 @@ Internal implementation of Thompson's algorithm.
 -/
 private def translate (startState : Nat) : RegularExprAST → NFA
   | .ε =>
-    { nodes := #[.ε (startState + 1)] }
+    { nodes := #[.edge .ε (startState + 1)] }
   | .symbol c =>
-    { nodes := #[.char c (startState + 1)] }
+    { nodes := #[.edge (.char c) (startState + 1)] }
   | .dot =>
-    { nodes := #[.dot (startState + 1)] }
+    { nodes := #[.edge .dot (startState + 1)] }
   | .concat first rest =>
     let fstNFA := translate startState first
     let sndNFA := translate (startState + fstNFA.nodes.size) rest
@@ -44,9 +44,9 @@ private def translate (startState : Nat) : RegularExprAST → NFA
       nodes :=
       #[.split leftStart rightStart] ++
       leftNFA.nodes ++
-      #[.ε endState] ++
+      #[.edge .ε endState] ++
       rightNFA.nodes ++
-      #[.ε endState]
+      #[.edge .ε endState]
     }
 
 /--
@@ -58,27 +58,36 @@ def reToNFA (regex : RegularExprAST) : NFA :=
 
 -- "a"
 #guard
-reToNFA (.symbol 'a') = { nodes := #[.char 'a' 1, .done] }
+reToNFA (.symbol 'a') = { nodes := #[.edge (.char 'a') 1, .done] }
 
 -- "."
 #guard
-reToNFA .dot = { nodes := #[.dot 1, .done] }
+reToNFA .dot = { nodes := #[.edge .dot 1, .done] }
 
 -- ""
 #guard
-reToNFA .ε = { nodes := #[.ε 1, .done] }
+reToNFA .ε = { nodes := #[.edge .ε 1, .done] }
 
 -- "ab"
 #guard
 reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
-{ nodes := #[.char 'a' 1, .char 'b' 2, .done] }
+{ nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done] }
 
 -- "a|b"
 #guard
 reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
-{ nodes := #[.split 1 3, .char 'a' 2, .ε 5, .char 'b' 4, .ε 5, .done] }
+{
+  nodes := #[
+    .split 1 3,
+    .edge (.char 'a') 2,
+    .edge .ε 5,
+    .edge (.char 'b') 4,
+    .edge .ε 5,
+    .done
+  ]
+}
 
 -- "a*"
 #guard
 reToNFA (.repeated (.symbol 'a')) =
-{ nodes := #[.split 1 3, .char 'a' 2, .split 1 3, .done] }
+{ nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done] }
