@@ -12,6 +12,11 @@ import Std.Data.HashMap
 Defines the DFA representation (`DFA`).
 -/
 
+/--
+The label type for `DFA` transitions.
+
+Unlike `Edge`, it has no `ε`: a `DFA` has no ε-transitions.
+-/
 inductive Symbol where
   /--
   Matches the literal character `c`.
