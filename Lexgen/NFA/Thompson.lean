@@ -3,8 +3,13 @@ Copyright (c) 2026 Oleg Shabanov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
-import Lexgen.NFA.Automaton
-import Lexgen.Regex.Ast
+module
+public import Lexgen.NFA.Automaton
+public import Lexgen.Regex.Ast
+meta import Lexgen.NFA.Automaton
+meta import Lexgen.Regex.Ast
+
+public section
 
 /-!
 # Thompson's construction
