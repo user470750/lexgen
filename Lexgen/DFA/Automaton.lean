@@ -16,7 +16,7 @@ inductive Symbol where
   Matches any single character.
   -/
   | dot
-deriving Repr, DecidableEq, Hashable
+deriving Repr, DecidableEq, Hashable, Inhabited
 
 /--
 The deterministic finite automaton representation.

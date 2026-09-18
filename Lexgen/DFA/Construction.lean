@@ -1,4 +1,5 @@
 import Std.Data.HashSet
+import Std.Data.HashMap
 import Lexgen.NFA.Automaton
 import Lexgen.DFA.Automaton
 
@@ -56,3 +57,60 @@ private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Char :=
           some c
         else
           none)
+
+/-
+Predicate checking whether a `DFA` state (a set of `NFA` states) is accepting.
+
+A `DFA` state is accepting if at least one of the `NFA` states it includes
+is accepting.
+-/
+private def NFA.isAccepting (nfa : NFA) (states : Std.HashSet Nat) : Bool :=
+  states.toList.any (.done == nfa.nodes[·]!)
+
+/--
+Translates an `NFA` into a `DFA` using the subset construction.
+-/
+def NFA.toDFA (nfa : NFA) : DFA :=
+  -- The subset construction is an established imperative algorithm:
+  -- `states`, `trans` and `accepting` all need to be mutated while building
+  -- the `DFA`.
+  -- `while`/`for` loops are simpler here than splitting the logic into a
+  -- bunch of recursive helper functions, which would be more verbose.
+  -- TODO: Consider a functional rewrite for consistency with the rest of
+  -- the codebase.
+  Id.run do
+    -- The alphabet is the actual characters used in the `NFA` plus `dot`.
+    -- New character classes will need to extend it too.
+    let alphabet : List Edge := (nfa.getAlphabet.toList.map .char).insert .dot
+
+    let mut states    : Array (Std.HashSet Nat)        := #[nfa.εClosure {} 0]
+    let mut trans     : Std.HashMap (Nat × Symbol) Nat := {}
+    let mut accepting : Std.HashSet Nat                := {}
+
+    if isAccepting nfa states[0]! then
+      accepting := accepting.insert 0
+
+    let mut lastState  := 0
+    let mut current    := 0
+
+    -- `lastState` stops growing once every reached state for `current` is already in `states`.
+    while current ≤ lastState do
+      for edgeLabel in alphabet do
+        let reached := nfa.edgeDFA states[current]! edgeLabel
+        let dfaSymbol : Symbol :=
+          match edgeLabel with
+          | .char ch => .char ch
+          | .dot     => .dot
+          -- TODO: Can we prove this branch is unreachable instead of panicking?
+          | .ε       => panic! "alphabet should never contain ε"
+        match states.findIdx? (· == reached) with
+        | some existingId => trans := trans.insert (current, dfaSymbol) existingId
+        | none            =>
+          lastState := lastState + 1
+          states := states.push reached
+          trans := trans.insert (current, dfaSymbol) lastState
+          if isAccepting nfa reached then
+            accepting := accepting.insert lastState
+      current := current + 1
+
+    return { trans, accepting }
