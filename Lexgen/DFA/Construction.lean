@@ -3,7 +3,14 @@ import Std.Data.HashMap
 import Lexgen.NFA.Automaton
 import Lexgen.DFA.Automaton
 
-/--
+/-!
+# DFA construction
+
+Defines `NFA.toDFA`: translating an `NFA` into a `DFA` using the
+subset construction.
+-/
+
+/-
 ε-closure of `node`.
 
 TODO: Prove termination. An `Array` may be needed instead of a `HashSet`.
