@@ -106,9 +106,3 @@ as a possible future direction for this step:
 
 * **Hopcroft's algorithm** — minimizes the DFA by iteratively refining a partition of
   states into equivalence classes, in O(n log n).
-
-## AI Contribution
-
-AI is used in this project to assist with code review, documentation edits, and
-commit messages. However, when submitting a pull request, a contributor is expected
-to fully understand their own code rather than relying on AI.
