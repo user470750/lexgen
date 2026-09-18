@@ -31,4 +31,4 @@ structure DFA where
   Accepting (final) states.
   -/
   accepting : Std.HashSet Nat
-deriving Repr
+deriving Repr, BEq
