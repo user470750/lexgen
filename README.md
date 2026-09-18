@@ -11,32 +11,35 @@ Lexgen is a compile-time, declarative, regex-based lexer generator for the Lean 
 
 ## Intended Usage
 
-Token types will be declared as ordinary Lean inductives, with each constructor
-annotated with the regex pattern it corresponds to, and the lexer derived automatically.
-As an example, tokens for a JSON lexer:
+Lexers will be declared with the `lexer` command, which is in essence a small DSL for
+lexers embedded in Lean. It pairs each constructor with the regex pattern it
+corresponds to (and, for constructors carrying a value, a user-defined function
+converting the matched text), and expands into an ordinary Lean inductive together
+with the lexer itself. Patterns are written as raw string literals, so regex escapes
+need no extra backslashes. As an example, tokens for a JSON lexer:
 
 ```lean
-inductive Token where
-  | @[token "\{"]                        lbrace
-  | @[token "\}"]                        rbrace
-  | @[token "\["]                        lbracket
-  | @[token "\]"]                        rbracket
-  | @[token ":"]                         colon
-  | @[token ","]                         comma
-  | @[token "true"]                      true
-  | @[token "false"]                     false
-  | @[token "null"]                      null
-  | @[token "-?[0-9]+(\.[0-9]+)?"]       number (n : Float)
-  | @[token "\"([^\"\\\\]|\\\\.)*\""]    string (s : String)
-  deriving Lexgen
+lexer Token where
+  | lbrace                            r"\{"
+  | rbrace                            r"\}"
+  | lbracket                          r"\["
+  | rbracket                          r"\]"
+  | colon                             r":"
+  | comma                             r","
+  | jtrue                             r"true"
+  | jfalse                            r"false"
+  | null                              r"null"
+  -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
+  | number (n : Float)  stringToFloat r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?"
+  | string (s : String) unquote       r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""#
 ```
 
 Once code generation is implemented, such a declaration will make Lexgen generate a
 function that turns an input string into a list of tokens:
 
 ```lean
-#eval Token.lex "{\"a\": 1, \"b\": true}"
--- [lbrace, string "a", colon, number 1, comma, string "b", colon, true, rbrace]
+#eval Token.lex r#"{"a": 1, "b": true}"#
+-- [lbrace, string "a", colon, number 1, comma, string "b", colon, jtrue, rbrace]
 ```
 
 ## Alternatives
