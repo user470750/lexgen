@@ -15,7 +15,7 @@ Defines `NFA.toDFA`: translating an `NFA` into a `DFA` using the
 subset construction.
 -/
 
-/-
+/--
 ε-closure of `node`.
 
 TODO: Prove termination. An `Array` may be needed instead of a `HashSet`.
@@ -37,7 +37,7 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
     -- have already been marked as visited.
     | .split next₁ next₂ => nfa.εClosure (nfa.εClosure newVisited next₁) next₂
 
-/-
+/--
 Returns all `NFA` states reachable by following
 a single edge with label `c` from state `s`.
 -/
@@ -50,7 +50,7 @@ private def edge : (c : Edge) → (s : Node) → List Nat
   | .ε, .split next₁ next₂           => [next₁, next₂]
   | _, _                             => []
 
-/-
+/--
 Maps a set of states to the new set of states reachable via
 a transition on edge value `c` (`char`/`dot`/`ε`) followed by an
 unbounded number of ε-transitions.
@@ -59,7 +59,7 @@ private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : Edge) : Std.
   let raw := states.toList.flatMap (fun state => edge c nfa.nodes[state]!)
   raw.foldl nfa.εClosure {}
 
-/-
+/--
 Returns the alphabet of `nfa`.
 -/
 private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Edge :=
@@ -71,7 +71,7 @@ private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Edge :=
         | .edge .dot      _ => some .dot
         | _                 => none)
 
-/-
+/--
 Predicate checking whether a `DFA` state (a set of `NFA` states) is accepting.
 
 A `DFA` state is accepting if at least one of the `NFA` states it includes
