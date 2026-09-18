@@ -8,6 +8,11 @@ import Lexgen.Regex.Ast
 import Lexgen.Regex.Parser
 import Lexgen.Regex.Desugar
 
+/--
+Parses a regular expression `s` and desugars it into a `RegularExprAST`.
+
+Returns an error message if `s` is not a valid regular expression.
+-/
 def parse (s : String) : Except String RegularExprAST := do
   let syn ← parseRe.run s
   pure $ desugar syn
