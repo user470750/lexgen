@@ -3,10 +3,15 @@ Copyright (c) 2026 Oleg Shabanov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
-import Std.Data.HashSet
-import Std.Data.HashMap
-import Lexgen.NFA.Automaton
-import Lexgen.DFA.Automaton
+module
+public import Std.Data.HashSet
+public import Std.Data.HashMap
+public import Lexgen.NFA.Automaton
+public import Lexgen.DFA.Automaton
+meta import Lexgen.NFA.Automaton
+meta import Lexgen.DFA.Automaton
+
+public section
 
 /-!
 # DFA construction
