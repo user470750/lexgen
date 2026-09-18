@@ -53,6 +53,42 @@ reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
 { nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done] }
 ```
 
+## Commit Messages
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+
+**Header.** `type(scope): summary`, where:
+
+* `type` is one of `feat`, `fix`, `refactor`, `docs`, `style`, `test`;
+* `scope` names the affected module or part of the project, e.g. `DFA`, `parser`,
+  `readme`;
+* `summary` is a short imperative phrase in lowercase without a trailing period;
+  identifiers are wrapped in backticks.
+
+A breaking change is marked with `!` after the scope, e.g. `refactor(NFA)!: ...`, and
+described in a `BREAKING CHANGE:` footer.
+
+**Body.** When a commit makes more than one change, list them explicitly, one per `*`
+item. Where the reason for a change is not obvious, briefly explain it. The text
+should not be redundant: don't restate the diff or add filler.
+
+```
+test(DFA): add `#guard` tests for the subset construction
+
+* add tests for the same regexes as in `Lexgen.NFA.Thompson`, plus `".a"`
+  and `"a."`
+* derive `BEq` for `DFA`, needed for `#guard`; `DecidableEq` cannot be
+  derived, since `Std.HashMap` has no instance
+```
+
+**Squash merges.** Pull requests are squash-merged. The squash commit's header follows
+the same format, with the PR number appended by GitHub, e.g.
+`feat(DFA): add DFA conversion (#2)`; its body lists the branch's commits.
+
+**AI assistance.** If AI assisted with a commit, this must be stated explicitly: say
+in the body what AI was used for, and add a `Co-Authored-By:` trailer naming the
+model. See also [AI Contribution](#ai-contribution).
+
 ## AI Contribution
 
 AI is used in this project to assist with code review, documentation edits, and
