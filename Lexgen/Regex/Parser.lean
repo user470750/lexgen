@@ -3,9 +3,12 @@ Copyright (c) 2026 Oleg Shabanov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
-import Std.Internal.Parsec
-import Std.Internal.Parsec.String
-import Lexgen.Regex.Syntax
+module
+public import Std.Internal.Parsec
+public import Std.Internal.Parsec.String
+public import Lexgen.Regex.Syntax
+
+public section
 
 open Std.Internal.Parsec Std.Internal.Parsec.String
 
