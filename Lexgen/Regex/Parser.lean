@@ -28,7 +28,7 @@ private def rightParen         : Parser Unit := skipChar ')'
 private def leftBrace          : Parser Unit := skipChar '{'
 private def rightBrace         : Parser Unit := skipChar '}'
 
-/-
+/--
 `dot := "."`
 
 Parser for the dot metacharacter, matching any character.
@@ -36,12 +36,12 @@ Parser for the dot metacharacter, matching any character.
 private def dot : Parser ReSyntax :=
   pchar '.' *> pure .dot
 
-/-
+/--
 String containing all metacharacters in regular expression grammar.
 -/
 private def metaChars : String := "\\|.*+?(){}"
 
-/-
+/--
 `escapedMeta := "\" metaChar`
 
 Parser for escaped metacharacters.
@@ -50,7 +50,7 @@ private def escapedMeta : Parser Char := do
   skipChar '\\'
   satisfy (metaChars.contains ·)
 
-/-
+/--
 Parser for escape sequences.
 -/
 private def simpleEscape : Parser Char := do
@@ -67,12 +67,12 @@ private def simpleEscape : Parser Char := do
     | 'e' => Char.ofNat 27   -- escape
     | _   => c               -- impossible due to satisfy predicate
 
-/-
+/--
 Parser for literal characters (except escaped).
 -/
 private def literalChar : Parser Char := satisfy (not $ metaChars.contains ·)
 
-/-
+/--
 `symbol := escapedMeta | simpleEscape | literalChar`
 
 Parser for literal characters, escape sequences and escaped metacharacters.
@@ -82,7 +82,7 @@ private def symbol : Parser ReSyntax := do
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
   pure $ .symbol sym
 
-/-
+/--
 `quantity := "{" digits ("," digits?)? "}"`
 
 Parser for a quantity.
@@ -102,7 +102,7 @@ private def rangeQuantifier : Parser Quantity := do
   rightBrace <|> fail s!"missing }, unterminated quantifier"
   pure spec
 
-/-
+/--
 Takes the already-parsed atom `re`, parses a `Quantity`, and produces
 a `repeatRe` CST node.
 -/
@@ -110,7 +110,7 @@ private def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
   let quantity ← rangeQuantifier
   pure $ .repeatRe quantity re
 
-/-
+/--
 Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
 appears with no preceding atom to repeat.
 -/
@@ -122,7 +122,7 @@ private def nothingToRepeat : Parser ReSyntax :=
   *> fail "nothing to repeat"
 
 mutual
-/-
+/--
 `alt := concat? ("|" concat?)*`
 
 Parser for alternatives in the regular expression grammar. Top-level rule.
@@ -132,7 +132,7 @@ private partial def altRe : Parser ReSyntax := do
   let alts ← many (altSep *> (concatRe <|> pure .ε))
   pure $ alts.foldl .alt left
 
-/-
+/--
 `concat := quantified+`
 
 Parser for concatenation in the regular expression grammar.
@@ -142,7 +142,7 @@ private partial def concatRe : Parser ReSyntax := do
   let rest ← many quantified
   pure $ rest.foldl .concat first
 
-/-
+/--
 `quantified := atom ("*" | "+" | "?" | quantity)?`
 
 Parser for a quantified atom.
@@ -155,7 +155,7 @@ private partial def quantified : Parser ReSyntax := do
   buildQuantity re                                        <|>
   pure re
 
-/-
+/--
 `atom := symbol | dot | subExpr`
 
 Parser for atoms in the regular expression grammar.
@@ -166,7 +166,7 @@ private partial def atom : Parser ReSyntax :=
   subExpr <|>
   nothingToRepeat
 
-/-
+/--
 `subExpr := "(" alt ")"`
 
 Parser for an expression in parenthesis.

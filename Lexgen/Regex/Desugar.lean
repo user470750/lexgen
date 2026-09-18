@@ -12,7 +12,7 @@ import Lexgen.Regex.Ast
 Defines the `desugar` function for translating a CST into an AST.
 -/
 
-/-
+/--
 Builds a chain of `n` copies of `re` concatenated together.
 
 Produces `.ε` (the empty match) if `n` (repetitions) is zero.
@@ -24,7 +24,7 @@ private def repeatConcat (n : Nat) (re : RegularExprAST) : RegularExprAST :=
   | 0     => .ε
   | m + 1 => (List.replicate m re).foldl .concat re
 
-/-
+/--
 Builds a chain of `n` optional copies of `re`, allowing to match
 at most `n` times.
 

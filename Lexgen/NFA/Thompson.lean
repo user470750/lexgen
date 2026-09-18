@@ -13,7 +13,7 @@ Defines Thompson's construction: translating a
 `RegularExprAST` into an `NFA`.
 -/
 
-/-
+/--
 Internal implementation of Thompson's algorithm.
 
 `startState` is passed explicitly at every step.

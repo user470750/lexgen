@@ -19,9 +19,10 @@ match it rather than introducing a new one.
   -/
   ```
 
-* Public declarations (definitions, structures, inductives, their constructors and
-  fields) get a docstring `/-- ... -/`.
-* Private declarations get a plain comment `/- ... -/` instead of a docstring.
+* All declarations are documented with docstrings `/-- ... -/`: required for public
+  ones (checked by `linter.missingDocs`), recommended for private ones whose purpose
+  isn't obvious. Plain comments are for notes that don't describe a single
+  declaration.
 * Non-obvious steps inside a definition are explained with `--` comments; open
   questions are marked with `TODO:`.
 * Identifiers and type names in comments are wrapped in backticks, e.g. `NFA`.
