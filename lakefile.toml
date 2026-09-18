@@ -2,5 +2,8 @@ name = "lexgen"
 version = "0.1.0"
 defaultTargets = ["Lexgen"]
 
+[leanOptions]
+linter.missingDocs = true
+
 [[lean_lib]]
 name = "Lexgen"
