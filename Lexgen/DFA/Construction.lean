@@ -49,14 +49,14 @@ private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : Edge) : Std.
 /-
 Returns the alphabet of `nfa`.
 -/
-private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Char :=
+private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Edge :=
   Std.HashSet.ofArray
     (nfa.nodes.filterMap
       fun state =>
-        if let .edge (.char c) _ := state then
-          some c
-        else
-          none)
+        match state with
+        | .edge (.char c) _ => some (.char c)
+        | .edge .dot      _ => some .dot
+        | _                 => none)
 
 /-
 Predicate checking whether a `DFA` state (a set of `NFA` states) is accepting.
@@ -79,9 +79,7 @@ def NFA.toDFA (nfa : NFA) : DFA :=
   -- TODO: Consider a functional rewrite for consistency with the rest of
   -- the codebase.
   Id.run do
-    -- The alphabet is the actual characters used in the `NFA` plus `dot`.
-    -- New character classes will need to extend it too.
-    let alphabet : List Edge := (nfa.getAlphabet.toList.map .char).insert .dot
+    let alphabet : List Edge := nfa.getAlphabet.toList
 
     let mut states    : Array (Std.HashSet Nat)        := #[nfa.εClosure {} 0]
     let mut trans     : Std.HashMap (Nat × Symbol) Nat := {}

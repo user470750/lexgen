@@ -20,7 +20,7 @@ inductive Edge where
   Matches the empty string.
   -/
   | ε
-deriving Repr, DecidableEq
+deriving Repr, DecidableEq, Hashable
 
 /--
 A state of the `NFA`.
