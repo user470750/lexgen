@@ -5,6 +5,24 @@ Defines the NFA representation (`NFA`).
 -/
 
 /--
+The label type for `NFA` transitions.
+-/
+inductive Edge where
+  /--
+  Matches the literal character `c`.
+  -/
+  | char (c : Char)
+  /--
+  Matches any single character.
+  -/
+  | dot
+  /--
+  Matches the empty string.
+  -/
+  | ε
+deriving Repr, DecidableEq, Hashable
+
+/--
 A state of the `NFA`.
 -/
 inductive Node where
@@ -13,22 +31,14 @@ inductive Node where
   -/
   | done
   /--
-  The literal character `c` label for transition to `next` state.
+  Node labeled by a real edge (`char`/`dot`/`ε`), not a control node.
   -/
-  | char (c : Char) (next : Nat)
-  /--
-  Any single character label for transition to `next` state.
-  -/
-  | dot (next : Nat)
-  /--
-  The empty string label for transition to `next` state.
-  -/
-  | ε (next : Nat)
+  | edge (e : Edge) (next : Nat)
   /--
   Two ε-transition labels, to `next₁` and `next₂`.
   -/
   | split (next₁ next₂ : Nat)
-deriving Repr, DecidableEq
+deriving Repr, DecidableEq, Inhabited
 
 /--
 The non-deterministic finite automaton representation.
