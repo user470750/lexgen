@@ -32,6 +32,7 @@ a single edge with label `c` from state `s`.
 private def edge : (c : Edge) → (s : Node) → List Nat
   | .char c₁ , .edge (.char c₂) next =>
     if c₁ == c₂ then [next] else []
+  | .char _, .edge .dot next         => [next]
   | .dot, .edge .dot next            => [next]
   | .ε, .edge .ε next                => [next]
   | .ε, .split next₁ next₂           => [next₁, next₂]
