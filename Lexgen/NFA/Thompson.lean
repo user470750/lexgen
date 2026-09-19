@@ -6,8 +6,6 @@ Authors: Oleg Shabanov
 module
 public import Lexgen.NFA.Automaton
 public import Lexgen.Regex.Ast
-meta import Lexgen.NFA.Automaton
-meta import Lexgen.Regex.Ast
 
 public section
 
@@ -65,39 +63,3 @@ Translates a `RegularExprAST` into an `NFA` using Thompson's construction.
 def reToNFA (regex : RegularExprAST) : NFA :=
   let translated := translate 0 regex
   { nodes := translated.nodes ++ #[.done] }
-
--- "a"
-#guard
-reToNFA (.symbol 'a') = { nodes := #[.edge (.char 'a') 1, .done] }
-
--- "."
-#guard
-reToNFA .dot = { nodes := #[.edge .dot 1, .done] }
-
--- ""
-#guard
-reToNFA .ε = { nodes := #[.edge .ε 1, .done] }
-
--- "ab"
-#guard
-reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
-{ nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done] }
-
--- "a|b"
-#guard
-reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
-{
-  nodes := #[
-    .split 1 3,
-    .edge (.char 'a') 2,
-    .edge .ε 5,
-    .edge (.char 'b') 4,
-    .edge .ε 5,
-    .done
-  ]
-}
-
--- "a*"
-#guard
-reToNFA (.repeated (.symbol 'a')) =
-{ nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done] }

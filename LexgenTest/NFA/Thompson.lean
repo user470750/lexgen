@@ -1,0 +1,48 @@
+/-
+Copyright (c) 2026 Oleg Shabanov. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Oleg Shabanov
+-/
+import Lexgen.NFA.Thompson
+
+/-!
+# Tests for Thompson's construction
+
+Checks the `NFA` produced by `reToNFA` for basic regular expressions.
+-/
+
+-- "a"
+#guard
+reToNFA (.symbol 'a') = { nodes := #[.edge (.char 'a') 1, .done] }
+
+-- "."
+#guard
+reToNFA .dot = { nodes := #[.edge .dot 1, .done] }
+
+-- ""
+#guard
+reToNFA .ε = { nodes := #[.edge .ε 1, .done] }
+
+-- "ab"
+#guard
+reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
+{ nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done] }
+
+-- "a|b"
+#guard
+reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
+{
+  nodes := #[
+    .split 1 3,
+    .edge (.char 'a') 2,
+    .edge .ε 5,
+    .edge (.char 'b') 4,
+    .edge .ε 5,
+    .done
+  ]
+}
+
+-- "a*"
+#guard
+reToNFA (.repeated (.symbol 'a')) =
+{ nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done] }
