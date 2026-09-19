@@ -82,10 +82,12 @@ inductive ReSyntax where
   /--
   Matches an alternation of regular expressions.
   -/
+  -- Left-associative due to the parser: `a|b|c` is `alt (alt a b) c`.
   | alt (left : ReSyntax) (right : ReSyntax)
   /--
   Matches a concatenation of regular expressions.
   -/
+  -- Left-associative due to the parser: `abc` is `concat (concat a b) c`.
   | concat (first : ReSyntax) (rest : ReSyntax)
   /--
   Matches repetition of a regular expression.

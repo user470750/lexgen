@@ -133,6 +133,7 @@ Parser for alternatives in the regular expression grammar. Top-level rule.
 private partial def altRe : Parser ReSyntax := do
   let left ← concatRe <|> (pure .ε)
   let alts ← many (altSep *> (concatRe <|> pure .ε))
+  -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
   pure $ alts.foldl .alt left
 
 /--
@@ -143,6 +144,7 @@ Parser for concatenation in the regular expression grammar.
 private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
   let rest ← many quantified
+  -- `foldl` makes concatenation left-associative: `abc` is `concat (concat a b) c`.
   pure $ rest.foldl .concat first
 
 /--
