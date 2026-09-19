@@ -1,9 +1,12 @@
 name = "lexgen"
 version = "0.1.0"
 defaultTargets = ["Lexgen"]
-
-[leanOptions]
-linter.missingDocs = true
+testDriver = "LexgenTest"
 
 [[lean_lib]]
 name = "Lexgen"
+leanOptions = { linter.missingDocs = true }
+
+[[lean_lib]]
+name = "LexgenTest"
+globs = ["LexgenTest.+"]
