@@ -30,6 +30,7 @@ structure Quantity where
   Optional maximum number of occurrences.
   -/
   maximum : Option Nat
+deriving Repr, DecidableEq
 
 /--
 Creates a `Quantity` without bounds.
@@ -105,3 +106,4 @@ inductive ReSyntax where
   Matches the empty string.
   -/
   | ε
+deriving Repr, DecidableEq
