@@ -59,7 +59,9 @@ private def translate (startState : Nat) : RegularExprAST → NFA
 
 /--
 Translates a `RegularExprAST` into an `NFA` using Thompson's construction.
+
+The accept state of the resulting `NFA` is labeled with `rule`.
 -/
-def reToNFA (regex : RegularExprAST) : NFA :=
+def reToNFA (regex : RegularExprAST) (rule : Nat) : NFA :=
   let translated := translate 0 regex
-  { nodes := translated.nodes ++ #[.done] }
+  { nodes := translated.nodes ++ #[.done rule] }
