@@ -116,3 +116,18 @@ NFA.toDFA { nodes := #[.edge (.char 'a') 1, .edge .dot 2, .done 0] } ==
   ],
   accepting := Std.HashMap.ofList [(3, 0)]
 }
+
+-- Several rules.
+
+-- "a", "."
+#guard
+NFA.toDFA { nodes := #[.split 1 3, .edge (.char 'a') 2, .done 0, .edge .dot 4, .done 1] } ==
+{
+  trans := Std.HashMap.ofList [
+    ((0, .dot), 1), ((0, .char 'a'), 2),
+    ((1, .dot), 3), ((1, .char 'a'), 3),
+    ((2, .dot), 3), ((2, .char 'a'), 3),
+    ((3, .dot), 3), ((3, .char 'a'), 3)
+  ],
+  accepting := Std.HashMap.ofList [(1, 1), (2, 0)]
+}
