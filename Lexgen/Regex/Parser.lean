@@ -4,9 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 module
-public import Std.Internal.Parsec
-public import Std.Internal.Parsec.String
+
 public import Lexgen.Regex.Syntax
+public import Std.Internal.Parsec.String
+
+import Std.Internal.Parsec
 
 public section
 

@@ -57,6 +57,11 @@ else
 Use `match` when several patterns need their own branches, or when a proof needs
 the equation of the match (`match h : e with`).
 
+**Imports.** Use a plain `import` wherever possible, so that importing a module does
+not pull in its dependencies. After `module`, leave a blank line, list the
+`public import`s, leave another blank line, then list the plain `import`s. Sort each
+group alphabetically.
+
 **Tests.** New features and bug fixes are welcome to come with tests. Tests live next
 to the code they check as `#guard` commands:
 

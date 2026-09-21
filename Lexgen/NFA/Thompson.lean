@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 module
+
 public import Lexgen.NFA.Automaton
 public import Lexgen.Regex.Ast
 

@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 module
-public import Lexgen.Regex.Syntax
+
 public import Lexgen.Regex.Ast
+public import Lexgen.Regex.Syntax
 
 public section
 

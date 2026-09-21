@@ -4,10 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 module
-public import Std.Data.HashSet
-public import Std.Data.HashMap
-public import Lexgen.NFA.Automaton
+
 public import Lexgen.DFA.Automaton
+public import Lexgen.NFA.Automaton
+
+import Std.Data.HashMap
+import Std.Data.HashSet
 
 public section
 
