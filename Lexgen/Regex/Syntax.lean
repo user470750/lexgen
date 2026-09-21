@@ -50,7 +50,7 @@ def optionalOne : Quantity := { minimum := 0, maximum := some 1 }
 /--
 Creates a `Quantity` with the given lower and upper bounds.
 -/
-def between (minimum : Nat) (maximum : Nat) : Quantity :=
+def between (minimum maximum : Nat) : Quantity :=
   { minimum, maximum }
 
 /--
@@ -84,12 +84,12 @@ inductive ReSyntax where
   Matches an alternation of regular expressions.
   -/
   -- Left-associative due to the parser: `a|b|c` is `alt (alt a b) c`.
-  | alt (left : ReSyntax) (right : ReSyntax)
+  | alt (left right : ReSyntax)
   /--
   Matches a concatenation of regular expressions.
   -/
   -- Left-associative due to the parser: `abc` is `concat (concat a b) c`.
-  | concat (first : ReSyntax) (rest : ReSyntax)
+  | concat (first rest : ReSyntax)
   /--
   Matches repetition of a regular expression.
   -/

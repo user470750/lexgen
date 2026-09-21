@@ -28,7 +28,8 @@ States already in `visited` are not explored again, so `visited` is assumed to
 contain the ε-closure of each of its states.
 -/
 -- TODO: Prove termination. An `Array` may be needed instead of a `HashSet`.
-private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node : Nat) : Std.HashSet Nat :=
+private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node : Nat) :
+    Std.HashSet Nat :=
   if visited.contains node then
     visited
   else
