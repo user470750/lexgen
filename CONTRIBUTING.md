@@ -31,7 +31,7 @@ match it rather than introducing a new one.
 fields and `match` arms is encouraged:
 
 ```lean
-let leftStart  := startState + 1
+let leftStart  := offset + 1
 let leftNFA    := translate leftStart left
 let rightStart := leftStart + leftNFA.nodes.size + 1
 ```
