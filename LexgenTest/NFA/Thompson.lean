@@ -46,3 +46,26 @@ rulesToNFA (.alt (.symbol 'a') (.symbol 'b')) [] =
 #guard
 rulesToNFA (.repeated (.symbol 'a')) [] =
 { nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done 0] }
+
+-- Several rules.
+
+-- "a", "b"
+#guard
+rulesToNFA (.symbol 'a') [.symbol 'b'] =
+{ nodes := #[.split 1 3, .edge (.char 'a') 2, .done 0, .edge (.char 'b') 4, .done 1] }
+
+-- "a", "b", "c"
+#guard
+rulesToNFA (.symbol 'a') [.symbol 'b', .symbol 'c'] =
+{
+  nodes := #[
+    .split 1 3,
+    .edge (.char 'a') 2,
+    .done 0,
+    .split 4 6,
+    .edge (.char 'b') 5,
+    .done 1,
+    .edge (.char 'c') 7,
+    .done 2
+  ]
+}
