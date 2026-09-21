@@ -85,7 +85,8 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
   identifiers are wrapped in backticks.
 
 A breaking change is marked with `!` after the scope, e.g. `refactor(NFA)!: ...`, and
-described in a `BREAKING CHANGE:` footer.
+described in a `BREAKING CHANGE:` footer. Until the first release, breaking changes
+are not marked.
 
 **Body.** When a commit makes more than one change, list them explicitly, one per `*`
 item. Where the reason for a change is not obvious, briefly explain it. The text
