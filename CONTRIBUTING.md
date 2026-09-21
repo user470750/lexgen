@@ -82,9 +82,8 @@ test(DFA): add `#guard` tests for the subset construction
   derived, since `Std.HashMap` has no instance
 ```
 
-**Squash merges.** Pull requests are squash-merged. The squash commit's header follows
-the same format, with the PR number appended by GitHub, e.g.
-`feat(DFA): add DFA conversion (#2)`; its body lists the branch's commits.
+**Rebase merges.** Prefer rebase when merging pull requests. Squash merging was used
+before, but it put too many changes into one commit.
 
 **AI assistance.** If AI assisted with a commit, this must be stated explicitly: say
 in the body what AI was used for, and add a `Co-Authored-By:` trailer naming the
