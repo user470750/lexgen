@@ -19,22 +19,26 @@ Defines Thompson's construction: translating a
 /--
 Internal implementation of Thompson's algorithm.
 
-`startState` is passed explicitly at every step.
+`offset` is passed explicitly at every step.
 -/
-private def translate (startState : Nat) : RegularExprAST → NFA
+private def translate (offset : Nat) : RegularExprAST → NFA
+  -- The single-node fragments below exit to the state right after them.
   | .ε =>
-    { nodes := #[.edge .ε (startState + 1)] }
+    { nodes := #[.edge .ε (offset + 1)] }
   | .symbol c =>
-    { nodes := #[.edge (.char c) (startState + 1)] }
+    { nodes := #[.edge (.char c) (offset + 1)] }
   | .dot =>
-    { nodes := #[.edge .dot (startState + 1)] }
+    { nodes := #[.edge .dot (offset + 1)] }
   | .concat first rest =>
-    let fstNFA := translate startState first
-    let sndNFA := translate (startState + fstNFA.nodes.size) rest
+    let fstNFA := translate offset first
+    -- The second fragment starts right after the first one.
+    let sndNFA := translate (offset + fstNFA.nodes.size) rest
     { nodes := fstNFA.nodes ++ sndNFA.nodes }
   | .repeated regex =>
-    let subStart := startState + 1
+    -- `+ 1` skips the entry `split` at `offset`.
+    let subStart := offset + 1
     let subNFA   := translate subStart regex
+    -- `+ 1` skips the loop-back `split` after the fragment.
     let endState := subStart + subNFA.nodes.size + 1
     {
       nodes :=
@@ -43,10 +47,13 @@ private def translate (startState : Nat) : RegularExprAST → NFA
         #[.split subStart endState]
     }
   | .alt left right =>
-    let leftStart  := startState + 1
+    -- `+ 1` skips the entry `split` at `offset`.
+    let leftStart  := offset + 1
     let leftNFA    := translate leftStart left
+    -- `+ 1` skips the `ε`-edge that exits the left fragment.
     let rightStart := leftStart + leftNFA.nodes.size + 1
     let rightNFA   := translate rightStart right
+    -- `+ 1` skips the `ε`-edge that exits the right fragment.
     let endState   := rightStart + rightNFA.nodes.size + 1
     {
       nodes :=
