@@ -58,10 +58,41 @@ private def translate (startState : Nat) : RegularExprAST → NFA
     }
 
 /--
-Translates a `RegularExprAST` into an `NFA` using Thompson's construction.
+Translates the rules `first :: rest` into an `NFA` whose states are numbered
+from `offset` and whose rules are numbered from `rule`.
 
-The accept state of the resulting `NFA` is labeled with `rule`.
+Each rule's fragment ends in a `done` state labeled with its rule, and a chain of
+`split` states chooses between the rules.
 -/
-def reToNFA (regex : RegularExprAST) (rule : Nat) : NFA :=
-  let translated := translate 0 regex
-  { nodes := translated.nodes ++ #[.done rule] }
+private def translateRules (rule offset : Nat) (first : RegularExprAST) :
+    List RegularExprAST → NFA
+  | [] =>
+    -- The last rule needs no `split`: its fragment starts right at `offset`.
+    let translated := translate offset first
+    { nodes := translated.nodes ++ #[.done rule] }
+  | next :: rest =>
+    -- `+ 1` skips the `split` at `offset` that chooses between this rule and the rest.
+    let translated := translate (offset + 1) first
+    -- `+ 2` skips the `split` and this rule's `done` state.
+    let restStart  := offset + translated.nodes.size + 2
+    {
+      nodes :=
+      -- Chooses between this rule and the remaining ones.
+      #[.split (offset + 1) restStart] ++
+      translated.nodes ++
+      -- The fragment exits here, to the state right after it.
+      #[.done rule] ++
+      -- The remaining rules, starting right after this rule's `done` state.
+      (translateRules (rule + 1) restStart next rest).nodes
+    }
+
+/--
+Translates the rules `first :: rest` into a single `NFA` using Thompson's
+construction.
+
+Rules are numbered by position, starting from `0` for `first`,
+and each accept state is labeled with its rule.
+-/
+-- Taking `first` separately guarantees there is at least one rule.
+def rulesToNFA (first : RegularExprAST) (rest : List RegularExprAST) : NFA :=
+  translateRules 0 0 first rest
