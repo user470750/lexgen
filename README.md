@@ -16,10 +16,12 @@ lexers embedded in Lean. It pairs each constructor with the regex pattern it
 corresponds to (and, for constructors carrying a value, a user-defined function
 converting the matched text), and expands into an ordinary Lean inductive together
 with the lexer itself. Patterns are written as raw string literals, so regex escapes
-need no extra backslashes. As an example, tokens for a JSON lexer:
+need no extra backslashes. Text matching a `skip` pattern, such as whitespace, is
+dropped. As an example, tokens for a JSON lexer:
 
 ```lean
 lexer Token where
+  skip                                r"[ \t\n\r]+"
   | lbrace                            r"\{"
   | rbrace                            r"\}"
   | lbracket                          r"\["
@@ -55,31 +57,29 @@ function that turns an input string into a list of tokens:
 The project is organized around the stages of the regex → NFA → DFA → lexer pipeline:
 
 ```
-Regex/    -- AST, regex parser, desugaring                              [implemented]
-NFA/      -- NFA construction (Thompson's construction)                 [implemented]
-DFA/      -- NFA -> DFA conversion (subset construction)                [implemented]
-          -- DFA optimization (Hopcroft's algorithm)                    [not implemented yet]
-Codegen/  -- lexer code generation from the optimized DFA                [not implemented yet]
+Regex/    -- AST, regex parser, desugaring
+NFA/      -- NFA construction (Thompson's construction)
+DFA/      -- NFA -> DFA conversion (subset construction)
+          -- DFA optimization (Hopcroft's algorithm)
+Codegen/  -- lexer code generation from the optimized DFA
 ```
 
 * **`Regex/`** — parses a regular expression into an AST and desugars extended syntax
-  (e.g. character classes, quantifiers) down to a small core of primitive constructs.
-  Implemented.
+  (e.g. quantifiers) down to a small core of primitive constructs.
 * **`NFA/`** — builds an NFA from the desugared AST via Thompson's construction.
-  Implemented.
-* **`DFA/`** — determinizes the NFA into a DFA via subset construction (implemented),
-  and will also cover DFA optimization via Hopcroft's algorithm (see Implementation
-  Details) — this part is not implemented yet.
-* **`Codegen/`** — not implemented yet. Once built, this module will turn the
-  (optimized) DFA into the actual generated lexer code, driven by Lean 4's macro
-  system (see Implementation Details).
+  The patterns of all rules are combined into one NFA.
+* **`DFA/`** — determinizes the NFA into a DFA via subset construction, and will also
+  cover DFA optimization via Hopcroft's algorithm (see Implementation Details).
+  When several rules match the same text, the rule listed first wins.
+* **`Codegen/`** — will turn the (optimized) DFA into the actual generated lexer code,
+  driven by Lean 4's macro system (see Implementation Details).
 
 ## Implementation Roadmap
 
 - [x] Regex parsing
 - [x] NFA construction (Thompson's construction)
-- [x] NFA → DFA conversion (subset construction) (currently only in the `dfa-conversion` branch)
-- [ ] Extending regex syntax with additional syntactic sugar (e.g. character classes, quantifiers)
+- [x] NFA → DFA conversion (subset construction)
+- [ ] Extending regex syntax with additional syntactic sugar (e.g. character classes)
 - [ ] Lexer code generation
 - [ ] Formal verification of pipeline correctness
 - [ ] DFA optimization (minimization)
