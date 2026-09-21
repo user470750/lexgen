@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 module
-public import Std.Data.HashSet
 public import Std.Data.HashMap
 
 public section
@@ -41,7 +40,7 @@ structure DFA where
   -/
   trans     : Std.HashMap (Nat × Symbol) Nat
   /--
-  Accepting (final) states.
+  Accepting (final) states, each mapped to the rule it accepts.
   -/
-  accepting : Std.HashSet Nat
+  accepting : Std.HashMap Nat Nat
 deriving Repr, BEq

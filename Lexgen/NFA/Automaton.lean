@@ -36,9 +36,9 @@ A state of the `NFA`.
 -/
 inductive Node where
   /--
-  Accept state of `NFA`. There are no transitions from it.
+  Accept state of `NFA` for rule `rule`. There are no transitions from it.
   -/
-  | done
+  | done (rule : Nat)
   /--
   Node labeled by a real edge (`char`/`dot`/`ε`), not a control node.
   -/

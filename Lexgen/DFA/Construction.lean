@@ -34,7 +34,7 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
     let state      : Node            := nfa.nodes[node]!
     let newVisited : Std.HashSet Nat := visited.insert node
     match state with
-    | .done              => newVisited
+    | .done _            => newVisited
     | .edge (.char _) _  => newVisited
     | .edge .dot _       => newVisited
     | .edge .ε next      => nfa.εClosure newVisited next
@@ -78,13 +78,19 @@ private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Edge :=
         | _                 => none)
 
 /--
-Predicate checking whether a `DFA` state (a set of `NFA` states) is accepting.
+Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none`
+if none of its `NFA` states is accepting.
 
-A `DFA` state is accepting if at least one of the `NFA` states it includes
-is accepting.
+When several rules are accepted, the one with the smallest number
+(rule declared earlier) takes priority.
 -/
-private def NFA.isAccepting (nfa : NFA) (states : Std.HashSet Nat) : Bool :=
-  states.toList.any (.done == nfa.nodes[·]!)
+private def NFA.acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :=
+  let rules := states.toList.filterMap fun state =>
+    if let .done rule := nfa.nodes[state]! then
+      some rule
+    else
+      none
+  rules.min?
 
 /--
 Translates an `NFA` into a `DFA` using the subset construction.
@@ -102,10 +108,10 @@ def NFA.toDFA (nfa : NFA) : DFA :=
 
     let mut states    : Array (Std.HashSet Nat)        := #[nfa.εClosure {} 0]
     let mut trans     : Std.HashMap (Nat × Symbol) Nat := {}
-    let mut accepting : Std.HashSet Nat                := {}
+    let mut accepting : Std.HashMap Nat Nat            := {}
 
-    if isAccepting nfa states[0]! then
-      accepting := accepting.insert 0
+    if let some rule := acceptingRule? nfa states[0]! then
+      accepting := accepting.insert 0 rule
 
     let mut lastState  := 0
     let mut current    := 0
@@ -126,8 +132,8 @@ def NFA.toDFA (nfa : NFA) : DFA :=
           lastState := lastState + 1
           states := states.push reached
           trans := trans.insert (current, dfaSymbol) lastState
-          if isAccepting nfa reached then
-            accepting := accepting.insert lastState
+          if let some rule := acceptingRule? nfa reached then
+            accepting := accepting.insert lastState rule
       current := current + 1
 
     return { trans, accepting }

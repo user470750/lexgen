@@ -13,24 +13,24 @@ Checks the `NFA` produced by `reToNFA` for basic regular expressions.
 
 -- "a"
 #guard
-reToNFA (.symbol 'a') = { nodes := #[.edge (.char 'a') 1, .done] }
+reToNFA (.symbol 'a') 0 = { nodes := #[.edge (.char 'a') 1, .done 0] }
 
 -- "."
 #guard
-reToNFA .dot = { nodes := #[.edge .dot 1, .done] }
+reToNFA .dot 0 = { nodes := #[.edge .dot 1, .done 0] }
 
 -- ""
 #guard
-reToNFA .ε = { nodes := #[.edge .ε 1, .done] }
+reToNFA .ε 0 = { nodes := #[.edge .ε 1, .done 0] }
 
 -- "ab"
 #guard
-reToNFA (.concat (.symbol 'a') (.symbol 'b')) =
-{ nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done] }
+reToNFA (.concat (.symbol 'a') (.symbol 'b')) 0 =
+{ nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done 0] }
 
 -- "a|b"
 #guard
-reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
+reToNFA (.alt (.symbol 'a') (.symbol 'b')) 0 =
 {
   nodes := #[
     .split 1 3,
@@ -38,11 +38,11 @@ reToNFA (.alt (.symbol 'a') (.symbol 'b')) =
     .edge .ε 5,
     .edge (.char 'b') 4,
     .edge .ε 5,
-    .done
+    .done 0
   ]
 }
 
 -- "a*"
 #guard
-reToNFA (.repeated (.symbol 'a')) =
-{ nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done] }
+reToNFA (.repeated (.symbol 'a')) 0 =
+{ nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done 0] }
