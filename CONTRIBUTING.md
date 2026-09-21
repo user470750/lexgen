@@ -44,6 +44,19 @@ match edgeLabel with
 
 When an arm's body goes on the next line, no padding is needed.
 
+**Pattern matching.** When only one pattern matters and all other cases share a
+fallback, `if let` is preferred over a `match` with a `_` arm:
+
+```lean
+if let .done rule := nfa.nodes[state]! then
+  some rule
+else
+  none
+```
+
+Use `match` when several patterns need their own branches, or when a proof needs
+the equation of the match (`match h : e with`).
+
 **Tests.** New features and bug fixes are welcome to come with tests. Tests live next
 to the code they check as `#guard` commands:
 
