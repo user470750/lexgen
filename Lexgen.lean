@@ -5,7 +5,6 @@ Authors: Oleg Shabanov
 -/
 module
 
-import Lexgen.Basic
 import Lexgen.DFA.Automaton
 import Lexgen.DFA.Construction
 import Lexgen.NFA.Automaton
