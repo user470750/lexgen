@@ -45,14 +45,14 @@ basic AST constructors.
 -/
 def ReSyntax.desugar : ReSyntax → RegularExprAST
   | .alt left right =>
-    .alt (desugar left) (desugar right)
+    .alt left.desugar right.desugar
   | .concat first rest =>
-    .concat (desugar first) (desugar rest)
+    .concat first.desugar rest.desugar
   | .repeatRe { minimum := n, maximum := none } re =>
-    let desugared := desugar re
+    let desugared := re.desugar
     .normalizedConcat (repeatConcat n desugared) (.repeated desugared)
   | .repeatRe { minimum := n, maximum := some m } re =>
-    let desugared := desugar re
+    let desugared := re.desugar
     .normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)

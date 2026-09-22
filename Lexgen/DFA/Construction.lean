@@ -113,7 +113,7 @@ def NFA.toDFA (nfa : NFA) : DFA :=
     let mut trans     : Std.HashMap (Nat × Symbol) Nat := {}
     let mut accepting : Std.HashMap Nat Nat            := {}
 
-    if let some rule := acceptingRule? nfa states[0]! then
+    if let some rule := nfa.acceptingRule? states[0]! then
       accepting := accepting.insert 0 rule
 
     let mut lastState  := 0
@@ -135,7 +135,7 @@ def NFA.toDFA (nfa : NFA) : DFA :=
           lastState := lastState + 1
           states := states.push reached
           trans := trans.insert (current, dfaSymbol) lastState
-          if let some rule := acceptingRule? nfa reached then
+          if let some rule := nfa.acceptingRule? reached then
             accepting := accepting.insert lastState rule
       current := current + 1
 
