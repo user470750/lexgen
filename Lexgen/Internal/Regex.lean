@@ -5,11 +5,11 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Regex.Ast
+public import Lexgen.Internal.Regex.Ast
 
-import Lexgen.Regex.Desugar
-import Lexgen.Regex.Parser
-import Lexgen.Regex.Syntax
+import Lexgen.Internal.Regex.Desugar
+import Lexgen.Internal.Regex.Parser
+import Lexgen.Internal.Regex.Syntax
 
 public section
 

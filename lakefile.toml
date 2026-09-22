@@ -5,6 +5,7 @@ testDriver = "LexgenTest"
 
 [[lean_lib]]
 name = "Lexgen"
+globs = ["Lexgen", "Lexgen.+"]
 leanOptions = { linter.missingDocs = true }
 
 [[lean_lib]]

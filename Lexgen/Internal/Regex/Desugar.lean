@@ -5,8 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Regex.Ast
-public import Lexgen.Regex.Syntax
+public import Lexgen.Internal.Regex.Ast
+public import Lexgen.Internal.Regex.Syntax
 
 public section
 

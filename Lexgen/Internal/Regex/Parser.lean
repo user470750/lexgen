@@ -5,7 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Regex.Syntax
+public import Lexgen.Internal.Regex.Syntax
 public import Std.Internal.Parsec.String
 
 import Std.Internal.Parsec

@@ -5,8 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.DFA.Automaton
-public import Lexgen.NFA.Automaton
+public import Lexgen.Internal.DFA.Automaton
+public import Lexgen.Internal.NFA.Automaton
 
 import Std.Data.HashMap
 import Std.Data.HashSet

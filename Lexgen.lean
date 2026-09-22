@@ -5,12 +5,4 @@ Authors: Oleg Shabanov
 -/
 module
 
-import Lexgen.DFA.Automaton
-import Lexgen.DFA.Construction
-import Lexgen.NFA.Automaton
-import Lexgen.NFA.Thompson
-import Lexgen.Regex
-import Lexgen.Regex.Ast
-import Lexgen.Regex.Desugar
-import Lexgen.Regex.Parser
-import Lexgen.Regex.Syntax
+-- TODO: Import the `lexer` command, once code generation is implemented.

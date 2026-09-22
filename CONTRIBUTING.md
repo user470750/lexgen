@@ -68,8 +68,8 @@ group alphabetically.
 
 **Tests.** New features and bug fixes are welcome to come with tests. Tests live in
 the `LexgenTest` library, in a module whose path mirrors the module it checks:
-`LexgenTest/NFA/Thompson.lean` checks `Lexgen/NFA/Thompson.lean`. They are written as
-`#guard` commands:
+`LexgenTest/Internal/NFA/Thompson.lean` checks `Lexgen/Internal/NFA/Thompson.lean`.
+They are written as `#guard` commands:
 
 ```lean
 -- "ab"

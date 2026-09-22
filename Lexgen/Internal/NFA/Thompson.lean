@@ -5,8 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.NFA.Automaton
-public import Lexgen.Regex.Ast
+public import Lexgen.Internal.NFA.Automaton
+public import Lexgen.Internal.Regex.Ast
 
 public section
 

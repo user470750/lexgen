@@ -54,14 +54,16 @@ function that turns an input string into a list of tokens:
 
 ## Architecture
 
-The project is organized around the stages of the regex → NFA → DFA → lexer pipeline:
+The project is organized around the stages of the regex → NFA → DFA → lexer pipeline.
+All of them live under `Lexgen/Internal/`, since only the `lexer` command is meant for
+users of the library:
 
 ```
-Regex/    -- AST, regex parser, desugaring
-NFA/      -- NFA construction (Thompson's construction)
-DFA/      -- NFA -> DFA conversion (subset construction)
-          -- DFA optimization (Hopcroft's algorithm)
-Codegen/  -- lexer code generation from the optimized DFA
+Regex/        -- AST, regex parser, desugaring
+NFA/          -- NFA construction (Thompson's construction)
+DFA/          -- NFA -> DFA conversion (subset construction)
+              -- DFA optimization (Hopcroft's algorithm)
+Codegen/      -- lexer code generation from the optimized DFA
 ```
 
 * **`Regex/`** — parses a regular expression into an AST and desugars extended syntax
