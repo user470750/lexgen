@@ -74,6 +74,9 @@ Codegen/  -- lexer code generation from the optimized DFA
 * **`Codegen/`** — will turn the (optimized) DFA into the actual generated lexer code,
   driven by Lean 4's macro system (see Implementation Details).
 
+Tests live in a separate library, `LexgenTest/`, where each module mirrors the path of
+the module it checks.
+
 ## Implementation Roadmap
 
 - [x] Regex parsing
