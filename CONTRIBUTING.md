@@ -38,8 +38,8 @@ let rightStart := leftStart + leftNFA.nodes.size + 1
 
 ```lean
 match edgeLabel with
-| .char ch => .char ch
-| .dot     => .dot
+| NFA.char ch => .char ch
+| NFA.dot     => .dot
 ```
 
 When an arm's body goes on the next line, no padding is needed.
@@ -54,16 +54,22 @@ else
   none
 ```
 
-Use `match` when several patterns need their own branches, or when a proof needs
-the equation of the match (`match h : e with`).
+Use `match` when several patterns need their own branches.
+
+**Similar types.** Some types share constructor names: `char`, `dot` and `ε` belong
+to both `NFA.Edge` and `DFA.Symbol`, and `ReSyntax` repeats the names of
+`RegularExprAST`. When two such types meet in one function, do not leave both to the
+leading dot: name the type, so that it is clear which one is meant.
 
 **Imports.** Use a plain `import` wherever possible, so that importing a module does
 not pull in its dependencies. After `module`, leave a blank line, list the
 `public import`s, leave another blank line, then list the plain `import`s. Sort each
 group alphabetically.
 
-**Tests.** New features and bug fixes are welcome to come with tests. Tests live next
-to the code they check as `#guard` commands:
+**Tests.** New features and bug fixes are welcome to come with tests. Tests live in
+the `LexgenTest` library, in a module whose path mirrors the module it checks:
+`LexgenTest/NFA/Thompson.lean` checks `Lexgen/NFA/Thompson.lean`. They are written as
+`#guard` commands:
 
 ```lean
 -- "ab"
