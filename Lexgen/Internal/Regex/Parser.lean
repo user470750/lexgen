@@ -187,4 +187,4 @@ A recursive-descent parser for regular expressions.
 
 Built using parser combinators. Produces a concrete syntax tree (`ReSyntax`).
 -/
-partial def parseRe : Parser ReSyntax := altRe <* eof
+def parseRe : Parser ReSyntax := altRe <* eof
