@@ -37,9 +37,9 @@ let rightStart := leftStart + leftNFA.nodes.size + 1
 ```
 
 ```lean
-match edgeLabel with
-| NFA.char ch => .char ch
-| NFA.dot     => .dot
+| DFA.char c₁, .edge (NFA.char c₂) next => if c₁ == c₂ then [next] else []
+| DFA.char _, .edge NFA.dot next        => [next]
+| DFA.dot, .edge NFA.dot next           => [next]
 ```
 
 When an arm's body goes on the next line, no padding is needed.
@@ -56,8 +56,8 @@ else
 
 Use `match` when several patterns need their own branches.
 
-**Similar types.** Some types share constructor names: `char`, `dot` and `ε` belong
-to both `NFA.Edge` and `DFA.Symbol`, and `ReSyntax` repeats the names of
+**Similar types.** Some types share constructor names: `char` and `dot` belong to
+both `NFA.Edge` and `DFA.Symbol`, and `ReSyntax` repeats the names of
 `RegularExprAST`. When two such types meet in one function, do not leave both to the
 leading dot: name the type, so that it is clear which one is meant.
 

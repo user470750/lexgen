@@ -48,36 +48,34 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 
 /--
 Returns all `NFA` states reachable by following
-a single edge with label `c` from state `s`.
+a single edge matching the symbol `c` from state `s`.
 -/
-private def edge : (c : NFA.Edge) → (s : NFA.Node) → List Nat
-  | .char c₁, .edge (.char c₂) next  => if c₁ == c₂ then [next] else []
-  | .char _, .edge .dot next         => [next]
-  | .dot, .edge .dot next            => [next]
-  | .ε, .edge .ε next                => [next]
-  | .ε, .split next₁ next₂           => [next₁, next₂]
-  | _, _                             => []
+private def edge : (c : DFA.Symbol) → (s : NFA.Node) → List Nat
+  | DFA.char c₁, .edge (NFA.char c₂) next => if c₁ == c₂ then [next] else []
+  | DFA.char _, .edge NFA.dot next        => [next]
+  | DFA.dot, .edge NFA.dot next           => [next]
+  | _, _                                  => []
 
 /--
-Maps a set of states to the new set of states reachable via
-a transition on edge value `c` (`char`/`dot`/`ε`) followed by an
-unbounded number of ε-transitions.
+Maps a set of states to the new set of states reachable via a transition
+on the symbol `c` followed by an unbounded number of ε-transitions.
 -/
-private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : Edge) : Std.HashSet Nat :=
+private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : DFA.Symbol) :
+    Std.HashSet Nat :=
   let raw := states.toList.flatMap (fun state => edge c nfa.nodes[state]!)
   raw.foldl nfa.εClosure {}
 
 /--
 Returns the alphabet of `nfa`.
 -/
-private def NFA.getAlphabet (nfa : NFA) : Std.HashSet Edge :=
+private def NFA.getAlphabet (nfa : NFA) : Std.HashSet DFA.Symbol :=
   Std.HashSet.ofArray
     (nfa.nodes.filterMap
       fun state =>
         match state with
-        | .edge (.char c) _ => some (.char c)
-        | .edge .dot      _ => some .dot
-        | _                 => none)
+        | .edge (NFA.char c) _ => some (DFA.char c)
+        | .edge NFA.dot      _ => some DFA.dot
+        | _                    => none)
 
 /--
 Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none`
@@ -106,7 +104,7 @@ def NFA.toDFA (nfa : NFA) : DFA :=
   -- TODO: Consider a functional rewrite for consistency with the rest of
   -- the codebase.
   Id.run do
-    let alphabet : List Edge := nfa.getAlphabet.toList
+    let alphabet : List DFA.Symbol := nfa.getAlphabet.toList
 
     let mut states    : Array (Std.HashSet Nat)            := #[nfa.εClosure {} 0]
     let mut trans     : Std.HashMap (Nat × DFA.Symbol) Nat := {}
@@ -120,20 +118,14 @@ def NFA.toDFA (nfa : NFA) : DFA :=
 
     -- `lastState` stops growing once every reached state for `current` is already in `states`.
     while current ≤ lastState do
-      for edgeLabel in alphabet do
-        let reached := nfa.edgeDFA states[current]! edgeLabel
-        let dfaSymbol : DFA.Symbol :=
-          match edgeLabel with
-          | NFA.char ch => .char ch
-          | NFA.dot     => .dot
-          -- TODO: Can we prove this branch is unreachable instead of panicking?
-          | NFA.ε       => panic! "alphabet should never contain ε"
+      for symbol in alphabet do
+        let reached := nfa.edgeDFA states[current]! symbol
         match states.findIdx? (· == reached) with
-        | some existingId => trans := trans.insert (current, dfaSymbol) existingId
+        | some existingId => trans := trans.insert (current, symbol) existingId
         | none            =>
           lastState := lastState + 1
           states := states.push reached
-          trans := trans.insert (current, dfaSymbol) lastState
+          trans := trans.insert (current, symbol) lastState
           if let some rule := nfa.acceptingRule? reached then
             accepting := accepting.insert lastState rule
       current := current + 1
