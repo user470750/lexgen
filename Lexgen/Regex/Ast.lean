@@ -24,12 +24,12 @@ inductive RegularExprAST where
   /--
   Matches an alternation of regular expressions.
   -/
-  -- Left-associative: `desugar` keeps the parser's `alt (alt a b) c`.
+  -- Left-associative: `ReSyntax.desugar` keeps the parser's `alt (alt a b) c`.
   | alt (left right : RegularExprAST)
   /--
   Matches a concatenation of regular expressions.
   -/
-  -- Left-associative: `desugar` keeps the parser's `concat (concat a b) c`.
+  -- Left-associative: `ReSyntax.desugar` keeps the parser's `concat (concat a b) c`.
   | concat (first rest : RegularExprAST)
   /--
   Matches repetition of a regular expression.

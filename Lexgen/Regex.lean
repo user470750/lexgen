@@ -20,4 +20,4 @@ Returns an error message if `s` is not a valid regular expression.
 -/
 def parse (s : String) : Except String RegularExprAST := do
   let syn ← parseRe.run s
-  pure $ desugar syn
+  pure syn.desugar

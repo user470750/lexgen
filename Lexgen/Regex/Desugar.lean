@@ -13,7 +13,7 @@ public section
 /-!
 # Regular expression desugaring
 
-Defines the `desugar` function for translating a CST into an AST.
+Defines `ReSyntax.desugar` for translating a CST into an AST.
 -/
 
 /--
@@ -43,7 +43,7 @@ Desugars CST (`ReSyntax`) to AST (`RegularExprAST`).
 Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
 basic AST constructors.
 -/
-def desugar : ReSyntax → RegularExprAST
+def ReSyntax.desugar : ReSyntax → RegularExprAST
   | .alt left right =>
     .alt (desugar left) (desugar right)
   | .concat first rest =>
