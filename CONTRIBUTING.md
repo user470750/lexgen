@@ -68,7 +68,7 @@ to the code they check as `#guard` commands:
 ```lean
 -- "ab"
 #guard
-rulesToNFA (.concat (.symbol 'a') (.symbol 'b')) [] =
+NFA.ofRules (.concat (.symbol 'a') (.symbol 'b')) [] =
 { nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done 0] }
 ```
 

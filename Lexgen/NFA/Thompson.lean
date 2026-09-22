@@ -102,5 +102,5 @@ Rules are numbered by position, starting from `0` for `first`,
 and each accept state is labeled with its rule.
 -/
 -- Taking `first` separately guarantees there is at least one rule.
-def rulesToNFA (first : RegularExprAST) (rest : List RegularExprAST) : NFA :=
+def NFA.ofRules (first : RegularExprAST) (rest : List RegularExprAST) : NFA :=
   translateRules 0 0 first rest

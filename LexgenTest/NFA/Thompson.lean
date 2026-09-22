@@ -8,29 +8,29 @@ import Lexgen.NFA.Thompson
 /-!
 # Tests for Thompson's construction
 
-Checks the `NFA` produced by `rulesToNFA` for basic regular expressions.
+Checks the `NFA` produced by `NFA.ofRules` for basic regular expressions.
 -/
 
 -- "a"
 #guard
-rulesToNFA (.symbol 'a') [] = { nodes := #[.edge (.char 'a') 1, .done 0] }
+NFA.ofRules (.symbol 'a') [] = { nodes := #[.edge (.char 'a') 1, .done 0] }
 
 -- "."
 #guard
-rulesToNFA .dot [] = { nodes := #[.edge .dot 1, .done 0] }
+NFA.ofRules .dot [] = { nodes := #[.edge .dot 1, .done 0] }
 
 -- ""
 #guard
-rulesToNFA .ε [] = { nodes := #[.edge .ε 1, .done 0] }
+NFA.ofRules .ε [] = { nodes := #[.edge .ε 1, .done 0] }
 
 -- "ab"
 #guard
-rulesToNFA (.concat (.symbol 'a') (.symbol 'b')) [] =
+NFA.ofRules (.concat (.symbol 'a') (.symbol 'b')) [] =
 { nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done 0] }
 
 -- "a|b"
 #guard
-rulesToNFA (.alt (.symbol 'a') (.symbol 'b')) [] =
+NFA.ofRules (.alt (.symbol 'a') (.symbol 'b')) [] =
 {
   nodes := #[
     .split 1 3,
@@ -44,19 +44,19 @@ rulesToNFA (.alt (.symbol 'a') (.symbol 'b')) [] =
 
 -- "a*"
 #guard
-rulesToNFA (.repeated (.symbol 'a')) [] =
+NFA.ofRules (.repeated (.symbol 'a')) [] =
 { nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done 0] }
 
 -- Several rules.
 
 -- "a", "b"
 #guard
-rulesToNFA (.symbol 'a') [.symbol 'b'] =
+NFA.ofRules (.symbol 'a') [.symbol 'b'] =
 { nodes := #[.split 1 3, .edge (.char 'a') 2, .done 0, .edge (.char 'b') 4, .done 1] }
 
 -- "a", "b", "c"
 #guard
-rulesToNFA (.symbol 'a') [.symbol 'b', .symbol 'c'] =
+NFA.ofRules (.symbol 'a') [.symbol 'b', .symbol 'c'] =
 {
   nodes := #[
     .split 1 3,
