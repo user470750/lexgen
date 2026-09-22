@@ -16,7 +16,7 @@ public section
 /-!
 # DFA construction
 
-Defines `NFA.toDFA`: translating an `NFA` into a `DFA` using the
+Defines `DFA.ofNFA`: translating an `NFA` into a `DFA` using the
 subset construction.
 -/
 
@@ -56,11 +56,13 @@ private def edge : (c : DFA.Symbol) → (s : NFA.Node) → List Nat
   | DFA.dot, .edge NFA.dot next           => [next]
   | _, _                                  => []
 
+namespace DFA
+
 /--
 Maps a set of states to the new set of states reachable via a transition
 on the symbol `c` followed by an unbounded number of ε-transitions.
 -/
-private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : DFA.Symbol) :
+private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (c : DFA.Symbol) :
     Std.HashSet Nat :=
   let raw := states.toList.flatMap (fun state => edge c nfa.nodes[state]!)
   raw.foldl nfa.εClosure {}
@@ -68,7 +70,7 @@ private def NFA.edgeDFA (nfa : NFA) (states : Std.HashSet Nat) (c : DFA.Symbol) 
 /--
 Returns the alphabet of `nfa`.
 -/
-private def NFA.getAlphabet (nfa : NFA) : Std.HashSet DFA.Symbol :=
+private def getAlphabet (nfa : NFA) : Std.HashSet DFA.Symbol :=
   Std.HashSet.ofArray
     (nfa.nodes.filterMap
       fun state =>
@@ -84,7 +86,7 @@ if none of its `NFA` states is accepting.
 When several rules are accepted, the one with the smallest number
 (rule declared earlier) takes priority.
 -/
-private def NFA.acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :=
+private def acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :=
   let rules := states.toList.filterMap fun state =>
     if let .done rule := nfa.nodes[state]! then
       some rule
@@ -95,7 +97,7 @@ private def NFA.acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option N
 /--
 Translates an `NFA` into a `DFA` using the subset construction.
 -/
-def NFA.toDFA (nfa : NFA) : DFA :=
+def ofNFA (nfa : NFA) : DFA :=
   -- The subset construction is an established imperative algorithm:
   -- `states`, `trans` and `accepting` all need to be mutated while building
   -- the `DFA`.
@@ -104,13 +106,13 @@ def NFA.toDFA (nfa : NFA) : DFA :=
   -- TODO: Consider a functional rewrite for consistency with the rest of
   -- the codebase.
   Id.run do
-    let alphabet : List DFA.Symbol := nfa.getAlphabet.toList
+    let alphabet : List DFA.Symbol := (getAlphabet nfa).toList
 
     let mut states    : Array (Std.HashSet Nat)            := #[nfa.εClosure {} 0]
     let mut trans     : Std.HashMap (Nat × DFA.Symbol) Nat := {}
     let mut accepting : Std.HashMap Nat Nat                := {}
 
-    if let some rule := nfa.acceptingRule? states[0]! then
+    if let some rule := acceptingRule? nfa states[0]! then
       accepting := accepting.insert 0 rule
 
     let mut lastState  := 0
@@ -119,15 +121,17 @@ def NFA.toDFA (nfa : NFA) : DFA :=
     -- `lastState` stops growing once every reached state for `current` is already in `states`.
     while current ≤ lastState do
       for symbol in alphabet do
-        let reached := nfa.edgeDFA states[current]! symbol
+        let reached := reachedOn nfa states[current]! symbol
         match states.findIdx? (· == reached) with
         | some existingId => trans := trans.insert (current, symbol) existingId
         | none            =>
           lastState := lastState + 1
           states := states.push reached
           trans := trans.insert (current, symbol) lastState
-          if let some rule := nfa.acceptingRule? reached then
+          if let some rule := acceptingRule? nfa reached then
             accepting := accepting.insert lastState rule
       current := current + 1
 
     return { trans, accepting }
+
+end DFA

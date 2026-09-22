@@ -38,4 +38,4 @@ def rulesToDFA : List String → Except String DFA
   | first :: rest => do
     let firstRegex ← parse first
     let restRegexes ← rest.mapM parse
-    pure (NFA.ofRules firstRegex restRegexes).toDFA
+    pure (DFA.ofNFA (NFA.ofRules firstRegex restRegexes))
