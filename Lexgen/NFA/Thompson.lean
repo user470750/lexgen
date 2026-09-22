@@ -24,12 +24,12 @@ Internal implementation of Thompson's algorithm.
 -/
 private def translate (offset : Nat) : RegularExprAST → NFA
   -- The single-node fragments below exit to the state right after them.
-  | .ε =>
-    { nodes := #[.edge .ε (offset + 1)] }
-  | .symbol c =>
-    { nodes := #[.edge (.char c) (offset + 1)] }
-  | .dot =>
-    { nodes := #[.edge .dot (offset + 1)] }
+  | RegularExprAST.ε =>
+    { nodes := #[.edge NFA.ε (offset + 1)] }
+  | RegularExprAST.symbol c =>
+    { nodes := #[.edge (NFA.char c) (offset + 1)] }
+  | RegularExprAST.dot =>
+    { nodes := #[.edge NFA.dot (offset + 1)] }
   | .concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.
@@ -60,9 +60,9 @@ private def translate (offset : Nat) : RegularExprAST → NFA
       nodes :=
       #[.split leftStart rightStart] ++
       leftNFA.nodes ++
-      #[.edge .ε endState] ++
+      #[.edge NFA.ε endState] ++
       rightNFA.nodes ++
-      #[.edge .ε endState]
+      #[.edge NFA.ε endState]
     }
 
 /--

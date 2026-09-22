@@ -44,18 +44,20 @@ Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
 basic AST constructors.
 -/
 def ReSyntax.desugar : ReSyntax → RegularExprAST
-  | .alt left right =>
-    .alt left.desugar right.desugar
-  | .concat first rest =>
-    .concat first.desugar rest.desugar
-  | .repeatRe { minimum := n, maximum := none } re =>
+  | ReSyntax.alt left right =>
+    RegularExprAST.alt left.desugar right.desugar
+  | ReSyntax.concat first rest =>
+    RegularExprAST.concat first.desugar rest.desugar
+  | ReSyntax.repeatRe { minimum := n, maximum := none } re =>
     let desugared := re.desugar
-    .normalizedConcat (repeatConcat n desugared) (.repeated desugared)
-  | .repeatRe { minimum := n, maximum := some m } re =>
+    RegularExprAST.normalizedConcat
+      (repeatConcat n desugared)
+      (RegularExprAST.repeated desugared)
+  | ReSyntax.repeatRe { minimum := n, maximum := some m } re =>
     let desugared := re.desugar
-    .normalizedConcat
+    RegularExprAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
-  | .symbol c => .symbol c
-  | .dot      => .dot
-  | .ε        => .ε
+  | ReSyntax.symbol c => RegularExprAST.symbol c
+  | ReSyntax.dot      => RegularExprAST.dot
+  | ReSyntax.ε        => RegularExprAST.ε

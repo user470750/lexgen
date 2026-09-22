@@ -16,7 +16,7 @@ Defines the NFA representation (`NFA`).
 /--
 The label type for `NFA` transitions.
 -/
-inductive Edge where
+inductive NFA.Edge where
   /--
   Matches the literal character `c`.
   -/
@@ -34,7 +34,7 @@ deriving Repr, DecidableEq, Hashable
 /--
 A state of the `NFA`.
 -/
-inductive Node where
+inductive NFA.Node where
   /--
   Accept state of `NFA` for rule `rule`. There are no transitions from it.
   -/
@@ -42,7 +42,7 @@ inductive Node where
   /--
   Node labeled by a real edge (`char`/`dot`/`ε`), not a control node.
   -/
-  | edge (e : Edge) (next : Nat)
+  | edge (e : NFA.Edge) (next : Nat)
   /--
   Two ε-transition labels, to `next₁` and `next₂`.
   -/
@@ -56,5 +56,15 @@ structure NFA where
   /--
   The states of the `NFA`, indexed by state id.
   -/
-  nodes : Array Node
+  nodes : Array NFA.Node
 deriving Repr, DecidableEq
+
+namespace NFA
+
+/-
+Short names for `Edge` constructors, so that `NFA.dot` tells the `NFA`
+edge apart from the `DFA` symbol `DFA.dot`.
+-/
+export Edge (char dot ε)
+
+end NFA

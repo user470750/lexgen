@@ -18,9 +18,9 @@ Defines the DFA representation (`DFA`).
 /--
 The label type for `DFA` transitions.
 
-Unlike `Edge`, it has no `ε`: a `DFA` has no ε-transitions.
+Unlike `NFA.Edge`, it has no `ε`: a `DFA` has no ε-transitions.
 -/
-inductive Symbol where
+inductive DFA.Symbol where
   /--
   Matches the literal character `c`.
   -/
@@ -39,9 +39,19 @@ structure DFA where
   Transition table: maps a state and an edge label to the
   resulting state.
   -/
-  trans     : Std.HashMap (Nat × Symbol) Nat
+  trans     : Std.HashMap (Nat × DFA.Symbol) Nat
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
   accepting : Std.HashMap Nat Nat
 deriving Repr, BEq
+
+namespace DFA
+
+/-
+Short names for `Symbol` constructors, so that `DFA.dot` tells the `DFA`
+symbol apart from the `NFA` edge `NFA.dot`.
+-/
+export Symbol (char dot)
+
+end DFA

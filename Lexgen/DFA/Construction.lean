@@ -50,7 +50,7 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 Returns all `NFA` states reachable by following
 a single edge with label `c` from state `s`.
 -/
-private def edge : (c : Edge) → (s : Node) → List Nat
+private def edge : (c : NFA.Edge) → (s : NFA.Node) → List Nat
   | .char c₁ , .edge (.char c₂) next =>
     if c₁ == c₂ then [next] else []
   | .char _, .edge .dot next         => [next]
@@ -109,9 +109,9 @@ def NFA.toDFA (nfa : NFA) : DFA :=
   Id.run do
     let alphabet : List Edge := nfa.getAlphabet.toList
 
-    let mut states    : Array (Std.HashSet Nat)        := #[nfa.εClosure {} 0]
-    let mut trans     : Std.HashMap (Nat × Symbol) Nat := {}
-    let mut accepting : Std.HashMap Nat Nat            := {}
+    let mut states    : Array (Std.HashSet Nat)            := #[nfa.εClosure {} 0]
+    let mut trans     : Std.HashMap (Nat × DFA.Symbol) Nat := {}
+    let mut accepting : Std.HashMap Nat Nat                := {}
 
     if let some rule := nfa.acceptingRule? states[0]! then
       accepting := accepting.insert 0 rule
@@ -123,12 +123,12 @@ def NFA.toDFA (nfa : NFA) : DFA :=
     while current ≤ lastState do
       for edgeLabel in alphabet do
         let reached := nfa.edgeDFA states[current]! edgeLabel
-        let dfaSymbol : Symbol :=
+        let dfaSymbol : DFA.Symbol :=
           match edgeLabel with
-          | .char ch => .char ch
-          | .dot     => .dot
+          | NFA.char ch => .char ch
+          | NFA.dot     => .dot
           -- TODO: Can we prove this branch is unreachable instead of panicking?
-          | .ε       => panic! "alphabet should never contain ε"
+          | NFA.ε       => panic! "alphabet should never contain ε"
         match states.findIdx? (· == reached) with
         | some existingId => trans := trans.insert (current, dfaSymbol) existingId
         | none            =>
