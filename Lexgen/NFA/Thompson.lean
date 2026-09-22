@@ -58,11 +58,11 @@ private def translate (offset : Nat) : RegularExprAST → NFA
     let endState   := rightStart + rightNFA.nodes.size + 1
     {
       nodes :=
-      #[.split leftStart rightStart] ++
-      leftNFA.nodes ++
-      #[.edge NFA.ε endState] ++
-      rightNFA.nodes ++
-      #[.edge NFA.ε endState]
+        #[.split leftStart rightStart] ++
+        leftNFA.nodes ++
+        #[.edge NFA.ε endState] ++
+        rightNFA.nodes ++
+        #[.edge NFA.ε endState]
     }
 
 /--
@@ -85,13 +85,13 @@ private def translateRules (rule offset : Nat) (first : RegularExprAST) :
     let restStart  := offset + translated.nodes.size + 2
     {
       nodes :=
-      -- Chooses between this rule and the remaining ones.
-      #[.split (offset + 1) restStart] ++
-      translated.nodes ++
-      -- The fragment exits here, to the state right after it.
-      #[.done rule] ++
-      -- The remaining rules, starting right after this rule's `done` state.
-      (translateRules (rule + 1) restStart next rest).nodes
+        -- Chooses between this rule and the remaining ones.
+        #[.split (offset + 1) restStart] ++
+        translated.nodes ++
+        -- The fragment exits here, to the state right after it.
+        #[.done rule] ++
+        -- The remaining rules, starting right after this rule's `done` state.
+        (translateRules (rule + 1) restStart next rest).nodes
     }
 
 /--

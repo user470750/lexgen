@@ -53,6 +53,6 @@ deriving Repr
 Wraps `concat` to avoid useless concatenation with ε.
 -/
 def RegularExprAST.normalizedConcat : RegularExprAST → RegularExprAST → RegularExprAST
-  | .ε,   rest  => rest
+  | .ε,    rest => rest
   | first, .ε   => first
   | first, rest => .concat first rest
