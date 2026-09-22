@@ -99,11 +99,11 @@ private def rangeQuantifier : Parser Quantity := do
       skipChar ','
       (do
         let m ← digits
-        let q := between n m
-        if inOrder q then pure q
+        let q : Quantity := .between n m
+        if q.inOrder then pure q
         else fail s!"invalid range \{{n},{m}}: maximum less than minimum"
-      ) <|> pure (atLeast n)
-    ) <|> pure (exactly n)
+      ) <|> pure (.atLeast n)
+    ) <|> pure (.exactly n)
   rightBrace <|> fail s!"missing }, unterminated quantifier"
   pure spec
 
@@ -156,10 +156,10 @@ Parser for a quantified atom.
 -/
 private partial def quantified : Parser ReSyntax := do
   let re ← atom
-  starQuantifier     *> (pure $ .repeatRe zeroOrMore re)  <|>
-  plusQuantifier     *> (pure $ .repeatRe oneOrMore re)   <|>
-  questionQuantifier *> (pure $ .repeatRe optionalOne re) <|>
-  buildQuantity re                                        <|>
+  starQuantifier     *> (pure $ .repeatRe .zeroOrMore re)  <|>
+  plusQuantifier     *> (pure $ .repeatRe .oneOrMore re)   <|>
+  questionQuantifier *> (pure $ .repeatRe .optionalOne re) <|>
+  buildQuantity re                                         <|>
   pure re
 
 /--

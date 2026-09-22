@@ -35,44 +35,44 @@ deriving Repr, DecidableEq
 /--
 Creates a `Quantity` without bounds.
 -/
-def zeroOrMore : Quantity := { minimum := 0, maximum := none }
+def Quantity.zeroOrMore : Quantity := { minimum := 0, maximum := none }
 
 /--
 Creates a `Quantity` with a lower bound of one and no upper bound.
 -/
-def oneOrMore : Quantity := { minimum := 1, maximum := none }
+def Quantity.oneOrMore : Quantity := { minimum := 1, maximum := none }
 
 /--
 Creates a `Quantity` from zero to one.
 -/
-def optionalOne : Quantity := { minimum := 0, maximum := some 1 }
+def Quantity.optionalOne : Quantity := { minimum := 0, maximum := some 1 }
 
 /--
 Creates a `Quantity` with the given lower and upper bounds.
 -/
-def between (minimum maximum : Nat) : Quantity :=
+def Quantity.between (minimum maximum : Nat) : Quantity :=
   { minimum, maximum }
 
 /--
 Creates a `Quantity` with only a lower bound.
 -/
-def atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
+def Quantity.atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
 
 /--
 Creates a `Quantity` from zero to the given upper bound.
 -/
-def atMost (maximum : Nat) : Quantity := { minimum := 0, maximum }
+def Quantity.atMost (maximum : Nat) : Quantity := { minimum := 0, maximum }
 
 /--
 Creates a `Quantity` requiring an exact number of occurrences.
 -/
-def exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
+def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
 
 /--
 Checks whether a `Quantity`'s bounds are well-formed,
 i.e. `minimum <= maximum`.
 -/
-def inOrder : Quantity → Bool
+def Quantity.inOrder : Quantity → Bool
   | { minimum := _, maximum := none }   => true
   | { minimum,      maximum := some m } => minimum <= m
 
