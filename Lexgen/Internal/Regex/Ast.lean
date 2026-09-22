@@ -56,3 +56,14 @@ def RegularExprAST.normalizedConcat : RegularExprAST → RegularExprAST → Regu
   | .ε,    rest => rest
   | first, .ε   => first
   | first, rest => .concat first rest
+
+/--
+Checks whether `re` matches the empty string.
+-/
+def RegularExprAST.matchesEmpty : RegularExprAST → Bool
+  | .ε          => true
+  | .symbol _   => false
+  | .dot        => false
+  | .alt l r    => l.matchesEmpty || r.matchesEmpty
+  | .concat f s => f.matchesEmpty && s.matchesEmpty
+  | .repeated _ => true

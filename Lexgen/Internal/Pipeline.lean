@@ -30,12 +30,26 @@ into a single `DFA`.
 Rules are numbered by position: when several of them match the same text, the
 one declared earlier wins.
 
-Returns an error message if a rule is not a valid regular expression, or if
-there are no rules at all.
+Returns an error message if a rule is not a valid regular expression, if there
+are no rules at all, or if a rule matches the empty string: such a rule would
+make the lexer loop, since it accepts a token of length zero.
 -/
 def rulesToDFA : List String → Except String DFA
   | []            => throw "a lexer needs at least one rule"
   | first :: rest => do
-    let firstRegex ← parse first
+    let firstRegex  ← parse first
     let restRegexes ← rest.mapM parse
+    let emptyRules := existEmpty (firstRegex :: restRegexes)
+    unless emptyRules.isEmpty do
+      -- TODO: Return the rule numbers as data instead of putting them into a
+      -- message. The `lexer` command knows the name of every rule, so it could
+      -- then report the names instead of the numbers.
+      throw s!"rules matching the empty string: {emptyRules}"
     pure (DFA.ofNFA (NFA.ofRules firstRegex restRegexes))
+where
+  /--
+  Returns the numbers of the rules that match the empty string.
+  -/
+  existEmpty (rules : List RegularExprAST) : List Nat :=
+    rules.zipIdx.filterMap
+      (fun (regex, rule) => if regex.matchesEmpty then some rule else none)
