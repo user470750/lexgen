@@ -18,6 +18,8 @@ Parses a regular expression `s` and desugars it into a `RegularExprAST`.
 
 Returns an error message if `s` is not a valid regular expression.
 -/
+-- TODO: Run the parser directly instead of `Parser.run`, so that the error keeps
+-- the offset as data rather than inside a message.
 def parse (s : String) : Except String RegularExprAST := do
   let syn ← parseRe.run s
   pure syn.desugar
