@@ -108,9 +108,9 @@ def ofNFA (nfa : NFA) : DFA :=
   Id.run do
     let alphabet : List DFA.Symbol := (getAlphabet nfa).toList
 
-    let mut states    : Array (Std.HashSet Nat)            := #[nfa.εClosure {} 0]
-    let mut trans     : Std.HashMap (Nat × DFA.Symbol) Nat := {}
-    let mut accepting : Std.HashMap Nat Nat                := {}
+    let mut states    : Array (Std.HashSet Nat)         := #[nfa.εClosure {} 0]
+    let mut trans     : Array (List (DFA.Symbol × Nat)) := #[]
+    let mut accepting : Std.HashMap Nat Nat             := {}
 
     if let some rule := acceptingRule? nfa states[0]! then
       accepting := accepting.insert 0 rule
@@ -120,16 +120,18 @@ def ofNFA (nfa : NFA) : DFA :=
 
     -- `lastState` stops growing once every reached state for `current` is already in `states`.
     while current ≤ lastState do
+      let mut row : List (DFA.Symbol × Nat) := []
       for symbol in alphabet do
         let reached := reachedOn nfa states[current]! symbol
         match states.findIdx? (· == reached) with
-        | some existingId => trans := trans.insert (current, symbol) existingId
+        | some existingId => row := (symbol, existingId) :: row
         | none            =>
           lastState := lastState + 1
           states := states.push reached
-          trans := trans.insert (current, symbol) lastState
+          row := (symbol, lastState) :: row
           if let some rule := acceptingRule? nfa reached then
             accepting := accepting.insert lastState rule
+      trans := trans.push row
       current := current + 1
 
     return { trans, accepting }
