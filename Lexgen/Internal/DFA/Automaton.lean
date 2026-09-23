@@ -36,10 +36,10 @@ The deterministic finite automaton representation.
 -/
 structure DFA where
   /--
-  Transition table: maps a state and an edge label to the
-  resulting state.
+  Transition table: for every state, the symbols leaving it together with
+  the states they lead to. Indexed by state.
   -/
-  trans     : Std.HashMap (Nat × DFA.Symbol) Nat
+  trans     : Array (List (DFA.Symbol × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
