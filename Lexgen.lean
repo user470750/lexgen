@@ -5,4 +5,4 @@ Authors: Oleg Shabanov
 -/
 module
 
--- TODO: Import the `lexer` command, once code generation is implemented.
+public import Lexgen.LexerSyntax

@@ -18,9 +18,6 @@ public section
 
 Defines the entry point of the regex → NFA → DFA pipeline: `rulesToDFA`,
 turning the rules of a `lexer` declaration into a single `DFA`.
-
-It is the only declaration of the pipeline that `Codegen` needs, and once code
-generation is implemented, `Codegen` will be the only module importing this one.
 -/
 
 /--
