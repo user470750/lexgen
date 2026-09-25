@@ -17,7 +17,8 @@ corresponds to (and, for constructors carrying a value, a user-defined function
 converting the matched text), and expands into an ordinary Lean inductive together
 with the lexer itself. Patterns are written as raw string literals, so regex escapes
 need no extra backslashes. Text matching a `skip` pattern, such as whitespace, is
-dropped. As an example, tokens for a JSON lexer:
+dropped. An optional `deriving` clause derives instances for the token type, as for
+any inductive. As an example, tokens for a JSON lexer:
 
 ```lean
 lexer Token where
@@ -34,6 +35,7 @@ lexer Token where
   -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
   | number (n : Float)  stringToFloat r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?"
   | string (s : String) unquote       r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""#
+deriving Repr, BEq
 ```
 
 Once the `lexer` command is implemented, such a declaration will make Lexgen generate a
@@ -94,12 +96,10 @@ the module it checks.
 
 ## Implementation Details
 
-Lexgen is intended to be built on top of Lean 4's macro system: once code generation
-is implemented, token definitions will be processed at elaboration time
-(`Meta`/`TermElab`), so the regex → NFA → DFA pipeline will run during compilation,
-and the resulting lexer will be emitted as ordinary Lean code with no runtime
-dependency on Lexgen itself. This part (`Codegen/`) is not implemented yet — see
-Implementation Roadmap.
+Lexgen is built on top of Lean 4's macro system: the `lexer` command is processed at
+elaboration time, so the regex → NFA → DFA pipeline runs during compilation, and the
+resulting lexer is emitted as ordinary Lean code with no runtime dependency on Lexgen
+itself.
 
 Internally, the pipeline relies on two classical automata-theoretic constructions:
 
