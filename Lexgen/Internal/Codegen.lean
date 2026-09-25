@@ -106,7 +106,8 @@ private def buildTokenType (typeName : Ident) (tokNames : Array Ident) : m Comma
 Builds the function `lex` in the namespace of the type named `typeName`,
 which splits a string into tokens.
 
-The generated function returns an error if no rule matches at some point of the input.
+The generated function returns an error if no rule matches at some point of the input,
+with the byte offset of that point.
 -/
 private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command := do
   let startState ← stateName typeName DFA.start
@@ -129,7 +130,7 @@ private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command 
       let mut $acc := #[]
       while !$(s).isEmpty do
         let some ($rule, $rest) := $startState $s
-          | throw "no rule matches the input"
+          | throw s!"offset {$(s).startInclusive.offset.byteIdx}: no rule matches the input"
         let some $token := (match $rule:ident with $[| $ruleNums => some $ctors]* | _ => none)
           | throw "unknown rule"
         $s:ident   := $rest
