@@ -39,17 +39,17 @@ def rulesToDFA : List String → Except String DFA
   | first :: rest => do
     let firstRegex  ← parse first
     let restRegexes ← rest.mapM parse
-    let emptyRules := existEmpty (firstRegex :: restRegexes)
+    let emptyRules := rulesMatchingEmpty (firstRegex :: restRegexes)
     unless emptyRules.isEmpty do
       -- TODO: Return the rule numbers as data instead of putting them into a
       -- message. The `lexer` command knows the name of every rule, so it could
       -- then report the names instead of the numbers.
       throw s!"rules matching the empty string: {emptyRules}"
-    pure (DFA.ofNFA (NFA.ofRules firstRegex restRegexes))
+    return DFA.ofNFA (NFA.ofRules firstRegex restRegexes)
 where
   /--
   Returns the numbers of the rules that match the empty string.
   -/
-  existEmpty (rules : List RegularExprAST) : List Nat :=
+  rulesMatchingEmpty (rules : List RegularExprAST) : List Nat :=
     rules.zipIdx.filterMap
       (fun (regex, rule) => if regex.matchesEmpty then some rule else none)

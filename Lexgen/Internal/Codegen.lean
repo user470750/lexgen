@@ -119,7 +119,7 @@ private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command 
   let token    ← `(ident| token)
   `(
     def $runnerName ($inputArg : String) : Except String (Array $typeName) := do
-      let mut $s := $(inputArg).toSlice
+      let mut $s   := $(inputArg).toSlice
       let mut $acc := #[]
       while !$(s).isEmpty do
         let some ($rule, $rest) := $zeroState $s

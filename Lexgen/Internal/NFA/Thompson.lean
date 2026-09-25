@@ -30,12 +30,12 @@ private def translate (offset : Nat) : RegularExprAST → NFA
     { nodes := #[.edge (NFA.char c) (offset + 1)] }
   | RegularExprAST.dot =>
     { nodes := #[.edge NFA.dot (offset + 1)] }
-  | .concat first rest =>
+  | RegularExprAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.
     let sndNFA := translate (offset + fstNFA.nodes.size) rest
     { nodes := fstNFA.nodes ++ sndNFA.nodes }
-  | .repeated regex =>
+  | RegularExprAST.repeated regex =>
     -- `+ 1` skips the entry `split` at `offset`.
     let subStart := offset + 1
     let subNFA   := translate subStart regex
@@ -47,7 +47,7 @@ private def translate (offset : Nat) : RegularExprAST → NFA
         subNFA.nodes ++
         #[.split subStart endState]
     }
-  | .alt left right =>
+  | RegularExprAST.alt left right =>
     -- `+ 1` skips the entry `split` at `offset`.
     let leftStart  := offset + 1
     let leftNFA    := translate leftStart left

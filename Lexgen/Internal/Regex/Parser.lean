@@ -61,7 +61,7 @@ Parser for escape sequences.
 private def simpleEscape : Parser Char := do
   skipChar '\\'
   let c ← satisfy ("nrtfv0ae".contains ·)
-  pure $ match c with
+  return match c with
     | 'n' => '\n'
     | 'r' => '\r'
     | 't' => '\t'
@@ -75,7 +75,7 @@ private def simpleEscape : Parser Char := do
 /--
 Parser for literal characters (except escaped).
 -/
-private def literalChar : Parser Char := satisfy (not $ metaChars.contains ·)
+private def literalChar : Parser Char := satisfy (!metaChars.contains ·)
 
 /--
 `symbol := escapedMeta | simpleEscape | literalChar`
@@ -85,7 +85,7 @@ Parser for literal characters, escape sequences and escaped metacharacters.
 private def symbol : Parser ReSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
-  pure $ .symbol sym
+  return .symbol sym
 
 /--
 `quantity := "{" digits ("," digits?)? "}"`
@@ -105,7 +105,7 @@ private def rangeQuantifier : Parser Quantity := do
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)
   rightBrace <|> fail s!"missing }, unterminated quantifier"
-  pure spec
+  return spec
 
 /--
 Takes the already-parsed atom `re`, parses a `Quantity`, and produces
@@ -113,7 +113,7 @@ a `repeatRe` CST node.
 -/
 private def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
   let quantity ← rangeQuantifier
-  pure $ .repeatRe quantity re
+  return .repeatRe quantity re
 
 /--
 Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
@@ -136,7 +136,7 @@ private partial def altRe : Parser ReSyntax := do
   let left ← concatRe <|> (pure .ε)
   let alts ← many (altSep *> (concatRe <|> pure .ε))
   -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
-  pure $ alts.foldl .alt left
+  return alts.foldl .alt left
 
 /--
 `concat := quantified+`
@@ -145,9 +145,9 @@ Parser for concatenation in the regular expression grammar.
 -/
 private partial def concatRe : Parser ReSyntax := do
   let first ← quantified
-  let rest ← many quantified
+  let rest  ← many quantified
   -- `foldl` makes concatenation left-associative: `abc` is `concat (concat a b) c`.
-  pure $ rest.foldl .concat first
+  return rest.foldl .concat first
 
 /--
 `quantified := atom ("*" | "+" | "?" | quantity)?`

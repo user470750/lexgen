@@ -22,4 +22,4 @@ Returns an error message if `s` is not a valid regular expression.
 -- the offset as data rather than inside a message.
 def parse (s : String) : Except String RegularExprAST := do
   let syn ← parseRe.run s
-  pure syn.desugar
+  return syn.desugar

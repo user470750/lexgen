@@ -61,6 +61,9 @@ both `NFA.Edge` and `DFA.Symbol`, and `ReSyntax` repeats the names of
 `RegularExprAST`. When two such types meet in one function, do not leave both to the
 leading dot: name the type, so that it is clear which one is meant.
 
+**`return` and `pure`.** The final value of a `do` block is given with `return`,
+`pure` stays where a term is expected.
+
 **Imports.** Use a plain `import` wherever possible, so that importing a module does
 not pull in its dependencies. After `module`, leave a blank line, list the
 `public import`s, leave another blank line, then list the plain `import`s. Sort each
