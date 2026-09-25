@@ -141,7 +141,7 @@ private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command 
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
 * an inductive type named `typeName`, with a constructor for each name in `tokNames`;
-* a `mutual` block with a function per `DFA` state, hidden from the user;
+* a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * a function `lex` in the namespace of that type, which splits a string into an array
   of tokens, always taking the longest match.
 
