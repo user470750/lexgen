@@ -22,24 +22,23 @@ Defines the translation of a `DFA` into the code of the generated lexer.
 variable [Monad m] [MonadQuotation m]
 
 /--
-Returns the name of the generated function for state `state` of the lexer whose type is
-named `typeName`.
+Returns the name of the generated function for state `state`.
 -/
-private def stateName (typeName : Ident) (state : Nat) : m Ident := do
+private def stateName (state : Nat) : m Ident := do
   -- The name is hygienic: it cannot clash with a name of the user, such as a token called
-  -- `state0`, and it is not visible outside the generated code. It lies in the namespace
-  -- of `typeName`.
-  return mkIdent (← MonadQuotation.addMacroScope (typeName.getId.str s!"state{state}"))
+  -- `state0`, or with the states of another lexer, and it is not visible outside the
+  -- generated code.
+  return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
 Builds a branch of the generated `match`.
 -/
-private def buildBranch (typeName inputArg : Ident) (pat : Term) (next : Nat) :
+private def buildBranch (inputArg : Ident) (pat : Term) (next : Nat) :
     m (TSyntax ``Lean.Parser.Term.matchAlt) := do
   -- The trap never leads to a match, so going there fails at once.
   if next == DFA.trap then
     return ← `(Lean.Parser.Term.matchAltExpr| | $pat => none)
-  let funcName ← stateName typeName next
+  let funcName ← stateName next
   -- A character matching `pat` leads to a call of the function of state `next` on the
   -- input without its first character.
   `(Lean.Parser.Term.matchAltExpr| | $pat => $funcName ($(inputArg).drop 1))
@@ -48,15 +47,15 @@ private def buildBranch (typeName inputArg : Ident) (pat : Term) (next : Nat) :
 Builds the `match` on the next character of the input named `inputArg`, for a
 state with the transitions `trans`.
 -/
-private def buildTrans (typeName inputArg : Ident) (trans : List (DFA.Symbol × Nat)) : m Term := do
+private def buildTrans (inputArg : Ident) (trans : List (DFA.Symbol × Nat)) : m Term := do
   -- Without a `dot` transition, the catch-all branch returns `none`: no character of the
   -- alphabet matched, and there is nowhere to go.
   let mut dot : TSyntax ``Lean.Parser.Term.matchAlt ← `(Lean.Parser.Term.matchAltExpr| | _ => none)
   let mut chars := #[]
   for (sym, next) in trans do
     match sym with
-    | .char c => chars := chars.push (← buildBranch typeName inputArg (quote c) next)
-    | .dot    => dot ← buildBranch typeName inputArg (← `(_)) next
+    | .char c => chars := chars.push (← buildBranch inputArg (quote c) next)
+    | .dot    => dot ← buildBranch inputArg (← `(_)) next
   let branches := chars.push dot
   let c ← `(ident| c)
   -- `bind` returns `none` if the input is empty.
@@ -67,13 +66,13 @@ Builds the function of state `state`. The generated function takes the rest of
 the input and returns the rule it matched, together with the input left after the match,
 or `none` if no rule matches.
 -/
-private def buildStateFunc (typeName : Ident) (dfa : DFA) (state : Nat)
+private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : List (DFA.Symbol × Nat)) : m Command := do
-  let funcName   ← stateName typeName state
+  let funcName   ← stateName state
   -- One name for the input, passed to every builder: otherwise nothing guarantees that
   -- the other functions refer to the argument by the same name.
   let inputArg   ← `(ident| str)
-  let transMatch ← buildTrans typeName inputArg trans
+  let transMatch ← buildTrans inputArg trans
   let body       ← if let some rule := dfa.accepting[state]? then
     -- An accepting state succeeds with its own rule even when going further fails, so
     -- that the longest match wins.
@@ -88,11 +87,11 @@ private def buildStateFunc (typeName : Ident) (dfa : DFA) (state : Nat)
 Builds the functions of all states of `dfa` but the trap as one `mutual` block, since
 they call each other.
 -/
-private def buildStateFuncs (typeName : Ident) (dfa : DFA) : m Command := do
+private def buildStateFuncs (dfa : DFA) : m Command := do
   -- The trap needs no function: no branch calls it. It comes before the start state,
   -- and every other state comes after it.
   let stateFuncs ← (dfa.trans.extract DFA.start).mapIdxM
-    fun i => (buildStateFunc typeName dfa (DFA.start + i))
+    fun i => (buildStateFunc dfa (DFA.start + i))
   `(mutual $stateFuncs* end)
 
 /--
@@ -115,7 +114,7 @@ The generated function returns an error if no rule matches at some point of the 
 with the byte offset of that point.
 -/
 private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command := do
-  let startState ← stateName typeName DFA.start
+  let startState ← stateName DFA.start
   -- The rule number is only known when the lexer runs, so the generated code turns it
   -- into a constructor with a `match`: `ruleNums` are the rule numbers as literals, and
   -- `ctors` are the constructors they turn into.
@@ -159,6 +158,6 @@ def buildLexer (typeName : Ident) (tokNames : Array Ident) (dfa : DFA)
     (derivings : Option (Array Ident)) : m (Array Command) := do
   return #[
     ← buildTokenType typeName tokNames derivings,
-    ← buildStateFuncs typeName dfa,
+    ← buildStateFuncs dfa,
     ← buildRunner typeName tokNames
   ]
