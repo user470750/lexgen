@@ -33,12 +33,36 @@ token type.
 -/
 syntax "lexer" ident "where" ("|" ident str)* ("deriving" ident,+)? : command
 
+/--
+Checks the names of a `lexer` declaration before any code is generated, so that errors
+are reported on the names themselves rather than on the generated code: the type must
+not be declared yet, and token names must be distinct and differ from `lex`.
+-/
+private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : CommandElabM Unit := do
+  -- Resolves the type name as `inductive` does and fails if it is already declared.
+  discard <| withRef typeName <| mkDeclName (← getCurrNamespace) {} typeName.getId
+
+  let mut seen : Std.HashSet Name := {}
+  let mut failed := false
+
+  for tok in tokNames do
+    if tok.getId == `lex then
+      logErrorAt tok m!"`lex` is taken by the generated function `{typeName}.lex`"
+      failed := true
+    else if seen.contains tok.getId then
+      logErrorAt tok m!"duplicate token name `{tok}`"
+      failed := true
+    seen := seen.insert tok.getId
+  if failed then
+    throwAbortCommand
+
 elab_rules : command
   | `(
       lexer $typeName:ident where
         $[| $tokName:ident $pattern:str]*
       $[deriving $[$derivings:ident],*]?
     ) => do
+    checkNames typeName tokName
     let dfa ← ofExcept <| rulesToDFA (pattern.toList.map TSyntax.getString)
     for cmd in ← buildLexer typeName tokName dfa derivings do
       elabCommand cmd
