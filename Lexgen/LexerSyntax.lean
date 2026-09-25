@@ -28,7 +28,7 @@ literal. `lex` always takes the longest match; when several rules match the same
 text, the one declared earlier wins. If no rule matches, `lex` returns an error with
 the byte offset of the failure.
 
-An optional `deriving` clause after the rules, derives these instances for the
+An optional `deriving` clause after the rules derives these instances for the
 token type.
 -/
 syntax "lexer" ident "where" ("|" ident str)* ("deriving" ident,+)? : command
