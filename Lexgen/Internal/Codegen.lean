@@ -97,10 +97,15 @@ private def buildStateFuncs (typeName : Ident) (dfa : DFA) : m Command := do
 
 /--
 Builds the inductive type named `typeName`, with a constructor for each name in
-`tokNames`.
+`tokNames`, deriving the instances in `derivings`, if any.
 -/
-private def buildTokenType (typeName : Ident) (tokNames : Array Ident) : m Command :=
-  `(inductive $typeName where $[| $tokNames:ident]*)
+private def buildTokenType (typeName : Ident) (tokNames : Array Ident)
+    (derivings : Option (Array Ident)) : m Command :=
+  `(
+    inductive $typeName where
+      $[| $tokNames:ident]*
+    $[deriving $[$derivings:ident],*]?
+  )
 
 /--
 Builds the function `lex` in the namespace of the type named `typeName`,
@@ -141,7 +146,8 @@ private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command 
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
-* an inductive type named `typeName`, with a constructor for each name in `tokNames`;
+* an inductive type named `typeName`, with a constructor for each name in `tokNames`,
+  deriving the instances in `derivings`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * a function `lex` in the namespace of that type, which splits a string into an array
   of tokens, always taking the longest match.
@@ -149,10 +155,10 @@ Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 Tokens are matched to rules by position, so `tokNames` must be in the same order as the
 rules `dfa` was built from.
 -/
-def buildLexer (typeName : Ident) (tokNames : Array Ident) (dfa : DFA) :
-    m (Array Command) := do
+def buildLexer (typeName : Ident) (tokNames : Array Ident) (dfa : DFA)
+    (derivings : Option (Array Ident)) : m (Array Command) := do
   return #[
-    ← buildTokenType typeName tokNames,
+    ← buildTokenType typeName tokNames derivings,
     ← buildStateFuncs typeName dfa,
     ← buildRunner typeName tokNames
   ]

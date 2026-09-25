@@ -27,11 +27,18 @@ Each rule pairs a constructor with the regex it matches, written as a raw string
 literal. `lex` always takes the longest match; when several rules match the same
 text, the one declared earlier wins. If no rule matches, `lex` returns an error with
 the byte offset of the failure.
+
+An optional `deriving` clause after the rules, derives these instances for the
+token type.
 -/
-syntax "lexer" ident "where" ("|" ident str)* : command
+syntax "lexer" ident "where" ("|" ident str)* ("deriving" ident,+)? : command
 
 elab_rules : command
-  | `(lexer $typeName:ident where $[| $tokName:ident $pattern:str]*) => do
+  | `(
+      lexer $typeName:ident where
+        $[| $tokName:ident $pattern:str]*
+      $[deriving $[$derivings:ident],*]?
+    ) => do
     let dfa ← ofExcept <| rulesToDFA (pattern.toList.map TSyntax.getString)
-    for cmd in ← buildLexer typeName tokName dfa do
+    for cmd in ← buildLexer typeName tokName dfa derivings do
       elabCommand cmd
