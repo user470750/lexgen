@@ -36,12 +36,13 @@ lexer Token where
   | string (s : String) unquote       r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""#
 ```
 
-Once code generation is implemented, such a declaration will make Lexgen generate a
-function that turns an input string into a list of tokens:
+Once the `lexer` command is implemented, such a declaration will make Lexgen generate a
+function that turns an input string into an array of tokens, or returns an error if
+some part of the input matches no rule:
 
 ```lean
 #eval Token.lex r#"{"a": 1, "b": true}"#
--- [lbrace, string "a", colon, number 1, comma, string "b", colon, jtrue, rbrace]
+-- Except.ok #[lbrace, string "a", colon, number 1, comma, string "b", colon, jtrue, rbrace]
 ```
 
 ## Alternatives
@@ -63,7 +64,8 @@ Regex/        -- AST, regex parser, desugaring
 NFA/          -- NFA construction (Thompson's construction)
 DFA/          -- NFA -> DFA conversion (subset construction)
               -- DFA optimization (Hopcroft's algorithm)
-Codegen/      -- lexer code generation from the optimized DFA
+Pipeline.lean -- entry point of the pipeline, from rules to a single DFA
+Codegen.lean  -- lexer code generation from the DFA
 ```
 
 * **`Regex/`** — parses a regular expression into an AST and desugars extended syntax
@@ -73,8 +75,9 @@ Codegen/      -- lexer code generation from the optimized DFA
 * **`DFA/`** — determinizes the NFA into a DFA via subset construction, and will also
   cover DFA optimization via Hopcroft's algorithm (see Implementation Details).
   When several rules match the same text, the rule listed first wins.
-* **`Codegen/`** — will turn the (optimized) DFA into the actual generated lexer code,
-  driven by Lean 4's macro system (see Implementation Details).
+* **`Codegen.lean`** — turns the DFA into the code of the generated lexer. The `lexer`
+  command, built on Lean 4's macro system, will run the pipeline and this step at
+  compile time (see Implementation Details).
 
 Tests live in a separate library, `LexgenTest/`, where each module mirrors the path of
 the module it checks.
