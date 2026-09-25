@@ -33,6 +33,9 @@ deriving Repr, DecidableEq, Hashable, Inhabited
 
 /--
 The deterministic finite automaton representation.
+
+States are numbered from zero. State `DFA.trap` is the trap, from which no match can
+be reached, and state `DFA.start` is the start state.
 -/
 structure DFA where
   /--
@@ -47,6 +50,17 @@ structure DFA where
 deriving Repr, BEq
 
 namespace DFA
+
+/--
+The number of the trap state: the empty set of `NFA` states, reached when no edge
+matches, and looping back to itself on every symbol.
+-/
+abbrev trap : Nat := 0
+
+/--
+The number of the start state.
+-/
+abbrev start : Nat := 1
 
 /-
 Short names for `Symbol` constructors, so that `DFA.dot` tells the `DFA`

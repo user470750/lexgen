@@ -108,12 +108,13 @@ def ofNFA (nfa : NFA) : DFA :=
   Id.run do
     let alphabet : List DFA.Symbol := (getAlphabet nfa).toList
 
+    -- The trap goes first and the start state second.
     let mut states    : Array (Std.HashSet Nat)         := #[{}, nfa.εClosure {} 0]
     let mut trans     : Array (List (DFA.Symbol × Nat)) := #[]
     let mut accepting : Std.HashMap Nat Nat             := {}
 
-    if let some rule := acceptingRule? nfa states[1]! then
-      accepting := accepting.insert 1 rule
+    if let some rule := acceptingRule? nfa states[DFA.start]! then
+      accepting := accepting.insert DFA.start rule
 
     let mut lastState := 1
     let mut current   := 0
