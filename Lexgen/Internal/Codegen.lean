@@ -36,6 +36,9 @@ Builds a branch of the generated `match`.
 -/
 private def buildBranch (typeName inputArg : Ident) (pat : Term) (next : Nat) :
     m (TSyntax ``Lean.Parser.Term.matchAlt) := do
+  -- The trap, state 0, never leads to a match, so going there fails at once.
+  if next == 0 then
+    return ← `(Lean.Parser.Term.matchAltExpr| | $pat => none)
   let funcName ← stateName typeName next
   -- A character matching `pat` leads to a call of the function of state `next` on the
   -- input without its first character.
@@ -82,11 +85,13 @@ private def buildStateFunc (typeName : Ident) (dfa : DFA) (state : Nat)
   `(partial def $funcName ($inputArg : String.Slice) : Option (Nat × String.Slice) := $body)
 
 /--
-Builds the functions of all states of `dfa` as one `mutual` block, since they
-call each other.
+Builds the functions of all states of `dfa` but the trap as one `mutual` block, since
+they call each other.
 -/
 private def buildStateFuncs (typeName : Ident) (dfa : DFA) : m Command := do
-  let stateFuncs ← dfa.trans.mapIdxM (buildStateFunc typeName dfa)
+  -- The trap, state 0, needs no function: no branch calls it.
+  let stateFuncs ← (dfa.trans.extract 1).mapIdxM
+    fun i => (buildStateFunc typeName dfa (i + 1))
   `(mutual $stateFuncs* end)
 
 /--
@@ -103,7 +108,7 @@ which splits a string into tokens.
 The generated function returns an error if no rule matches at some point of the input.
 -/
 private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command := do
-  let zeroState ← stateName typeName 0
+  let zeroState ← stateName typeName 1
   -- The rule number is only known when the lexer runs, so the generated code turns it
   -- into a constructor with a `match`: `ruleNums` are the rule numbers as literals, and
   -- `ctors` are the constructors they turn into.

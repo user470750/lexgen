@@ -14,45 +14,45 @@ Checks the `DFA` produced by `DFA.ofNFA` for basic regular expressions.
 -- The `NFA` inputs are the ones produced by Thompson's construction for the
 -- regexes given in the comments.
 
--- Each row is total: one entry per alphabet symbol. Most tables
--- therefore contain a trap state — the empty set of `NFA` states, reached
--- when no edge matches — looping back to itself.
+-- Each row is total: one entry per alphabet symbol. State 0 is always the trap —
+-- the empty set of `NFA` states, reached when no edge matches — looping back to
+-- itself, and state 1 is the start state.
 
 -- "a"
 #guard
 DFA.ofNFA { nodes := #[.edge (.char 'a') 1, .done 0] } ==
 {
   trans := #[
-    [(.char 'a', 1)],
+    [(.char 'a', 0)],
     [(.char 'a', 2)],
-    [(.char 'a', 2)]
+    [(.char 'a', 0)]
   ],
-  accepting := Std.HashMap.ofList [(1, 0)]
+  accepting := Std.HashMap.ofList [(2, 0)]
 }
 
 -- "."
 #guard
 DFA.ofNFA { nodes := #[.edge .dot 1, .done 0] } ==
 {
-  trans := #[[(.dot, 1)], [(.dot, 2)], [(.dot, 2)]],
-  accepting := Std.HashMap.ofList [(1, 0)]
+  trans := #[[(.dot, 0)], [(.dot, 2)], [(.dot, 0)]],
+  accepting := Std.HashMap.ofList [(2, 0)]
 }
 
--- The `NFA` has no `char`/`dot` edges, so the alphabet is empty and state 0
--- gets an empty row. State 0 accepts because its ε-closure reaches `done`.
+-- The `NFA` has no `char`/`dot` edges, so the alphabet is empty and every state
+-- gets an empty row. State 1 accepts because its ε-closure reaches `done`.
 #guard
 DFA.ofNFA { nodes := #[.edge .ε 1, .done 0] } ==
-{ trans := #[[]], accepting := Std.HashMap.ofList [(0, 0)] }
+{ trans := #[[], []], accepting := Std.HashMap.ofList [(1, 0)] }
 
 -- "ab"
 #guard
 DFA.ofNFA { nodes := #[.edge (.char 'a') 1, .edge (.char 'b') 2, .done 0] } ==
 {
   trans := #[
-    [(.char 'b', 2), (.char 'a', 1)],
-    [(.char 'b', 3), (.char 'a', 2)],
-    [(.char 'b', 2), (.char 'a', 2)],
-    [(.char 'b', 2), (.char 'a', 2)]
+    [(.char 'b', 0), (.char 'a', 0)],
+    [(.char 'b', 0), (.char 'a', 2)],
+    [(.char 'b', 3), (.char 'a', 0)],
+    [(.char 'b', 0), (.char 'a', 0)]
   ],
   accepting := Std.HashMap.ofList [(3, 0)]
 }
@@ -71,20 +71,20 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [(.char 'b', 2), (.char 'a', 1)],
-    [(.char 'b', 3), (.char 'a', 3)],
-    [(.char 'b', 3), (.char 'a', 3)],
-    [(.char 'b', 3), (.char 'a', 3)]
+    [(.char 'b', 0), (.char 'a', 0)],
+    [(.char 'b', 3), (.char 'a', 2)],
+    [(.char 'b', 0), (.char 'a', 0)],
+    [(.char 'b', 0), (.char 'a', 0)]
   ],
-  accepting := Std.HashMap.ofList [(1, 0), (2, 0)]
+  accepting := Std.HashMap.ofList [(2, 0), (3, 0)]
 }
 
 -- "a*"
 #guard
 DFA.ofNFA { nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done 0] } ==
 {
-  trans := #[[(.char 'a', 1)], [(.char 'a', 1)]],
-  accepting := Std.HashMap.ofList [(0, 0), (1, 0)]
+  trans := #[[(.char 'a', 0)], [(.char 'a', 2)], [(.char 'a', 2)]],
+  accepting := Std.HashMap.ofList [(1, 0), (2, 0)]
 }
 
 -- The two cases below mix a literal with `.`, so reading `'a'` has to follow
@@ -95,10 +95,10 @@ DFA.ofNFA { nodes := #[.split 1 3, .edge (.char 'a') 2, .split 1 3, .done 0] } =
 DFA.ofNFA { nodes := #[.edge .dot 1, .edge (.char 'a') 2, .done 0] } ==
 {
   trans := #[
-    [(.char 'a', 1), (.dot, 1)],
-    [(.char 'a', 3), (.dot, 2)],
+    [(.char 'a', 0), (.dot, 0)],
     [(.char 'a', 2), (.dot, 2)],
-    [(.char 'a', 2), (.dot, 2)]
+    [(.char 'a', 3), (.dot, 0)],
+    [(.char 'a', 0), (.dot, 0)]
   ],
   accepting := Std.HashMap.ofList [(3, 0)]
 }
@@ -108,10 +108,10 @@ DFA.ofNFA { nodes := #[.edge .dot 1, .edge (.char 'a') 2, .done 0] } ==
 DFA.ofNFA { nodes := #[.edge (.char 'a') 1, .edge .dot 2, .done 0] } ==
 {
   trans := #[
-    [(.char 'a', 2), (.dot, 1)],
-    [(.char 'a', 1), (.dot, 1)],
+    [(.char 'a', 0), (.dot, 0)],
+    [(.char 'a', 2), (.dot, 0)],
     [(.char 'a', 3), (.dot, 3)],
-    [(.char 'a', 1), (.dot, 1)]
+    [(.char 'a', 0), (.dot, 0)]
   ],
   accepting := Std.HashMap.ofList [(3, 0)]
 }
@@ -123,10 +123,10 @@ DFA.ofNFA { nodes := #[.edge (.char 'a') 1, .edge .dot 2, .done 0] } ==
 DFA.ofNFA { nodes := #[.split 1 3, .edge (.char 'a') 2, .done 0, .edge .dot 4, .done 1] } ==
 {
   trans := #[
-    [(.char 'a', 2), (.dot, 1)],
-    [(.char 'a', 3), (.dot, 3)],
-    [(.char 'a', 3), (.dot, 3)],
-    [(.char 'a', 3), (.dot, 3)]
+    [(.char 'a', 0), (.dot, 0)],
+    [(.char 'a', 3), (.dot, 2)],
+    [(.char 'a', 0), (.dot, 0)],
+    [(.char 'a', 0), (.dot, 0)]
   ],
-  accepting := Std.HashMap.ofList [(1, 1), (2, 0)]
+  accepting := Std.HashMap.ofList [(2, 1), (3, 0)]
 }

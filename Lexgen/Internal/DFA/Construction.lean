@@ -108,15 +108,15 @@ def ofNFA (nfa : NFA) : DFA :=
   Id.run do
     let alphabet : List DFA.Symbol := (getAlphabet nfa).toList
 
-    let mut states    : Array (Std.HashSet Nat)         := #[nfa.εClosure {} 0]
+    let mut states    : Array (Std.HashSet Nat)         := #[{}, nfa.εClosure {} 0]
     let mut trans     : Array (List (DFA.Symbol × Nat)) := #[]
     let mut accepting : Std.HashMap Nat Nat             := {}
 
-    if let some rule := acceptingRule? nfa states[0]! then
-      accepting := accepting.insert 0 rule
+    if let some rule := acceptingRule? nfa states[1]! then
+      accepting := accepting.insert 1 rule
 
-    let mut lastState  := 0
-    let mut current    := 0
+    let mut lastState := 1
+    let mut current   := 0
 
     -- `lastState` stops growing once every reached state for `current` is already in `states`.
     while current ≤ lastState do
