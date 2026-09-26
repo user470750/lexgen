@@ -44,7 +44,7 @@ private def dot : Parser ReSyntax :=
 /--
 String containing all metacharacters in regular expression grammar.
 -/
-private def metaChars : String := "\\|.*+?(){}"
+private def metaChars : String := "\\|.*+?()[]{}"
 
 /--
 `escapedMeta := "\" metaChar`
