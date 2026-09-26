@@ -38,9 +38,10 @@ lexer Token where
 deriving Repr, BEq
 ```
 
-Once the `lexer` command is implemented, such a declaration will make Lexgen generate a
-function `Token.lexer`, which creates a lexer for a string. Its `tokens` function splits the
-input into an array of tokens, or returns an error if some part of the input matches no rule:
+Such a declaration (`skip`, conversion functions and character classes are not implemented
+yet) makes Lexgen generate a function `Token.lexer`, which creates a lexer for a string. Its
+`tokens` function splits the input into an array of tokens, or returns an error if some part
+of the input matches no rule:
 
 ```lean
 #eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
@@ -78,7 +79,7 @@ Codegen.lean  -- lexer code generation from the DFA
   cover DFA optimization via Hopcroft's algorithm (see Implementation Details).
   When several rules match the same text, the rule listed first wins.
 * **`Codegen.lean`** — turns the DFA into the code of the generated lexer. The `lexer`
-  command, built on Lean 4's macro system, will run the pipeline and this step at
+  command, built on Lean 4's macro system, runs the pipeline and this step at
   compile time (see Implementation Details).
 
 Tests live in a separate library, `LexgenTest/`, where each module mirrors the path of
