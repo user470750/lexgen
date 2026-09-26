@@ -20,13 +20,13 @@ Defines the `lexer` command: its syntax and its elaboration.
 -/
 
 /--
-Declares a lexer: an inductive type with a constructor for each rule, and a function
-`lex` in its namespace, which splits a string into an array of tokens.
+Declares a lexer: an inductive type with a constructor for each rule, its `Lexgen.Lexable`
+instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer` for a string.
 
 Each rule pairs a constructor with the regex it matches, written as a raw string
-literal. `lex` always takes the longest match; when several rules match the same
-text, the one declared earlier wins. If no rule matches, `lex` returns an error with
-the byte offset of the failure.
+literal. The lexer always takes the longest match; when several rules match the same
+text, the one declared earlier wins. If no rule matches, lexing fails with the byte
+offset of the failure.
 
 An optional `deriving` clause after the rules derives these instances for the
 token type.
@@ -36,7 +36,7 @@ syntax "lexer" ident "where" ("|" ident str)* ("deriving" ident,+)? : command
 /--
 Checks the names of a `lexer` declaration before any code is generated, so that errors
 are reported on the names themselves rather than on the generated code: the type must
-not be declared yet, and token names must be distinct and differ from `lex`.
+not be declared yet, and token names must be distinct and differ from `lexer`.
 -/
 private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : CommandElabM Unit := do
   -- Resolves the type name as `inductive` does and fails if it is already declared.
@@ -46,8 +46,8 @@ private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : Comman
   let mut failed := false
 
   for tok in tokNames do
-    if tok.getId == `lex then
-      logErrorAt tok m!"`lex` is taken by the generated function `{typeName}.lex`"
+    if tok.getId == `lexer then
+      logErrorAt tok m!"`lexer` is taken by the generated function `{typeName}.lexer`"
       failed := true
     else if seen.contains tok.getId then
       logErrorAt tok m!"duplicate token name `{tok}`"
