@@ -56,6 +56,22 @@ private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : Comman
   if failed then
     throwAbortCommand
 
+/--
+Reports `err` on the part of the `lexer` declaration it concerns: the pattern of a rule
+that fails to parse, or the name of each rule that matches the empty string.
+`tokNames` and `patterns` are indexed by rule number.
+-/
+private meta def throwConversionError (tokNames : Array Ident) (patterns : Array StrLit) :
+    ConversionError → CommandElabM α
+  | .noRules => throwError "a lexer needs at least one rule"
+  | .invalidPattern rule offset msg =>
+    throwErrorAt patterns[rule]! m!"offset {offset}: {msg}"
+  | .matchesEmpty rules => do
+    for rule in rules do
+      logErrorAt tokNames[rule]!
+        m!"rule `{tokNames[rule]!}` matches the empty string, so the lexer would loop on it"
+    throwAbortCommand
+
 elab_rules : command
   | `(
       lexer $typeName:ident where
@@ -63,6 +79,8 @@ elab_rules : command
       $[deriving $[$derivings:ident],*]?
     ) => do
     checkNames typeName tokName
-    let dfa ← ofExcept <| rulesToDFA (pattern.toList.map TSyntax.getString)
+    let dfa ← match rulesToDFA (pattern.toList.map TSyntax.getString) with
+      | .ok    dfa => pure dfa
+      | .error err => throwConversionError tokName pattern err
     for cmd in ← buildLexer typeName tokName dfa derivings do
       elabCommand cmd
