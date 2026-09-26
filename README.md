@@ -39,11 +39,11 @@ deriving Repr, BEq
 ```
 
 Once the `lexer` command is implemented, such a declaration will make Lexgen generate a
-function that turns an input string into an array of tokens, or returns an error if
-some part of the input matches no rule:
+function `Token.lexer`, which creates a lexer for a string. Its `tokens` function splits the
+input into an array of tokens, or returns an error if some part of the input matches no rule:
 
 ```lean
-#eval Token.lex r#"{"a": 1, "b": true}"#
+#eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
 -- Except.ok #[lbrace, string "a", colon, number 1, comma, string "b", colon, jtrue, rbrace]
 ```
 
@@ -58,8 +58,8 @@ some part of the input matches no rule:
 ## Architecture
 
 The project is organized around the stages of the regex → NFA → DFA → lexer pipeline.
-All of them live under `Lexgen/Internal/`, since only the `lexer` command is meant for
-users of the library:
+All of them live under `Lexgen/Internal/`, since only the `lexer` command and the `Lexer`
+type it builds on are meant for users of the library:
 
 ```
 Regex/        -- AST, regex parser, desugaring
@@ -98,8 +98,7 @@ the module it checks.
 
 Lexgen is built on top of Lean 4's macro system: the `lexer` command is processed at
 elaboration time, so the regex → NFA → DFA pipeline runs during compilation, and the
-resulting lexer is emitted as ordinary Lean code with no runtime dependency on Lexgen
-itself.
+resulting lexer is emitted as ordinary Lean code, built on the `Lexer` type of Lexgen.
 
 Internally, the pipeline relies on two classical automata-theoretic constructions:
 

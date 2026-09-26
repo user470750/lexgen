@@ -8,6 +8,7 @@ module
 public import Lexgen.Internal.DFA.Automaton
 
 import Lean
+import Lexgen.Lexer
 
 public section
 
@@ -107,39 +108,43 @@ private def buildTokenType (typeName : Ident) (tokNames : Array Ident)
   )
 
 /--
-Builds the function `lex` in the namespace of the type named `typeName`,
-which splits a string into tokens.
-
-The generated function returns an error if no rule matches at some point of the input,
-with the byte offset of that point.
+Builds the function `lexer` in the namespace of the type named `typeName`, which creates a
+`Lexer` for a string.
 -/
-private def buildRunner (typeName : Ident) (tokNames : Array Ident) : m Command := do
+private def buildLexerFunc (typeName : Ident) : m Command := do
+  -- `lexer` is called by the user, so its name is not hygienic.
+  let lexerName := mkIdent (typeName.getId.str "lexer")
+  let source ← `(ident| source)
+  `(
+    def $lexerName ($source : String) : Lexgen.Lexer $typeName :=
+      Lexgen.Lexer.new $source
+  )
+
+/--
+Builds the `Lexable` instance of the type named `typeName`.
+-/
+private def buildLexableImpl (typeName : Ident) (tokNames : Array Ident) : m Command := do
   let startState ← stateName DFA.start
   -- The rule number is only known when the lexer runs, so the generated code turns it
   -- into a constructor with a `match`: `ruleNums` are the rule numbers as literals, and
   -- `ctors` are the constructors they turn into.
   let ruleNums : Array Term := tokNames.mapIdx fun i _ => quote i
   let ctors := tokNames.map fun tok => mkIdent (typeName.getId ++ tok.getId)
-  -- `lex` is called by the user, so its name is not hygienic. The local names are.
-  let runnerName := mkIdent (typeName.getId.str "lex")
-  let inputArg ← `(ident| str)
-  let s        ← `(ident| s)
-  let acc      ← `(ident| acc)
-  let rule     ← `(ident| rule)
-  let rest     ← `(ident| rest)
-  let token    ← `(ident| token)
+  let input ← `(ident| input)
+  let rule  ← `(ident| rule)
+  let rest  ← `(ident| rest)
+  let token ← `(ident| token)
   `(
-    def $runnerName ($inputArg : String) : Except String (Array $typeName) := do
-      let mut $s   := $(inputArg).toSlice
-      let mut $acc := #[]
-      while !$(s).isEmpty do
-        let some ($rule, $rest) := $startState $s
-          | throw s!"offset {$(s).startInclusive.offset.byteIdx}: no rule matches the input"
+    instance : Lexgen.Lexable $typeName where
+      next $input:ident := do
+        let some ($rule, $rest) := $startState $input
+          | throw s!"offset {$(input).startInclusive.offset.byteIdx}: no rule matches the input"
         let some $token := (match $rule:ident with $[| $ruleNums => some $ctors]* | _ => none)
           | throw "unknown rule"
-        $s:ident   := $rest
-        $acc:ident := $(acc).push $token
-      return $acc
+        -- The token is the part of `input` before `rest`: its length in bytes is the distance
+        -- between their starts.
+        let len := $(rest).startInclusive.offset.byteIdx - $(input).startInclusive.offset.byteIdx
+        return (⟨$token, $(input).sliceTo ($(input).pos! ⟨len⟩)⟩, $rest)
   )
 
 /--
@@ -148,8 +153,8 @@ Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 * an inductive type named `typeName`, with a constructor for each name in `tokNames`,
   deriving the instances in `derivings`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
-* a function `lex` in the namespace of that type, which splits a string into an array
-  of tokens, always taking the longest match.
+* the `Lexable` instance of that type;
+* a function `lexer` in the namespace of that type, which creates a `Lexer` for a string.
 
 Tokens are matched to rules by position, so `tokNames` must be in the same order as the
 rules `dfa` was built from.
@@ -159,5 +164,6 @@ def buildLexer (typeName : Ident) (tokNames : Array Ident) (dfa : DFA)
   return #[
     ← buildTokenType typeName tokNames derivings,
     ← buildStateFuncs dfa,
-    ← buildRunner typeName tokNames
+    ← buildLexableImpl typeName tokNames,
+    ← buildLexerFunc typeName
   ]
