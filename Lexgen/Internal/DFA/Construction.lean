@@ -50,7 +50,7 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 Returns all `NFA` states reachable by following
 a single edge matching the symbol `c` from state `s`.
 -/
-private def edge : (c : DFA.Symbol) → (s : NFA.Node) → List Nat
+private def step : (c : DFA.Symbol) → (s : NFA.Node) → List Nat
   | DFA.char c₁, .edge (NFA.char c₂) next => if c₁ == c₂ then [next] else []
   | DFA.char _, .edge NFA.dot next        => [next]
   | DFA.dot, .edge NFA.dot next           => [next]
@@ -64,13 +64,13 @@ on the symbol `c` followed by an unbounded number of ε-transitions.
 -/
 private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (c : DFA.Symbol) :
     Std.HashSet Nat :=
-  let raw := states.toList.flatMap (fun state => edge c nfa.nodes[state]!)
+  let raw := states.toList.flatMap (fun state => step c nfa.nodes[state]!)
   raw.foldl nfa.εClosure {}
 
 /--
 Returns the alphabet of `nfa`.
 -/
-private def getAlphabet (nfa : NFA) : Std.HashSet DFA.Symbol :=
+private def alphabet (nfa : NFA) : Std.HashSet DFA.Symbol :=
   Std.HashSet.ofArray
     (nfa.nodes.filterMap
       fun state =>
@@ -106,7 +106,7 @@ def ofNFA (nfa : NFA) : DFA :=
   -- TODO: Consider a functional rewrite for consistency with the rest of
   -- the codebase.
   Id.run do
-    let alphabet : List DFA.Symbol := (getAlphabet nfa).toList
+    let alphabet : List DFA.Symbol := (alphabet nfa).toList
 
     -- The trap goes first and the start state second.
     let mut states    : Array (Std.HashSet Nat)         := #[{}, nfa.εClosure {} 0]

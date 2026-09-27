@@ -13,7 +13,7 @@ public section
 /-!
 # Regular expression desugaring
 
-Defines `ReSyntax.desugar` for translating a CST into an AST.
+Defines `RegexSyntax.desugar` for translating a CST into an AST.
 -/
 
 /--
@@ -23,7 +23,7 @@ Produces `.ε` (the empty match) if `n` (repetitions) is zero.
 
 Used for the required part of a `{n,m}` range.
 -/
-private def repeatConcat (n : Nat) (re : RegularExprAST) : RegularExprAST :=
+private def repeatConcat (n : Nat) (re : RegexAST) : RegexAST :=
   match n with
   | 0     => .ε
   | m + 1 => (List.replicate m re).foldl .concat re
@@ -34,30 +34,30 @@ at most `n` times.
 
 Used for the optional part of a `{n,m}` range.
 -/
-private def optionalTail (n : Nat) (re : RegularExprAST) : RegularExprAST :=
+private def optionalTail (n : Nat) (re : RegexAST) : RegexAST :=
   repeatConcat n (.alt re .ε)
 
 /--
-Desugars CST (`ReSyntax`) to AST (`RegularExprAST`).
+Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
 
 Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
 basic AST constructors.
 -/
-def ReSyntax.desugar : ReSyntax → RegularExprAST
-  | ReSyntax.alt left right =>
-    RegularExprAST.alt left.desugar right.desugar
-  | ReSyntax.concat first rest =>
-    RegularExprAST.concat first.desugar rest.desugar
-  | ReSyntax.repeatRe { minimum := n, maximum := none } re =>
+def RegexSyntax.desugar : RegexSyntax → RegexAST
+  | RegexSyntax.alt left right =>
+    RegexAST.alt left.desugar right.desugar
+  | RegexSyntax.concat first rest =>
+    RegexAST.concat first.desugar rest.desugar
+  | RegexSyntax.repeated { minimum := n, maximum := none } re =>
     let desugared := re.desugar
-    RegularExprAST.normalizedConcat
+    RegexAST.normalizedConcat
       (repeatConcat n desugared)
-      (RegularExprAST.repeated desugared)
-  | ReSyntax.repeatRe { minimum := n, maximum := some m } re =>
+      (RegexAST.repeated desugared)
+  | RegexSyntax.repeated { minimum := n, maximum := some m } re =>
     let desugared := re.desugar
-    RegularExprAST.normalizedConcat
+    RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
-  | ReSyntax.symbol c => RegularExprAST.symbol c
-  | ReSyntax.dot      => RegularExprAST.dot
-  | ReSyntax.ε        => RegularExprAST.ε
+  | RegexSyntax.symbol c => RegexAST.symbol c
+  | RegexSyntax.dot      => RegexAST.dot
+  | RegexSyntax.ε        => RegexAST.ε

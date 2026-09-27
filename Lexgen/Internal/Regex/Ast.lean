@@ -10,7 +10,7 @@ public section
 /-!
 # Regex AST
 
-Defines the abstract syntax tree (`RegularExprAST`)
+Defines the abstract syntax tree (`RegexAST`)
 for regular expressions.
 -/
 
@@ -20,21 +20,21 @@ The AST representation of regular expressions.
 AST covers only basic regex constructs, while
 others are desugared into them.
 -/
-inductive RegularExprAST where
+inductive RegexAST where
   /--
   Matches an alternation of regular expressions.
   -/
-  -- Left-associative: `ReSyntax.desugar` keeps the parser's `alt (alt a b) c`.
-  | alt (left right : RegularExprAST)
+  -- Left-associative: `RegexSyntax.desugar` keeps the parser's `alt (alt a b) c`.
+  | alt (left right : RegexAST)
   /--
   Matches a concatenation of regular expressions.
   -/
-  -- Left-associative: `ReSyntax.desugar` keeps the parser's `concat (concat a b) c`.
-  | concat (first rest : RegularExprAST)
+  -- Left-associative: `RegexSyntax.desugar` keeps the parser's `concat (concat a b) c`.
+  | concat (first rest : RegexAST)
   /--
   Matches repetition of a regular expression.
   -/
-  | repeated (re : RegularExprAST)
+  | repeated (re : RegexAST)
   /--
   Matches the literal character `c`.
   -/
@@ -52,7 +52,7 @@ deriving Repr
 /--
 Wraps `concat` to avoid useless concatenation with ε.
 -/
-def RegularExprAST.normalizedConcat : RegularExprAST → RegularExprAST → RegularExprAST
+def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
   | .ε,    rest => rest
   | first, .ε   => first
   | first, rest => .concat first rest
@@ -60,7 +60,7 @@ def RegularExprAST.normalizedConcat : RegularExprAST → RegularExprAST → Regu
 /--
 Checks whether `re` matches the empty string.
 -/
-def RegularExprAST.matchesEmpty : RegularExprAST → Bool
+def RegexAST.matchesEmpty : RegexAST → Bool
   | .ε          => true
   | .symbol _   => false
   | .dot        => false

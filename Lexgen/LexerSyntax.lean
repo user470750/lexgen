@@ -59,21 +59,21 @@ Checks the names of a `lexer` declaration before any code is generated, so that 
 are reported on the names themselves rather than on the generated code: the type must
 not be declared yet, and token names must be distinct and differ from `lexer`.
 -/
-private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : CommandElabM Unit := do
+private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : CommandElabM Unit := do
   -- Resolves the type name as `inductive` does and fails if it is already declared.
   discard <| withRef typeName <| mkDeclName (← getCurrNamespace) {} typeName.getId
 
   let mut seen : Std.HashSet Name := {}
   let mut failed := false
 
-  for tok in tokNames do
-    if tok.getId == `lexer then
-      logErrorAt tok m!"`lexer` is taken by the generated function `{typeName}.lexer`"
+  for token in tokenNames do
+    if token.getId == `lexer then
+      logErrorAt token m!"`lexer` is taken by the generated function `{typeName}.lexer`"
       failed := true
-    else if seen.contains tok.getId then
-      logErrorAt tok m!"duplicate token name `{tok}`"
+    else if seen.contains token.getId then
+      logErrorAt token m!"duplicate token name `{token}`"
       failed := true
-    seen := seen.insert tok.getId
+    seen := seen.insert token.getId
   if failed then
     throwAbortCommand
 
@@ -100,23 +100,23 @@ elab_rules : command
         $[| $rules:lexgenRule]*
       $[deriving $[$derivings:ident],*]?
     ) => do
-    let mut tokens := #[]
+    let mut ruleInfos := #[]
     let mut patterns := #[]
     for pattern in skipPatterns do
-      tokens   := tokens.push TokenInfo.skip
-      patterns := patterns.push pattern
+      ruleInfos := ruleInfos.push RuleInfo.skip
+      patterns  := patterns.push pattern
     for rule in rules do
       match rule with
-      | `(lexgenRule| $tokName:ident := $pattern) =>
-        tokens   := tokens.push (TokenInfo.simple tokName)
-        patterns := patterns.push pattern
-      | `(lexgenRule| $tokName:ident : $valueType := $pattern => $func) =>
-        tokens   := tokens.push (TokenInfo.converted tokName valueType func)
-        patterns := patterns.push pattern
+      | `(lexgenRule| $tokenName:ident := $pattern) =>
+        ruleInfos := ruleInfos.push (RuleInfo.simple tokenName)
+        patterns  := patterns.push pattern
+      | `(lexgenRule| $tokenName:ident : $valueType := $pattern => $func) =>
+        ruleInfos := ruleInfos.push (RuleInfo.converted tokenName valueType func)
+        patterns  := patterns.push pattern
       | _ => throwUnsupportedSyntax
-    checkNames typeName (tokens.filterMap (·.name))
+    checkNames typeName (ruleInfos.filterMap (·.name))
     let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
       | .ok    dfa => pure dfa
       | .error err => throwConversionError patterns err
-    for cmd in ← buildLexer typeName tokens dfa derivings do
+    for cmd in ← buildLexer typeName ruleInfos dfa derivings do
       elabCommand cmd

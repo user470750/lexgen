@@ -64,11 +64,11 @@ where
   /--
   Parses the pattern of rule `rule`, tagging a parse error with the rule number.
   -/
-  parseRule (rule : Nat) (pattern : String) : Except ConversionError RegularExprAST :=
+  parseRule (rule : Nat) (pattern : String) : Except ConversionError RegexAST :=
     (parse pattern).mapError fun err => .invalidPattern rule err.offset err.msg
   /--
   Returns the numbers of the rules that match the empty string.
   -/
-  rulesMatchingEmpty (rules : List RegularExprAST) : List Nat :=
+  rulesMatchingEmpty (rules : List RegexAST) : List Nat :=
     rules.zipIdx.filterMap
       (fun (regex, rule) => if regex.matchesEmpty then some rule else none)

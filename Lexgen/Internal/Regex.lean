@@ -27,9 +27,9 @@ structure ParseRegexError where
   msg    : String
 
 /--
-Parses a regular expression `s` and desugars it into a `RegularExprAST`.
+Parses a regular expression `s` and desugars it into a `RegexAST`.
 -/
-def parse (s : String) : Except ParseRegexError RegularExprAST :=
-  match parseRe ⟨s, s.startPos⟩ with
+def parse (s : String) : Except ParseRegexError RegexAST :=
+  match parseRegex ⟨s, s.startPos⟩ with
   | .success _ syn => pure syn.desugar
   | .error it err  => throw { offset := it.2.offset.byteIdx, msg := toString err }

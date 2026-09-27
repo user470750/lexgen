@@ -38,7 +38,7 @@ private def rightBrace         : Parser Unit := skipChar '}'
 
 Parser for the dot metacharacter, matching any character.
 -/
-private def dot : Parser ReSyntax :=
+private def dot : Parser RegexSyntax :=
   pchar '.' *> pure .dot
 
 /--
@@ -82,7 +82,7 @@ private def literalChar : Parser Char := satisfy (!metaChars.contains ·)
 
 Parser for literal characters, escape sequences and escaped metacharacters.
 -/
-private def symbol : Parser ReSyntax := do
+private def symbol : Parser RegexSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
   return .symbol sym
@@ -109,17 +109,17 @@ private def rangeQuantifier : Parser Quantity := do
 
 /--
 Takes the already-parsed atom `re`, parses a `Quantity`, and produces
-a `repeatRe` CST node.
+a `repeated` CST node.
 -/
-private def buildQuantity (re : ReSyntax) : Parser ReSyntax := do
+private def quantifiedByRange (re : RegexSyntax) : Parser RegexSyntax := do
   let quantity ← rangeQuantifier
-  return .repeatRe quantity re
+  return .repeated quantity re
 
 /--
 Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
 appears with no preceding atom to repeat.
 -/
-private def nothingToRepeat : Parser ReSyntax :=
+private def nothingToRepeat : Parser RegexSyntax :=
   (discard starQuantifier     <|>
    discard plusQuantifier     <|>
    discard questionQuantifier <|>
@@ -132,9 +132,9 @@ mutual
 
 Parser for alternatives in the regular expression grammar. Top-level rule.
 -/
-private partial def altRe : Parser ReSyntax := do
-  let left ← concatRe <|> (pure .ε)
-  let alts ← many (altSep *> (concatRe <|> pure .ε))
+private partial def alt : Parser RegexSyntax := do
+  let left ← concat <|> (pure .ε)
+  let alts ← many (altSep *> (concat <|> pure .ε))
   -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
   return alts.foldl .alt left
 
@@ -143,7 +143,7 @@ private partial def altRe : Parser ReSyntax := do
 
 Parser for concatenation in the regular expression grammar.
 -/
-private partial def concatRe : Parser ReSyntax := do
+private partial def concat : Parser RegexSyntax := do
   let first ← quantified
   let rest  ← many quantified
   -- `foldl` makes concatenation left-associative: `abc` is `concat (concat a b) c`.
@@ -154,12 +154,12 @@ private partial def concatRe : Parser ReSyntax := do
 
 Parser for a quantified atom.
 -/
-private partial def quantified : Parser ReSyntax := do
+private partial def quantified : Parser RegexSyntax := do
   let re ← atom
-  starQuantifier     *> (pure $ .repeatRe .zeroOrMore re)  <|>
-  plusQuantifier     *> (pure $ .repeatRe .oneOrMore re)   <|>
-  questionQuantifier *> (pure $ .repeatRe .optionalOne re) <|>
-  buildQuantity re                                         <|>
+  starQuantifier     *> (pure $ .repeated .zeroOrMore re)  <|>
+  plusQuantifier     *> (pure $ .repeated .oneOrMore re)   <|>
+  questionQuantifier *> (pure $ .repeated .optionalOne re) <|>
+  quantifiedByRange re                                     <|>
   pure re
 
 /--
@@ -167,7 +167,7 @@ private partial def quantified : Parser ReSyntax := do
 
 Parser for atoms in the regular expression grammar.
 -/
-private partial def atom : Parser ReSyntax :=
+private partial def atom : Parser RegexSyntax :=
   symbol  <|>
   dot     <|>
   subExpr <|>
@@ -178,13 +178,13 @@ private partial def atom : Parser ReSyntax :=
 
 Parser for an expression in parenthesis.
 -/
-private partial def subExpr : Parser ReSyntax :=
-  leftParen *> altRe <* (rightParen <|> fail "missing ), unterminated subpattern")
+private partial def subExpr : Parser RegexSyntax :=
+  leftParen *> alt <* (rightParen <|> fail "missing ), unterminated subpattern")
 end
 
 /--
 A recursive-descent parser for regular expressions.
 
-Built using parser combinators. Produces a concrete syntax tree (`ReSyntax`).
+Built using parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
 -/
-def parseRe : Parser ReSyntax := altRe <* eof
+def parseRegex : Parser RegexSyntax := alt <* eof

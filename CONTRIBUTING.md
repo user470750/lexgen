@@ -15,7 +15,7 @@ match it rather than introducing a new one.
   # Thompson's construction
 
   Defines Thompson's construction: translating a
-  `RegularExprAST` into an `NFA`.
+  `RegexAST` into an `NFA`.
   -/
   ```
 
@@ -57,8 +57,8 @@ else
 Use `match` when several patterns need their own branches.
 
 **Similar types.** Some types share constructor names: `char` and `dot` belong to
-both `NFA.Edge` and `DFA.Symbol`, and `ReSyntax` repeats the names of
-`RegularExprAST`. When two such types meet in one function, do not leave both to the
+both `NFA.Edge` and `DFA.Symbol`, and `RegexSyntax` repeats the names of
+`RegexAST`. When two such types meet in one function, do not leave both to the
 leading dot: name the type, so that it is clear which one is meant.
 
 **`return` and `pure`.** The final value of a `do` block is given with `return`,

@@ -10,7 +10,7 @@ public section
 /-!
 # Regex CST
 
-Defines the concrete syntax tree (`ReSyntax`) for regular expressions.
+Defines the concrete syntax tree (`RegexSyntax`) for regular expressions.
 
 Also defines `Quantity`, used to represent repetition bounds.
 -/
@@ -79,21 +79,21 @@ def Quantity.inOrder : Quantity → Bool
 /--
 The CST representation of regular expressions.
 -/
-inductive ReSyntax where
+inductive RegexSyntax where
   /--
   Matches an alternation of regular expressions.
   -/
   -- Left-associative due to the parser: `a|b|c` is `alt (alt a b) c`.
-  | alt (left right : ReSyntax)
+  | alt (left right : RegexSyntax)
   /--
   Matches a concatenation of regular expressions.
   -/
   -- Left-associative due to the parser: `abc` is `concat (concat a b) c`.
-  | concat (first rest : ReSyntax)
+  | concat (first rest : RegexSyntax)
   /--
   Matches repetition of a regular expression.
   -/
-  | repeatRe (quantity : Quantity) (re : ReSyntax)
+  | repeated (quantity : Quantity) (re : RegexSyntax)
   /--
   Matches the literal character `c`.
   -/

@@ -14,7 +14,7 @@ public section
 # Thompson's construction
 
 Defines Thompson's construction: translating a
-`RegularExprAST` into an `NFA`.
+`RegexAST` into an `NFA`.
 -/
 
 /--
@@ -22,20 +22,20 @@ Internal implementation of Thompson's algorithm.
 
 `offset` is passed explicitly at every step.
 -/
-private def translate (offset : Nat) : RegularExprAST → NFA
+private def translate (offset : Nat) : RegexAST → NFA
   -- The single-node fragments below exit to the state right after them.
-  | RegularExprAST.ε =>
+  | RegexAST.ε =>
     { nodes := #[.edge NFA.ε (offset + 1)] }
-  | RegularExprAST.symbol c =>
+  | RegexAST.symbol c =>
     { nodes := #[.edge (NFA.char c) (offset + 1)] }
-  | RegularExprAST.dot =>
+  | RegexAST.dot =>
     { nodes := #[.edge NFA.dot (offset + 1)] }
-  | RegularExprAST.concat first rest =>
+  | RegexAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.
     let sndNFA := translate (offset + fstNFA.nodes.size) rest
     { nodes := fstNFA.nodes ++ sndNFA.nodes }
-  | RegularExprAST.repeated regex =>
+  | RegexAST.repeated regex =>
     -- `+ 1` skips the entry `split` at `offset`.
     let subStart := offset + 1
     let subNFA   := translate subStart regex
@@ -47,7 +47,7 @@ private def translate (offset : Nat) : RegularExprAST → NFA
         subNFA.nodes ++
         #[.split subStart endState]
     }
-  | RegularExprAST.alt left right =>
+  | RegexAST.alt left right =>
     -- `+ 1` skips the entry `split` at `offset`.
     let leftStart  := offset + 1
     let leftNFA    := translate leftStart left
@@ -72,8 +72,8 @@ from `offset` and whose rules are numbered from `rule`.
 Each rule's fragment ends in a `done` state labeled with its rule, and a chain of
 `split` states chooses between the rules.
 -/
-private def translateRules (rule offset : Nat) (first : RegularExprAST) :
-    List RegularExprAST → NFA
+private def translateRules (rule offset : Nat) (first : RegexAST) :
+    List RegexAST → NFA
   | [] =>
     -- The last rule needs no `split`: its fragment starts right at `offset`.
     let translated := translate offset first
@@ -102,5 +102,5 @@ Rules are numbered by position, starting from `0` for `first`,
 and each accept state is labeled with its rule.
 -/
 -- Taking `first` separately guarantees there is at least one rule.
-def NFA.ofRules (first : RegularExprAST) (rest : List RegularExprAST) : NFA :=
+def NFA.ofRules (first : RegexAST) (rest : List RegexAST) : NFA :=
   translateRules 0 0 first rest
