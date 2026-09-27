@@ -20,7 +20,7 @@ Defines the `lexer` command: its syntax and its elaboration.
 -/
 
 /--
-A rule of the `lexer` command.
+A token rule of the `lexer` command.
 -/
 declare_syntax_cat lexgenRule
 
@@ -36,19 +36,23 @@ the function computing the value from the token's slice.
 syntax ident ":" term ":=" str "=>" term : lexgenRule
 
 /--
-Declares a lexer: an inductive type with a constructor for each rule, its `Lexgen.Lexable`
-instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer` for a string.
+Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
+`Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a
+`Lexgen.Lexer` for a string.
 
-Each rule pairs a constructor with the regex it matches, written as a raw string
+Each token rule pairs a constructor with the regex it matches, written as a raw string
 literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value
 of type `α`, which `f : String.Slice → α` computes from the token's slice. The lexer always
 takes the longest match; when several rules match the same text, the one declared earlier
 wins. If no rule matches, lexing fails with the byte offset of the failure.
 
+Rules `skip r"…"`, written before the others, match text that is dropped, such as whitespace
+or comments; being declared first, they win over other rules matching the same text.
+
 An optional `deriving` clause after the rules derives these instances for the
 token type.
 -/
-syntax "lexer" ident "where" ("|" lexgenRule)* ("deriving" ident,+)? : command
+syntax "lexer" ident "where" ("skip" str)* ("|" lexgenRule)* ("deriving" ident,+)? : command
 
 /--
 Checks the names of a `lexer` declaration before any code is generated, so that errors
@@ -74,42 +78,45 @@ private meta def checkNames (typeName : Ident) (tokNames : Array Ident) : Comman
     throwAbortCommand
 
 /--
-Reports `err` on the part of the `lexer` declaration it concerns: the pattern of a rule
-that fails to parse, or the name of each rule that matches the empty string.
-`tokNames` and `patterns` are indexed by rule number.
+Reports `err` on the patterns it concerns: the pattern of a rule that fails to parse, or the
+pattern of each rule that matches the empty string. `patterns` are indexed by rule number.
 -/
-private meta def throwConversionError (tokNames : Array Ident) (patterns : Array StrLit) :
+private meta def throwConversionError (patterns : Array StrLit) :
     ConversionError → CommandElabM α
   | .noRules => throwError "a lexer needs at least one rule"
   | .invalidPattern rule offset msg =>
     throwErrorAt patterns[rule]! m!"offset {offset}: {msg}"
   | .matchesEmpty rules => do
     for rule in rules do
-      logErrorAt tokNames[rule]!
-        m!"rule `{tokNames[rule]!}` matches the empty string, so the lexer would loop on it"
+      logErrorAt
+        patterns[rule]!
+        "this rule matches the empty string, so the lexer would loop on it"
     throwAbortCommand
 
 elab_rules : command
   | `(
       lexer $typeName:ident where
+        $[skip $skipPatterns]*
         $[| $rules:lexgenRule]*
       $[deriving $[$derivings:ident],*]?
     ) => do
     let mut tokens := #[]
     let mut patterns := #[]
+    for pattern in skipPatterns do
+      tokens   := tokens.push TokenInfo.skip
+      patterns := patterns.push pattern
     for rule in rules do
       match rule with
       | `(lexgenRule| $tokName:ident := $pattern) =>
-        tokens := tokens.push (TokenInfo.simple tokName)
+        tokens   := tokens.push (TokenInfo.simple tokName)
         patterns := patterns.push pattern
       | `(lexgenRule| $tokName:ident : $valueType := $pattern => $func) =>
-        tokens := tokens.push (TokenInfo.converted tokName valueType func)
+        tokens   := tokens.push (TokenInfo.converted tokName valueType func)
         patterns := patterns.push pattern
       | _ => throwUnsupportedSyntax
-    let tokenNames := tokens.map (·.name)
-    checkNames typeName tokenNames
+    checkNames typeName (tokens.filterMap (·.name))
     let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
       | .ok    dfa => pure dfa
-      | .error err => throwConversionError tokenNames patterns err
+      | .error err => throwConversionError patterns err
     for cmd in ← buildLexer typeName tokens dfa derivings do
       elabCommand cmd
