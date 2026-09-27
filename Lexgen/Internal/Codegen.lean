@@ -33,13 +33,18 @@ inductive TokenInfo where
   token's slice.
   -/
   | converted (name : Ident) (valueType : Term) (func : Term)
+  /--
+  A skip rule: its matches are dropped, and it has no constructor in the generated token type.
+  -/
+  | skip
 
 /--
-Returns the name of the token.
+Returns the name of the token, or `none` for a skip rule.
 -/
-def TokenInfo.name : TokenInfo → Ident
-  | .simple name        => name
-  | .converted name _ _ => name
+def TokenInfo.name : TokenInfo → Option Ident
+  | .simple name        => some name
+  | .converted name _ _ => some name
+  | .skip               => none
 
 variable [Monad m] [MonadQuotation m]
 
@@ -117,15 +122,17 @@ private def buildStateFuncs (dfa : DFA) : m Command := do
   `(mutual $stateFuncs* end)
 
 /--
-Builds the inductive type named `typeName`, with a constructor for each of `tokens`,
-carrying a value if the token has one, deriving the instances in `derivings`, if any.
+Builds the inductive type named `typeName`, with a constructor for each of `tokens` but the
+skip rules, carrying a value if the token has one, deriving the instances in `derivings`, if
+any.
 -/
 private def buildTokenType (typeName : Ident) (tokens : Array TokenInfo)
     (derivings : Option (Array Ident)) : m Command := do
-  let ctors ← tokens.mapM fun
-    | .simple name                => `(Lean.Parser.Command.ctor| | $name:ident)
+  let ctors ← tokens.filterMapM fun
+    | .simple name                => some <$> `(Lean.Parser.Command.ctor| | $name:ident)
     | .converted name valueType _ =>
-      `(Lean.Parser.Command.ctor| | $name:ident (value : $valueType))
+      some <$> `(Lean.Parser.Command.ctor| | $name:ident (value : $valueType))
+    | .skip => pure none
   `(
     inductive $typeName where
       $ctors*
@@ -150,40 +157,43 @@ Builds the `Lexable` instance of the type named `typeName`.
 -/
 private def buildLexableImpl (typeName : Ident) (tokens : Array TokenInfo) : m Command := do
   let startState ← stateName DFA.start
-  -- The rule number is only known when the lexer runs, so the generated code turns it
-  -- into a constructor with a `match`: `ruleNums` are the rule numbers as literals, and
-  -- `ctors` are the tokens they turn into.
+  -- The rule number is only known when the lexer runs, so the generated code acts on it
+  -- with a `match`: `ruleNums` are the rule numbers as literals, and `branches` are what
+  -- is done for them.
   let ruleNums : Array Term := tokens.mapIdx fun i _ => quote i
   let input ← `(ident| input)
   let rule  ← `(ident| rule)
   let rest  ← `(ident| rest)
   let slice ← `(ident| slice)
-  let token ← `(ident| token)
-  let ctors : Array Term ← tokens.mapM fun tok => do
-    let ctor := mkIdent (typeName.getId ++ tok.name.getId)
-    match tok with
-    | .simple _ => return ctor
-    | .converted _ valueType func =>
+  let branches ← tokens.mapM fun
+    | .simple name =>
+      `(doSeq| return some (⟨.$name, $slice⟩, $rest))
+    | .converted name valueType func => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
-      `($ctor ($typedFunc $slice))
+      `(doSeq| return some (⟨.$name ($typedFunc $slice), $slice⟩, $rest))
+    -- A skipped match is dropped, and lexing goes on after it.
+    | .skip => `(doSeq| $input:ident := $rest)
   `(
     instance : Lexgen.Lexable $typeName where
       next $input:ident := do
-        let some ($rule, $rest) := $startState $input
-          | throw s!"offset {$(input).startInclusive.offset.byteIdx}: no rule matches the input"
-        -- The token is the part of `input` before `rest`, which is a suffix of `input`.
-        let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
-        let some $token := (match $rule:ident with $[| $ruleNums => some $ctors]* | _ => none)
-          | throw "unknown rule"
-        return (⟨$token, $slice⟩, $rest)
+        let mut $input:ident := $input
+        while !$(input).isEmpty do
+          let some ($rule, $rest) := $startState $input
+            | throw s!"offset {$(input).startInclusive.offset.byteIdx}: no rule matches the input"
+          -- The token is the part of `input` before `rest`, which is a suffix of `input`.
+          let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
+          match $rule:ident with
+          $[| $ruleNums => $branches]*
+          | _ => throw "unknown rule"
+        return none
   )
 
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
-* an inductive type named `typeName`, with a constructor for each of `tokens`,
-  deriving the instances in `derivings`, if any;
+* an inductive type named `typeName`, with a constructor for each of `tokens` but the skip
+  rules, deriving the instances in `derivings`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * the `Lexable` instance of that type;
 * a function `lexer` in the namespace of that type, which creates a `Lexer` for a string.

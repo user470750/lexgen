@@ -38,10 +38,11 @@ A type of tokens that can be lexed. The `lexer` command implements it for the ty
 -/
 class Lexable (α : Type) where
   /--
-  Matches a token at the start of the input: returns the token with its slice and the rest of
-  the input, or an error if no rule matches.
+  Returns the first token of the input that is not matched by a skip rule, with its slice and
+  the rest of the input; `none` if there is no such token (the input is empty, or only skip
+  rules matched); or an error if no rule matches.
   -/
-  next : String.Slice → Except String (Spanned α × String.Slice)
+  next : String.Slice → Except String (Option (Spanned α × String.Slice))
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
@@ -68,7 +69,8 @@ def Lexer.collectMap [Lexable α] (lexer : Lexer α) (f : Spanned α → β) :
   let mut s := lexer.rest
   let mut acc := #[]
   while !s.isEmpty do
-    let (item, rest) ← Lexable.next s
+    let some (item, rest) ← Lexable.next s
+      | return acc
     s   := rest
     acc := acc.push (f item)
   return acc

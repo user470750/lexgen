@@ -16,7 +16,7 @@ lexers embedded in Lean. It pairs each constructor with the regex pattern it
 corresponds to (and, for constructors carrying a value, a user-defined function
 converting the matched text), and expands into an ordinary Lean inductive together
 with the lexer itself. Patterns are written as raw string literals, so regex escapes
-need no extra backslashes. Text matching a `skip` pattern, such as whitespace, is
+need no extra backslashes. Text matching a `skip` rule, such as whitespace, is
 dropped. An optional `deriving` clause derives instances for the token type, as for
 any inductive. As an example, tokens for a JSON lexer:
 
@@ -38,10 +38,9 @@ lexer Token where
 deriving Repr, BEq
 ```
 
-Such a declaration (`skip` and character classes are not implemented yet) makes Lexgen
-generate a function `Token.lexer`, which creates a lexer for a string. Its `tokens` function
-splits the input into an array of tokens, or returns an error if some part of the input
-matches no rule:
+Such a declaration (character classes are not implemented yet) makes Lexgen generate a
+function `Token.lexer`, which creates a lexer for a string. Its `tokens` function splits the
+input into an array of tokens, or returns an error if some part of the input matches no rule:
 
 ```lean
 #eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
@@ -91,7 +90,7 @@ the module it checks.
 - [x] NFA construction (Thompson's construction)
 - [x] NFA → DFA conversion (subset construction)
 - [ ] Extending regex syntax with additional syntactic sugar (e.g. character classes)
-- [ ] Lexer code generation
+- [x] Lexer code generation
 - [ ] Formal verification of pipeline correctness
 - [ ] DFA optimization (minimization)
 
