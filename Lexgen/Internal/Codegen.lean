@@ -20,6 +20,27 @@ open Lean
 Defines the translation of a `DFA` into the code of the generated lexer.
 -/
 
+/--
+A token of a `lexer` declaration.
+-/
+inductive TokenInfo where
+  /--
+  A token named `name`, without a value.
+  -/
+  | simple (name : Ident)
+  /--
+  A token named `name` with a value of type `valueType`, which `func` computes from the
+  token's slice.
+  -/
+  | converted (name : Ident) (valueType : Term) (func : Term)
+
+/--
+Returns the name of the token.
+-/
+def TokenInfo.name : TokenInfo → Ident
+  | .simple name        => name
+  | .converted name _ _ => name
+
 variable [Monad m] [MonadQuotation m]
 
 /--
@@ -96,14 +117,18 @@ private def buildStateFuncs (dfa : DFA) : m Command := do
   `(mutual $stateFuncs* end)
 
 /--
-Builds the inductive type named `typeName`, with a constructor for each name in
-`tokNames`, deriving the instances in `derivings`, if any.
+Builds the inductive type named `typeName`, with a constructor for each of `tokens`,
+carrying a value if the token has one, deriving the instances in `derivings`, if any.
 -/
-private def buildTokenType (typeName : Ident) (tokNames : Array Ident)
-    (derivings : Option (Array Ident)) : m Command :=
+private def buildTokenType (typeName : Ident) (tokens : Array TokenInfo)
+    (derivings : Option (Array Ident)) : m Command := do
+  let ctors ← tokens.mapM fun
+    | .simple name                => `(Lean.Parser.Command.ctor| | $name:ident)
+    | .converted name valueType _ =>
+      `(Lean.Parser.Command.ctor| | $name:ident (value : $valueType))
   `(
     inductive $typeName where
-      $[| $tokNames:ident]*
+      $ctors*
     $[deriving $[$derivings:ident],*]?
   )
 
@@ -123,47 +148,54 @@ private def buildLexerFunc (typeName : Ident) : m Command := do
 /--
 Builds the `Lexable` instance of the type named `typeName`.
 -/
-private def buildLexableImpl (typeName : Ident) (tokNames : Array Ident) : m Command := do
+private def buildLexableImpl (typeName : Ident) (tokens : Array TokenInfo) : m Command := do
   let startState ← stateName DFA.start
   -- The rule number is only known when the lexer runs, so the generated code turns it
   -- into a constructor with a `match`: `ruleNums` are the rule numbers as literals, and
-  -- `ctors` are the constructors they turn into.
-  let ruleNums : Array Term := tokNames.mapIdx fun i _ => quote i
-  let ctors := tokNames.map fun tok => mkIdent (typeName.getId ++ tok.getId)
+  -- `ctors` are the tokens they turn into.
+  let ruleNums : Array Term := tokens.mapIdx fun i _ => quote i
   let input ← `(ident| input)
   let rule  ← `(ident| rule)
   let rest  ← `(ident| rest)
+  let slice ← `(ident| slice)
   let token ← `(ident| token)
+  let ctors : Array Term ← tokens.mapM fun tok => do
+    let ctor := mkIdent (typeName.getId ++ tok.name.getId)
+    match tok with
+    | .simple _ => return ctor
+    | .converted _ valueType func =>
+      -- The ascription takes the position of the function, so that a type error points at it.
+      let typedFunc ← withRef func `(($func : String.Slice → $valueType))
+      `($ctor ($typedFunc $slice))
   `(
     instance : Lexgen.Lexable $typeName where
       next $input:ident := do
         let some ($rule, $rest) := $startState $input
           | throw s!"offset {$(input).startInclusive.offset.byteIdx}: no rule matches the input"
+        -- The token is the part of `input` before `rest`, which is a suffix of `input`.
+        let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
         let some $token := (match $rule:ident with $[| $ruleNums => some $ctors]* | _ => none)
           | throw "unknown rule"
-        -- The token is the part of `input` before `rest`: its length in bytes is the distance
-        -- between their starts.
-        let len := $(rest).startInclusive.offset.byteIdx - $(input).startInclusive.offset.byteIdx
-        return (⟨$token, $(input).sliceTo ($(input).pos! ⟨len⟩)⟩, $rest)
+        return (⟨$token, $slice⟩, $rest)
   )
 
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
-* an inductive type named `typeName`, with a constructor for each name in `tokNames`,
+* an inductive type named `typeName`, with a constructor for each of `tokens`,
   deriving the instances in `derivings`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * the `Lexable` instance of that type;
 * a function `lexer` in the namespace of that type, which creates a `Lexer` for a string.
 
-Tokens are matched to rules by position, so `tokNames` must be in the same order as the
+Tokens are matched to rules by position, so `tokens` must be in the same order as the
 rules `dfa` was built from.
 -/
-def buildLexer (typeName : Ident) (tokNames : Array Ident) (dfa : DFA)
+def buildLexer (typeName : Ident) (tokens : Array TokenInfo) (dfa : DFA)
     (derivings : Option (Array Ident)) : m (Array Command) := do
   return #[
-    ← buildTokenType typeName tokNames derivings,
+    ← buildTokenType typeName tokens derivings,
     ← buildStateFuncs dfa,
-    ← buildLexableImpl typeName tokNames,
+    ← buildLexableImpl typeName tokens,
     ← buildLexerFunc typeName
   ]

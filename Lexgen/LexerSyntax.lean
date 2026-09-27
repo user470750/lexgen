@@ -20,18 +20,35 @@ Defines the `lexer` command: its syntax and its elaboration.
 -/
 
 /--
+A rule of the `lexer` command.
+-/
+declare_syntax_cat lexgenRule
+
+/--
+A rule of a token without a value.
+-/
+syntax ident ":=" str : lexgenRule
+
+/--
+A rule of a token with a value: the name of the token, the type of the value, the regex, and
+the function computing the value from the token's slice.
+-/
+syntax ident ":" term ":=" str "=>" term : lexgenRule
+
+/--
 Declares a lexer: an inductive type with a constructor for each rule, its `Lexgen.Lexable`
 instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer` for a string.
 
 Each rule pairs a constructor with the regex it matches, written as a raw string
-literal. The lexer always takes the longest match; when several rules match the same
-text, the one declared earlier wins. If no rule matches, lexing fails with the byte
-offset of the failure.
+literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value
+of type `α`, which `f : String.Slice → α` computes from the token's slice. The lexer always
+takes the longest match; when several rules match the same text, the one declared earlier
+wins. If no rule matches, lexing fails with the byte offset of the failure.
 
 An optional `deriving` clause after the rules derives these instances for the
 token type.
 -/
-syntax "lexer" ident "where" ("|" ident str)* ("deriving" ident,+)? : command
+syntax "lexer" ident "where" ("|" lexgenRule)* ("deriving" ident,+)? : command
 
 /--
 Checks the names of a `lexer` declaration before any code is generated, so that errors
@@ -75,12 +92,24 @@ private meta def throwConversionError (tokNames : Array Ident) (patterns : Array
 elab_rules : command
   | `(
       lexer $typeName:ident where
-        $[| $tokName:ident $pattern:str]*
+        $[| $rules:lexgenRule]*
       $[deriving $[$derivings:ident],*]?
     ) => do
-    checkNames typeName tokName
-    let dfa ← match rulesToDFA (pattern.toList.map TSyntax.getString) with
+    let mut tokens := #[]
+    let mut patterns := #[]
+    for rule in rules do
+      match rule with
+      | `(lexgenRule| $tokName:ident := $pattern) =>
+        tokens := tokens.push (TokenInfo.simple tokName)
+        patterns := patterns.push pattern
+      | `(lexgenRule| $tokName:ident : $valueType := $pattern => $func) =>
+        tokens := tokens.push (TokenInfo.converted tokName valueType func)
+        patterns := patterns.push pattern
+      | _ => throwUnsupportedSyntax
+    let tokenNames := tokens.map (·.name)
+    checkNames typeName tokenNames
+    let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
       | .ok    dfa => pure dfa
-      | .error err => throwConversionError tokName pattern err
-    for cmd in ← buildLexer typeName tokName dfa derivings do
+      | .error err => throwConversionError tokenNames patterns err
+    for cmd in ← buildLexer typeName tokens dfa derivings do
       elabCommand cmd

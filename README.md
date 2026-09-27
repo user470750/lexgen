@@ -22,26 +22,26 @@ any inductive. As an example, tokens for a JSON lexer:
 
 ```lean
 lexer Token where
-  skip                                r"[ \t\n\r]+"
-  | lbrace                            r"\{"
-  | rbrace                            r"\}"
-  | lbracket                          r"\["
-  | rbracket                          r"\]"
-  | colon                             r":"
-  | comma                             r","
-  | jtrue                             r"true"
-  | jfalse                            r"false"
-  | null                              r"null"
+  skip r"[ \t\n\r]+"
+  | lbrace          := r"\{"
+  | rbrace          := r"\}"
+  | lbracket        := r"\["
+  | rbracket        := r"\]"
+  | colon           := r":"
+  | comma           := r","
+  | jtrue           := r"true"
+  | jfalse          := r"false"
+  | null            := r"null"
   -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
-  | number (n : Float)  stringToFloat r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?"
-  | string (s : String) unquote       r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""#
+  | number : Float  := r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?" => stringToFloat
+  | string : String := r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""# => unquote
 deriving Repr, BEq
 ```
 
-Such a declaration (`skip`, conversion functions and character classes are not implemented
-yet) makes Lexgen generate a function `Token.lexer`, which creates a lexer for a string. Its
-`tokens` function splits the input into an array of tokens, or returns an error if some part
-of the input matches no rule:
+Such a declaration (`skip` and character classes are not implemented yet) makes Lexgen
+generate a function `Token.lexer`, which creates a lexer for a string. Its `tokens` function
+splits the input into an array of tokens, or returns an error if some part of the input
+matches no rule:
 
 ```lean
 #eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
