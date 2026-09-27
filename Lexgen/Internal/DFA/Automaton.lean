@@ -6,6 +6,7 @@ Authors: Oleg Shabanov
 module
 
 public import Std.Data.HashMap
+public import Std.Data.HashSet
 
 public section
 
@@ -61,6 +62,12 @@ abbrev trap : Nat := 0
 The number of the start state.
 -/
 abbrev start : Nat := 1
+
+/--
+Returns the rules that some state of `dfa` accepts.
+-/
+def liveRules (dfa : DFA) : Std.HashSet Nat :=
+  Std.HashSet.ofList dfa.accepting.values
 
 /-
 Short names for `Symbol` constructors, so that `DFA.dot` tells the `DFA`

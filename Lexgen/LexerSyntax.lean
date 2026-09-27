@@ -93,6 +93,17 @@ private meta def throwConversionError (patterns : Array StrLit) :
         "this rule matches the empty string, so the lexer would loop on it"
     throwAbortCommand
 
+/--
+Warns on the pattern of each rule of `dfa` that never produces a match.
+-/
+private meta def logDeadRules (patterns : Array StrLit) (dfa : DFA) : CommandElabM Unit := do
+  let live := dfa.liveRules
+  let dead := patterns.zipIdx.filter fun (_, i) => !live.contains i
+  for (pattern, _) in dead do
+    logWarningAt
+      pattern
+      "this rule never produces a match: other rules always win over it"
+
 elab_rules : command
   | `(
       lexer $typeName:ident where
@@ -118,5 +129,6 @@ elab_rules : command
     let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
       | .ok    dfa => pure dfa
       | .error err => throwConversionError patterns err
+    logDeadRules patterns dfa
     for cmd in ← buildLexer typeName ruleInfos dfa derivings do
       elabCommand cmd
