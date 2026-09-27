@@ -36,6 +36,11 @@ the function computing the value from the token's slice.
 syntax ident ":" term ":=" str "=>" term : lexgenRule
 
 /--
+A skip rule of the `lexer` command: the regex of the text that is dropped.
+-/
+syntax skipRule := "skip" str
+
+/--
 Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
 `Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a
 `Lexgen.Lexer` for a string.
@@ -52,7 +57,12 @@ or comments; being declared first, they win over other rules matching the same t
 An optional `deriving` clause after the rules derives these instances for the
 token type.
 -/
-syntax "lexer" ident "where" ("skip" str)* ("|" lexgenRule)* ("deriving" ident,+)? : command
+syntax
+"lexer" ident "where"
+  skipRule*
+  ("|" lexgenRule)*
+  skipRule*
+("deriving" ident,+)? : command
 
 /--
 Checks the names of a `lexer` declaration before any code is generated, so that errors
@@ -94,6 +104,16 @@ private meta def throwConversionError (patterns : Array StrLit) :
     throwAbortCommand
 
 /--
+Reports each skip rule written after the token rules.
+-/
+private meta def throwLateSkipError (statements : Array Syntax) : CommandElabM α := do
+  for statement in statements do
+    logErrorAt
+      statement
+      "skip rules must come before the token rules"
+  throwAbortCommand
+
+/--
 Warns on the pattern of each rule of `dfa` that never produces a match.
 -/
 private meta def logDeadRules (patterns : Array StrLit) (dfa : DFA) : CommandElabM Unit := do
@@ -132,3 +152,11 @@ elab_rules : command
     logDeadRules patterns dfa
     for cmd in ← buildLexer typeName ruleInfos dfa derivings do
       elabCommand cmd
+  | `(
+      lexer $_:ident where
+        $_*
+        $[| $rules:lexgenRule]*
+        $lateSkips*
+      $[deriving $[$derivings:ident],*]?
+    ) =>
+    throwLateSkipError lateSkips
