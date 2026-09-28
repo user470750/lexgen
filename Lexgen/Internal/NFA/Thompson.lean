@@ -26,10 +26,9 @@ private def translate (offset : Nat) : RegexAST → NFA
   -- The single-node fragments below exit to the state right after them.
   | RegexAST.ε =>
     { nodes := #[.edge NFA.ε (offset + 1)] }
-  | RegexAST.symbol c =>
-    { nodes := #[.edge (NFA.char c) (offset + 1)] }
-  | RegexAST.dot =>
-    { nodes := #[.edge NFA.dot (offset + 1)] }
+  -- TODO: Translate character classes.
+  | RegexAST.charClass .. =>
+    { nodes := #[.edge NFA.ε offset] }
   | RegexAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.
