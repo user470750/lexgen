@@ -5,7 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Internal.Regex.CharClass
+public import Lexgen.Internal.CharClass
 
 public section
 
