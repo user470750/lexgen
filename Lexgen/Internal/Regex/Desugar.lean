@@ -59,5 +59,7 @@ def RegexSyntax.desugar : RegexSyntax → RegexAST
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
   | RegexSyntax.symbol c => RegexAST.symbol c
+  -- TODO: Desugar character classes.
+  | RegexSyntax.charClass .. => RegexAST.ε
   | RegexSyntax.dot      => RegexAST.dot
   | RegexSyntax.ε        => RegexAST.ε

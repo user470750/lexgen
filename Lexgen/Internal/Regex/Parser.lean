@@ -32,6 +32,9 @@ private def leftParen          : Parser Unit := skipChar '('
 private def rightParen         : Parser Unit := skipChar ')'
 private def leftBrace          : Parser Unit := skipChar '{'
 private def rightBrace         : Parser Unit := skipChar '}'
+private def leftBracket        : Parser Unit := skipChar '['
+private def rightBracket       : Parser Unit := skipChar ']'
+private def rangeSep           : Parser Unit := skipChar '-'
 
 /--
 `dot := "."`
@@ -86,6 +89,81 @@ private def symbol : Parser RegexSyntax := do
   let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
   return .symbol sym
+
+/--
+String containing all metacharacters in character class grammar. Other metacharacters are
+literal inside a character class.
+-/
+private def classMetaChars : String := "\\[]^-"
+
+/--
+`escapedClassMeta := "\" (metaChar | classMetaChar)`
+
+Parser for escaped metacharacters inside a character class.
+-/
+private def escapedClassMeta : Parser Char := do
+  skipChar '\\'
+  satisfy fun c => metaChars.contains c || classMetaChars.contains c
+
+/--
+Parser for literal characters inside a character class (except escaped).
+-/
+private def classLiteralChar : Parser Char := satisfy (!classMetaChars.contains ·)
+
+/--
+`classChar := escapedClassMeta | simpleEscape | classLiteralChar`
+
+Parser for a character inside a character class.
+-/
+private def classChar : Parser Char :=
+  escapedClassMeta.attempt <|> simpleEscape.attempt <|> classLiteralChar <|>
+    satisfy ("[^-".contains ·) >>=
+      (fun (c : Char) => (fail s!"unescaped {c} in character class"))    <|>
+    (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
+
+/--
+Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces
+a `range` item.
+-/
+private def charClassRange (lower : Char) : Parser CharClass := do
+  rangeSep
+  let upper ← classChar <|> fail s!"missing upper bound of range {lower.quoteCore}-"
+  let range := CharClass.range lower upper
+  if range.isWellFormed then
+    pure range
+  else
+    fail s!"invalid range {lower.quoteCore}-{upper.quoteCore}: upper bound less than lower bound"
+
+/--
+`charClassItem := classChar ("-" classChar)?`
+
+Parser for an item of a character class.
+-/
+private def charClassItem : Parser CharClass := do
+  let c ← classChar
+  charClassRange c <|> pure (.single c)
+
+/--
+`classNegation := "^"?`
+
+Parser for the optional negation of a character class: returns whether it is negated.
+-/
+private def classNegation : Parser Bool :=
+  (skipChar '^' *> pure true) <|> pure false
+
+/--
+`charClass := "[" classNegation charClassItem+ "]"`
+
+Parser for a character class.
+-/
+private def charClass : Parser RegexSyntax := do
+  leftBracket
+  let negate ← classNegation
+  let items ← many charClassItem
+  rightBracket <|> fail "missing ], unterminated character class"
+  if items.isEmpty then
+    fail "empty character class"
+  return .charClass negate items
 
 /--
 `quantity := "{" digits ("," digits?)? "}"`
@@ -163,14 +241,15 @@ private partial def quantified : Parser RegexSyntax := do
   pure re
 
 /--
-`atom := symbol | dot | subExpr`
+`atom := symbol | dot | charClass | subExpr`
 
 Parser for atoms in the regular expression grammar.
 -/
 private partial def atom : Parser RegexSyntax :=
-  symbol  <|>
-  dot     <|>
-  subExpr <|>
+  symbol    <|>
+  dot       <|>
+  charClass <|>
+  subExpr   <|>
   nothingToRepeat
 
 /--
@@ -187,4 +266,8 @@ A recursive-descent parser for regular expressions.
 
 Built using parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
 -/
-def parseRegex : Parser RegexSyntax := alt <* eof
+def parseRegex : Parser RegexSyntax :=
+  alt <*
+    (eof <|>
+    satisfy ("])}".contains ·) >>=
+      (fun (c : Char) => fail s!"unmatched {c}"))

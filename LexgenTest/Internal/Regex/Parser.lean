@@ -110,7 +110,7 @@ some (.repeated { minimum := 0, maximum := none } (.concat (.symbol 'a') (.symbo
 #eval parseRegex.run r"(a"
 
 -- "a)"
-/-- info: Except.error "offset 1: expected end of input" -/
+/-- info: Except.error "offset 2: unmatched )" -/
 #guard_msgs in
 #eval parseRegex.run r"a)"
 
