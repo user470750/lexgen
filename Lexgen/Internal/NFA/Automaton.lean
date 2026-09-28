@@ -5,6 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.CharClass
+
 public section
 
 /-!
@@ -18,13 +20,9 @@ The label type for `NFA` transitions.
 -/
 inductive NFA.Edge where
   /--
-  Matches the literal character `c`.
+  Matches a character from `ranges`, or, if `negate`, a character outside them.
   -/
-  | char (c : Char)
-  /--
-  Matches any single character.
-  -/
-  | dot
+  | charClass (negate : Bool) (ranges : Array CharClass)
   /--
   Matches the empty string.
   -/
@@ -40,7 +38,7 @@ inductive NFA.Node where
   -/
   | done (rule : Nat)
   /--
-  Node labeled by a real edge (`char`/`dot`/`ε`), not a control node.
+  Node labeled by a real edge (`charClass`/`ε`), not a control node.
   -/
   | edge (e : NFA.Edge) (next : Nat)
   /--
@@ -62,9 +60,9 @@ deriving Repr, DecidableEq
 namespace NFA
 
 /-
-Short names for `Edge` constructors, so that `NFA.dot` tells the `NFA`
-edge apart from the `DFA` symbol `DFA.dot`.
+Short names for `Edge` constructors, so that `NFA.charClass` tells the `NFA`
+edge apart from the `RegexAST` node `RegexAST.charClass`.
 -/
-export Edge (char dot ε)
+export Edge (charClass ε)
 
 end NFA

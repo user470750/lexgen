@@ -25,7 +25,7 @@ inductive CharClass where
   Matches a character from `lower` to `upper`, inclusive.
   -/
   | range (lower upper : Char)
-deriving Repr, DecidableEq
+deriving Repr, DecidableEq, Hashable
 
 /--
 Checks whether a `CharClass` is well-formed, i.e. a range's `lower <= upper` by code point.
