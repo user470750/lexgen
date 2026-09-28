@@ -1,0 +1,75 @@
+/-
+Copyright (c) 2026 Oleg Shabanov. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Oleg Shabanov
+-/
+module
+
+public section
+
+/-!
+# Quantity
+
+Defines `Quantity`, used to represent repetition bounds.
+-/
+
+/--
+A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
+
+It can be used in certain parsers to specify
+how many times an item is expected to appear.
+-/
+structure Quantity where
+  /--
+  Minimum number of occurrences.
+  -/
+  minimum : Nat
+  /--
+  Optional maximum number of occurrences.
+  -/
+  maximum : Option Nat
+deriving Repr, DecidableEq
+
+/--
+Creates a `Quantity` without bounds.
+-/
+def Quantity.zeroOrMore : Quantity := { minimum := 0, maximum := none }
+
+/--
+Creates a `Quantity` with a lower bound of one and no upper bound.
+-/
+def Quantity.oneOrMore : Quantity := { minimum := 1, maximum := none }
+
+/--
+Creates a `Quantity` from zero to one.
+-/
+def Quantity.optionalOne : Quantity := { minimum := 0, maximum := some 1 }
+
+/--
+Creates a `Quantity` with the given lower and upper bounds.
+-/
+def Quantity.between (minimum maximum : Nat) : Quantity :=
+  { minimum, maximum }
+
+/--
+Creates a `Quantity` with only a lower bound.
+-/
+def Quantity.atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
+
+/--
+Creates a `Quantity` from zero to the given upper bound.
+-/
+def Quantity.atMost (maximum : Nat) : Quantity := { minimum := 0, maximum }
+
+/--
+Creates a `Quantity` requiring an exact number of occurrences.
+-/
+def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
+
+/--
+Checks whether a `Quantity`'s bounds are well-formed,
+i.e. `minimum <= maximum`.
+-/
+def Quantity.inOrder : Quantity → Bool
+  | { minimum := _, maximum := none }   => true
+  | { minimum,      maximum := some m } => minimum <= m
