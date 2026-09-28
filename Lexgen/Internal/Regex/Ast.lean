@@ -5,6 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.Regex.CharClass
+
 public section
 
 /-!
@@ -36,13 +38,9 @@ inductive RegexAST where
   -/
   | repeated (re : RegexAST)
   /--
-  Matches the literal character `c`.
+  Matches a character from `ranges`, or, if `negate`, a character outside them.
   -/
-  | symbol (c : Char)
-  /--
-  Matches any single character.
-  -/
-  | dot
+  | charClass (negate : Bool) (ranges : Array CharClass)
   /--
   Matches the empty string.
   -/
@@ -62,8 +60,7 @@ Checks whether `re` matches the empty string.
 -/
 def RegexAST.matchesEmpty : RegexAST → Bool
   | .ε          => true
-  | .symbol _   => false
-  | .dot        => false
+  | .charClass .. => false
   | .alt l r    => l.matchesEmpty || r.matchesEmpty
   | .concat f s => f.matchesEmpty && s.matchesEmpty
   | .repeated _ => true

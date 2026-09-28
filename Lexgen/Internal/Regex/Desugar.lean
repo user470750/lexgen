@@ -58,8 +58,8 @@ def RegexSyntax.desugar : RegexSyntax → RegexAST
     RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
-  | RegexSyntax.symbol c => RegexAST.symbol c
-  -- TODO: Desugar character classes.
-  | RegexSyntax.charClass .. => RegexAST.ε
-  | RegexSyntax.dot      => RegexAST.dot
+  | RegexSyntax.symbol c => RegexAST.charClass false #[.single c]
+  | RegexSyntax.charClass negate ranges =>
+    RegexAST.charClass negate ranges
+  | RegexSyntax.dot      => RegexAST.charClass true #[.single '\n']
   | RegexSyntax.ε        => RegexAST.ε
