@@ -5,6 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.Regex.CharClass
 public import Lexgen.Internal.Regex.Quantity
 
 public section
@@ -37,6 +38,10 @@ inductive RegexSyntax where
   Matches the literal character `c`.
   -/
   | symbol (c : Char)
+  /--
+  Matches a character from `ranges`, or, if `negate`, a character outside them.
+  -/
+  | charClass (negate : Bool) (ranges : Array CharClass)
   /--
   Matches any single character.
   -/
