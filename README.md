@@ -33,7 +33,7 @@ lexer Token where
   | jfalse          := r"false"
   | null            := r"null"
   -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
-  | number : Float  := r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+\-]?[0-9]+)?" => stringToFloat
+  | number : Float  := r"-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?" => stringToFloat
   | string : String := r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""# => unquote
 deriving Repr, BEq
 ```
@@ -89,7 +89,7 @@ the module it checks.
 - [x] Regex parsing
 - [x] NFA construction (Thompson's construction)
 - [x] NFA → DFA conversion (subset construction)
-- [ ] Extending regex syntax with additional syntactic sugar (e.g. character classes)
+- [x] Extending regex syntax with additional syntactic sugar (e.g. character classes)
 - [x] Lexer code generation
 - [ ] Formal verification of pipeline correctness
 - [ ] DFA optimization (minimization)
