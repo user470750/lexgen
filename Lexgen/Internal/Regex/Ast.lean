@@ -16,6 +16,8 @@ Defines the abstract syntax tree (`RegexAST`)
 for regular expressions.
 -/
 
+namespace Lexgen.Internal
+
 /--
 The AST representation of regular expressions.
 
@@ -64,3 +66,5 @@ def RegexAST.matchesEmpty : RegexAST → Bool
   | .alt l r    => l.matchesEmpty || r.matchesEmpty
   | .concat f s => f.matchesEmpty && s.matchesEmpty
   | .repeated _ => true
+
+end Lexgen.Internal

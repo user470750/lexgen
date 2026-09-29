@@ -17,6 +17,8 @@ public section
 Defines the DFA representation (`DFA`).
 -/
 
+namespace Lexgen.Internal
+
 /--
 The deterministic finite automaton representation.
 
@@ -56,3 +58,5 @@ def liveRules (dfa : DFA) : Std.HashSet Nat :=
   Std.HashSet.ofList dfa.accepting.values
 
 end DFA
+
+end Lexgen.Internal

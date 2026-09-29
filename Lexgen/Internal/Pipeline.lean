@@ -21,6 +21,8 @@ turning the rules of a `lexer` declaration into a single `DFA`, and its error ty
 `ConversionError`.
 -/
 
+namespace Lexgen.Internal
+
 /--
 An error of `rulesToDFA`. Rules are given by their numbers, so that the `lexer` command
 can report each error on the rule it concerns.
@@ -72,3 +74,5 @@ where
   rulesMatchingEmpty (rules : List RegexAST) : List Nat :=
     rules.zipIdx.filterMap
       (fun (regex, rule) => if regex.matchesEmpty then some rule else none)
+
+end Lexgen.Internal

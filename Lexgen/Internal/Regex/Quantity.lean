@@ -13,6 +13,8 @@ public section
 Defines `Quantity`, used to represent repetition bounds.
 -/
 
+namespace Lexgen.Internal
+
 /--
 A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
 
@@ -73,3 +75,5 @@ i.e. `minimum <= maximum`.
 def Quantity.inOrder : Quantity → Bool
   | { minimum := _, maximum := none }   => true
   | { minimum,      maximum := some m } => minimum <= m
+
+end Lexgen.Internal

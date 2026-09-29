@@ -21,6 +21,8 @@ Defines a recursive-descent parser for regular expressions,
 built using parser combinators.
 -/
 
+namespace Lexgen.Internal
+
 /-
 Parsers for special characters in the regular expression grammar.
 -/
@@ -300,3 +302,5 @@ def parseRegex : Parser RegexSyntax :=
     (eof <|>
     satisfy ("])}".contains ·) >>=
       (fun (c : Char) => fail s!"unmatched {c}"))
+
+end Lexgen.Internal

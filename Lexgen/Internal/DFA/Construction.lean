@@ -20,6 +20,8 @@ Defines `DFA.ofNFA`: translating an `NFA` into a `DFA` using the
 subset construction.
 -/
 
+namespace Lexgen.Internal
+
 /--
 Returns `visited` extended with the ε-closure of `node`: the states reachable
 from `node` (including `node` itself) via ε-transitions.
@@ -162,3 +164,5 @@ def ofNFA (nfa : NFA) : DFA :=
     return { trans, accepting }
 
 end DFA
+
+end Lexgen.Internal

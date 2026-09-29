@@ -13,6 +13,8 @@ public section
 Defines `CharClass`, an item of a character class.
 -/
 
+namespace Lexgen.Internal
+
 /--
 An item of a character class: a literal character or a range of characters.
 -/
@@ -33,3 +35,5 @@ Checks whether a `CharClass` matches the character `c`.
 def CharClass.contains (c : Char) : CharClass → Bool
   | .single s          => c == s
   | .range lower upper => lower <= c && c <= upper
+
+end Lexgen.Internal

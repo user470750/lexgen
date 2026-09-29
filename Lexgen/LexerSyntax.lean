@@ -13,13 +13,15 @@ public import Lexgen.Lexer
 
 public section
 
-open Lean Elab Command
+open Lean Elab Command Lexgen.Internal
 
 /-!
 # `lexer` syntax
 
 Defines the `lexer` command: its syntax and its elaboration.
 -/
+
+namespace Lexgen
 
 /--
 A token rule of the `lexer` command.
@@ -162,3 +164,5 @@ elab_rules : command
       $[deriving $[$derivings:ident],*]?
     ) =>
     throwLateSkipError lateSkips
+
+end Lexgen

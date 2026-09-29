@@ -17,6 +17,8 @@ Defines Thompson's construction: translating a
 `RegexAST` into an `NFA`.
 -/
 
+namespace Lexgen.Internal
+
 /--
 Internal implementation of Thompson's algorithm.
 
@@ -102,3 +104,5 @@ and each accept state is labeled with its rule.
 -- Taking `first` separately guarantees there is at least one rule.
 def NFA.ofRules (first : RegexAST) (rest : List RegexAST) : NFA :=
   translateRules 0 0 first rest
+
+end Lexgen.Internal

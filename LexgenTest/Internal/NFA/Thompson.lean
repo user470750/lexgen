@@ -11,6 +11,8 @@ import Lexgen.Internal.NFA.Thompson
 Checks the `NFA` produced by `NFA.ofRules` for basic regular expressions.
 -/
 
+open Lexgen.Internal
+
 -- "a"
 #guard
 NFA.ofRules (.charClass false #[.single 'a']) [] =

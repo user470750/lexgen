@@ -12,6 +12,8 @@ Checks the `RegexSyntax` produced by `parseRegex`, and that invalid patterns are
 rejected.
 -/
 
+open Lexgen.Internal
+
 -- "a"
 #guard (parseRegex.run r"a").toOption = some (.symbol 'a')
 

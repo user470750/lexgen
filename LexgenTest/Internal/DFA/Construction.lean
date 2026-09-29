@@ -11,6 +11,8 @@ import Lexgen.Internal.DFA.Construction
 Checks the `DFA` produced by `DFA.ofNFA` for basic regular expressions.
 -/
 
+open Lexgen.Internal
+
 -- The `NFA` inputs are the ones produced by Thompson's construction for the
 -- regexes given in the comments.
 

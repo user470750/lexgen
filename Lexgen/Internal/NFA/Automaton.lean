@@ -15,6 +15,8 @@ public section
 Defines the NFA representation (`NFA`).
 -/
 
+namespace Lexgen.Internal
+
 /--
 The label type for `NFA` transitions.
 -/
@@ -66,3 +68,5 @@ edge apart from the `RegexAST` node `RegexAST.charClass`.
 export Edge (charClass ε)
 
 end NFA
+
+end Lexgen.Internal

@@ -16,6 +16,8 @@ public section
 Defines `RegexSyntax.desugar` for translating a CST into an AST.
 -/
 
+namespace Lexgen.Internal
+
 /--
 Builds a chain of `n` copies of `re` concatenated together.
 
@@ -112,3 +114,5 @@ def RegexSyntax.desugar : RegexSyntax → RegexAST
     RegexAST.charClass false (namedClassRanges kind)
   | RegexSyntax.dot      => RegexAST.charClass true #[.single '\n']
   | RegexSyntax.ε        => RegexAST.ε
+
+end Lexgen.Internal

@@ -20,6 +20,8 @@ open Lean
 Defines the translation of a `DFA` into the code of the generated lexer.
 -/
 
+namespace Lexgen.Internal
+
 /--
 A rule of a `lexer` declaration.
 -/
@@ -200,3 +202,5 @@ def buildLexer (typeName : Ident) (rules : Array RuleInfo) (dfa : DFA)
     ← buildLexableImpl typeName rules,
     ← buildLexerFunc typeName
   ]
+
+end Lexgen.Internal

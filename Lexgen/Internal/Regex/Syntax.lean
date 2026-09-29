@@ -15,6 +15,8 @@ public section
 Defines the concrete syntax tree (`RegexSyntax`) for regular expressions.
 -/
 
+namespace Lexgen.Internal
+
 /--
 A named character class. The classes are ASCII.
 -/
@@ -109,3 +111,5 @@ inductive RegexSyntax where
   -/
   | ε
 deriving Repr, DecidableEq
+
+end Lexgen.Internal

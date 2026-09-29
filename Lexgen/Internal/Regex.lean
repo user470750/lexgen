@@ -13,6 +13,8 @@ import Lexgen.Internal.Regex.Syntax
 
 public section
 
+namespace Lexgen.Internal
+
 /--
 An error of `parse`.
 -/
@@ -33,3 +35,5 @@ def parse (s : String) : Except ParseRegexError RegexAST :=
   match parseRegex ⟨s, s.startPos⟩ with
   | .success _ syn => pure syn.desugar
   | .error it err  => throw { offset := it.2.offset.byteIdx, msg := toString err }
+
+end Lexgen.Internal
