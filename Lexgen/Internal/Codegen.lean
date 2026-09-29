@@ -58,35 +58,26 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds a branch of the generated `match`.
+Builds the chain of `if`s on the next character of `input`, for a state with the
+transitions `trans`.
 -/
-private def buildBranch (input : Ident) (pat : Term) (next : Nat) :
-    m (TSyntax ``Lean.Parser.Term.matchAlt) := do
-  -- The trap never leads to a match, so going there fails at once.
-  if next == DFA.trap then
-    return ← `(Lean.Parser.Term.matchAltExpr| | $pat => none)
-  let funcName ← stateName next
-  -- A character matching `pat` leads to a call of the function of state `next` on the
-  -- input without its first character.
-  `(Lean.Parser.Term.matchAltExpr| | $pat => $funcName ($(input).drop 1))
-
-/--
-Builds the `match` on the next character of `input`, for a state with the transitions
-`trans`.
--/
-private def buildTrans (input : Ident) (trans : List (DFA.Symbol × Nat)) : m Term := do
-  -- Without a `dot` transition, the catch-all branch returns `none`: no character of the
-  -- alphabet matched, and there is nowhere to go.
-  let mut dot : TSyntax ``Lean.Parser.Term.matchAlt ← `(Lean.Parser.Term.matchAltExpr| | _ => none)
-  let mut chars := #[]
-  for (sym, next) in trans do
-    match sym with
-    | .char c => chars := chars.push (← buildBranch input (quote c) next)
-    | .dot    => dot ← buildBranch input (← `(_)) next
-  let branches := chars.push dot
+private def buildTrans (input : Ident) (trans : Array (CharClass × Nat)) : m Term := do
   let c ← `(ident| c)
+  -- No interval matched: there is nowhere to go.
+  let body ← trans.foldrM (init := ← `(none)) fun (interval, next) rest => do
+    -- The trap never leads to a match, so going there is the same as no transition.
+    if next == DFA.trap then
+      return rest
+    -- A character of `interval` leads to a call of the function of state `next` on the
+    -- input without its first character.
+    let target ← `($(← stateName next) ($(input).drop 1))
+    match interval with
+    | .single character =>
+      `(if $c:ident == $(quote character) then $target else $rest)
+    | .range lower upper =>
+      `(if $(quote lower) ≤ $c:ident && $c:ident ≤ $(quote upper) then $target else $rest)
   -- `bind` returns `none` if the input is empty.
-  `($(input).front?.bind fun $c => match $c:ident with $branches:matchAlt*)
+  `($(input).front?.bind fun $c => $body)
 
 /--
 Builds the function of state `state`. The generated function takes the rest of
@@ -94,7 +85,7 @@ the input and returns the rule it matched, together with the input left after th
 or `none` if no rule matches.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
-    (trans : List (DFA.Symbol × Nat)) : m Command := do
+    (trans : Array (CharClass × Nat)) : m Command := do
   let funcName   ← stateName state
   -- One name for the input, passed to every builder: otherwise nothing guarantees that
   -- the other functions refer to the argument by the same name.
