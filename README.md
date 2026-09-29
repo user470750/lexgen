@@ -33,14 +33,14 @@ lexer Token where
   | jfalse          := r"false"
   | null            := r"null"
   -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
-  | number : Float  := r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?" => stringToFloat
+  | number : Float  := r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+\-]?[0-9]+)?" => stringToFloat
   | string : String := r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""# => unquote
 deriving Repr, BEq
 ```
 
-Such a declaration (character classes are not implemented yet) makes Lexgen generate a
-function `Token.lexer`, which creates a lexer for a string. Its `tokens` function splits the
-input into an array of tokens, or returns an error if some part of the input matches no rule:
+Such a declaration makes Lexgen generate a function `Token.lexer`, which creates a lexer
+for a string. Its `tokens` function splits the input into an array of tokens, or returns
+an error if some part of the input matches no rule:
 
 ```lean
 #eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
