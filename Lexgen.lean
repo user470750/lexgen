@@ -5,5 +5,4 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Lexer
 public import Lexgen.LexerSyntax
