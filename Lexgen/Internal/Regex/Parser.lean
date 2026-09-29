@@ -76,6 +76,22 @@ private def simpleEscape : Parser Char := do
     | _   => c               -- impossible due to satisfy predicate
 
 /--
+`classEscape := "\" ("d" | "D" | "w" | "W" | "s" | "S")`
+
+Parser for escape sequences of named character classes.
+-/
+private def classEscape : Parser NamedClass := do
+  skipChar '\\'
+  let c ← satisfy ("dDwWsS".contains ·)
+  return match c with
+    | 'd' => .digit
+    | 'D' => .nonDigit
+    | 'w' => .word
+    | 'W' => .nonWord
+    | 's' => .space
+    | _   => .nonSpace   -- `S`, due to the satisfy predicate
+
+/--
 Parser for literal characters (except escaped).
 -/
 private def literalChar : Parser Char := satisfy (!metaChars.contains ·)
@@ -125,10 +141,14 @@ private def classChar : Parser Char :=
 Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces
 a `range` item.
 -/
-private def charClassRange (lower : Char) : Parser CharClass := do
+private def charClassRange (lower : Char) : Parser ClassItem := do
   rangeSep
-  let upper ← classChar <|> fail s!"missing upper bound of range {lower.quoteCore}-"
-  let range := CharClass.range lower upper
+  let upper ←
+    (classEscape.attempt *>
+      fail s!"invalid range {lower.quoteCore}-: a named class cannot bound a range") <|>
+    classChar <|>
+    fail s!"missing upper bound of range {lower.quoteCore}-"
+  let range := ClassItem.range lower upper
   if range.isWellFormed then
     pure range
   else
@@ -139,7 +159,7 @@ private def charClassRange (lower : Char) : Parser CharClass := do
 
 Parser for an item of a character class.
 -/
-private def charClassItem : Parser CharClass := do
+private def charClassItem : Parser ClassItem := do
   let c ← classChar
   charClassRange c <|> pure (.single c)
 
@@ -152,14 +172,22 @@ private def classNegation : Parser Bool :=
   (skipChar '^' *> pure true) <|> pure false
 
 /--
-`charClass := "[" classNegation charClassItem+ "]"`
+`namedClass := classEscape`
+
+Parser for a named character class outside a character class, such as `\d`.
+-/
+private def namedClass : Parser RegexSyntax :=
+  RegexSyntax.namedClass <$> classEscape.attempt
+
+/--
+`charClass := "[" classNegation (classEscape | charClassItem)+ "]"`
 
 Parser for a character class.
 -/
 private def charClass : Parser RegexSyntax := do
   leftBracket
   let negate ← classNegation
-  let items ← many charClassItem
+  let items ← many ((ClassItem.named <$> classEscape.attempt) <|> charClassItem)
   rightBracket <|> fail "missing ], unterminated character class"
   if items.isEmpty then
     fail "empty character class"
@@ -241,15 +269,16 @@ private partial def quantified : Parser RegexSyntax := do
   pure re
 
 /--
-`atom := symbol | dot | charClass | subExpr`
+`atom := namedClass | symbol | dot | charClass | subExpr`
 
 Parser for atoms in the regular expression grammar.
 -/
 private partial def atom : Parser RegexSyntax :=
-  symbol    <|>
-  dot       <|>
-  charClass <|>
-  subExpr   <|>
+  namedClass <|>
+  symbol     <|>
+  dot        <|>
+  charClass  <|>
+  subExpr    <|>
   nothingToRepeat
 
 /--

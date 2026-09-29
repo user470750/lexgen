@@ -38,6 +38,53 @@ private def optionalTail (n : Nat) (re : RegexAST) : RegexAST :=
   repeatConcat n (.alt re .ε)
 
 /--
+Returns the ranges of the named character class `kind`.
+-/
+private def namedClassRanges (kind : NamedClass) : Array CharClass :=
+  let max := Char.ofNat 0x10FFFF
+  match kind with
+  | .digit => #[.range '0' '9']
+  | .nonDigit =>
+    #[
+      .range '\x00' '/',
+      .range ':' max
+    ]
+  | .word =>
+    #[
+      .range '0' '9',
+      .range 'A' 'Z',
+      .single '_',
+      .range 'a' 'z'
+    ]
+  | .nonWord =>
+    #[
+      .range '\x00' '/',
+      .range ':' '@',
+      .range '[' '^',
+      .single '`',
+      .range '{' max
+    ]
+  | .space =>
+    #[
+      .range '\t' '\r',
+      .single ' '
+    ]
+  | .nonSpace =>
+    #[
+      .range '\x00' '\x08',
+      .range '\x0e' '\x1f',
+      .range '!' max
+    ]
+
+/--
+Desugars an item of a character class into the ranges it matches.
+-/
+private def ClassItem.desugar : ClassItem → Array CharClass
+  | ClassItem.single c          => #[CharClass.single c]
+  | ClassItem.range lower upper => #[CharClass.range lower upper]
+  | ClassItem.named kind        => namedClassRanges kind
+
+/--
 Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
 
 Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
@@ -59,7 +106,9 @@ def RegexSyntax.desugar : RegexSyntax → RegexAST
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
   | RegexSyntax.symbol c => RegexAST.charClass false #[.single c]
-  | RegexSyntax.charClass negate ranges =>
-    RegexAST.charClass negate ranges
+  | RegexSyntax.charClass negate items =>
+    RegexAST.charClass negate (items.flatMap ClassItem.desugar)
+  | RegexSyntax.namedClass kind =>
+    RegexAST.charClass false (namedClassRanges kind)
   | RegexSyntax.dot      => RegexAST.charClass true #[.single '\n']
   | RegexSyntax.ε        => RegexAST.ε
