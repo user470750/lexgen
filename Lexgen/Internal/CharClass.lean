@@ -33,3 +33,10 @@ Checks whether a `CharClass` is well-formed, i.e. a range's `lower <= upper` by 
 def CharClass.isWellFormed : CharClass → Bool
   | .single _          => true
   | .range lower upper => lower <= upper
+
+/--
+Checks whether a `CharClass` matches the character `c`.
+-/
+def CharClass.contains (c : Char) : CharClass → Bool
+  | .single s          => c == s
+  | .range lower upper => lower <= c && c <= upper
