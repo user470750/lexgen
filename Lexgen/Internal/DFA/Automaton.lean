@@ -5,6 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.CharClass
 public import Std.Data.HashMap
 public import Std.Data.HashSet
 
@@ -17,22 +18,6 @@ Defines the DFA representation (`DFA`).
 -/
 
 /--
-The label type for `DFA` transitions.
-
-Unlike `NFA.Edge`, it has no `ε`: a `DFA` has no ε-transitions.
--/
-inductive DFA.Symbol where
-  /--
-  Matches the literal character `c`.
-  -/
-  | char (c : Char)
-  /--
-  Matches any single character.
-  -/
-  | dot
-deriving Repr, DecidableEq, Hashable, Inhabited
-
-/--
 The deterministic finite automaton representation.
 
 States are numbered from zero. State `DFA.trap` is the trap, from which no match can
@@ -40,10 +25,11 @@ be reached, and state `DFA.start` is the start state.
 -/
 structure DFA where
   /--
-  Transition table: for every state, the symbols leaving it together with
-  the states they lead to. Indexed by state.
+  Transition table: for every state, the intervals of characters leaving it together with
+  the states they lead to. Indexed by state. No `NFA` edge tells apart two characters of one
+  interval.
   -/
-  trans     : Array (List (DFA.Symbol × Nat))
+  trans     : Array (List (CharClass × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
@@ -54,7 +40,7 @@ namespace DFA
 
 /--
 The number of the trap state: the empty set of `NFA` states, reached when no edge
-matches, and looping back to itself on every symbol.
+matches, and looping back to itself on every interval.
 -/
 abbrev trap : Nat := 0
 
@@ -68,11 +54,5 @@ Returns the rules that some state of `dfa` accepts.
 -/
 def liveRules (dfa : DFA) : Std.HashSet Nat :=
   Std.HashSet.ofList dfa.accepting.values
-
-/-
-Short names for `Symbol` constructors, so that `DFA.dot` tells the `DFA`
-symbol apart from the `NFA` edge `NFA.dot`.
--/
-export Symbol (char dot)
 
 end DFA
