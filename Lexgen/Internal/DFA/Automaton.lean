@@ -29,7 +29,7 @@ structure DFA where
   the states they lead to. Indexed by state. No `NFA` edge tells apart two characters of one
   interval.
   -/
-  trans     : Array (List (CharClass × Nat))
+  trans     : Array (Array (CharClass × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/

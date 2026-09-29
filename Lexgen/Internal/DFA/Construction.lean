@@ -134,7 +134,7 @@ def ofNFA (nfa : NFA) : DFA :=
 
     -- The trap goes first and the start state second.
     let mut states    : Array (Std.HashSet Nat)         := #[{}, nfa.εClosure {} 0]
-    let mut trans     : Array (List (CharClass × Nat))  := #[]
+    let mut trans     : Array (Array (CharClass × Nat)) := #[]
     let mut accepting : Std.HashMap Nat Nat             := {}
 
     if let some rule := acceptingRule? nfa states[DFA.start]! then
@@ -156,7 +156,7 @@ def ofNFA (nfa : NFA) : DFA :=
           row := row.push (interval, lastState)
           if let some rule := acceptingRule? nfa reached then
             accepting := accepting.insert lastState rule
-      trans := trans.push row.toList
+      trans := trans.push row
       current := current + 1
 
     return { trans, accepting }

@@ -28,9 +28,9 @@ private def aboveSurrogates : CharClass := .range '\uE000' (Char.ofNat 0x10FFFF)
 DFA.ofNFA { nodes := #[.edge (.charClass false #[.single 'a']) 1, .done 0] } ==
 {
   trans := #[
-    [(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)]
+    #[(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
+    #[(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
+    #[(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)]
   ],
   accepting := Std.HashMap.ofList [(2, 0)]
 }
@@ -40,9 +40,18 @@ DFA.ofNFA { nodes := #[.edge (.charClass false #[.single 'a']) 1, .done 0] } ==
 DFA.ofNFA { nodes := #[.edge (.charClass true #[.single '\n']) 1, .done 0] } ==
 {
   trans := #[
-    [(.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '\t', 2), (.single '\n', 0), (.range '\x0b' '\uD7FF', 2), (aboveSurrogates, 2)],
-    [(.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '\uD7FF', 0), (aboveSurrogates, 0)]
+    #[
+      (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '\uD7FF', 0),
+      (aboveSurrogates, 0)
+    ],
+    #[
+      (.range '\x00' '\t', 2), (.single '\n', 0), (.range '\x0b' '\uD7FF', 2),
+      (aboveSurrogates, 2)
+    ],
+    #[
+      (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '\uD7FF', 0),
+      (aboveSurrogates, 0)
+    ]
   ],
   accepting := Std.HashMap.ofList [(2, 0)]
 }
@@ -54,8 +63,8 @@ DFA.ofNFA { nodes := #[.edge (.charClass true #[.single '\n']) 1, .done 0] } ==
 DFA.ofNFA { nodes := #[.edge .ε 1, .done 0] } ==
 {
   trans := #[
-    [(.range '\x00' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '\uD7FF', 0), (aboveSurrogates, 0)]
+    #[(.range '\x00' '\uD7FF', 0), (aboveSurrogates, 0)],
+    #[(.range '\x00' '\uD7FF', 0), (aboveSurrogates, 0)]
   ],
   accepting := Std.HashMap.ofList [(1, 0)]
 }
@@ -71,19 +80,19 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 2), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 3), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ]
@@ -105,19 +114,19 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 2), (.single 'b', 3), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '`', 0), (.single 'a', 0), (.single 'b', 0), (.range 'c' '\uD7FF', 0),
       (aboveSurrogates, 0)
     ]
@@ -132,9 +141,9 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
-    [(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)]
+    #[(.range '\x00' '`', 0), (.single 'a', 0), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
+    #[(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)],
+    #[(.range '\x00' '`', 0), (.single 'a', 2), (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)]
   ],
   accepting := Std.HashMap.ofList [(1, 0), (2, 0)]
 }
@@ -153,19 +162,19 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 2), (.single '\n', 0), (.range '\x0b' '`', 2), (.single 'a', 2),
       (.range 'b' '\uD7FF', 2), (aboveSurrogates, 2)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 3),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ]
@@ -184,19 +193,19 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 2),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 3), (.single '\n', 0), (.range '\x0b' '`', 3), (.single 'a', 3),
       (.range 'b' '\uD7FF', 3), (aboveSurrogates, 3)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ]
@@ -219,19 +228,19 @@ DFA.ofNFA {
 } ==
 {
   trans := #[
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 2), (.single '\n', 0), (.range '\x0b' '`', 2), (.single 'a', 3),
       (.range 'b' '\uD7FF', 2), (aboveSurrogates, 2)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ],
-    [
+    #[
       (.range '\x00' '\t', 0), (.single '\n', 0), (.range '\x0b' '`', 0), (.single 'a', 0),
       (.range 'b' '\uD7FF', 0), (aboveSurrogates, 0)
     ]
