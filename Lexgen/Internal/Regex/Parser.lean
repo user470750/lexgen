@@ -6,9 +6,9 @@ Authors: Oleg Shabanov
 module
 
 public import Lexgen.Internal.Regex.Syntax
-public import Std.Internal.Parsec.String
 
 import Std.Internal.Parsec
+import Std.Internal.Parsec.String
 
 public section
 
@@ -297,10 +297,32 @@ A recursive-descent parser for regular expressions.
 
 Built using parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
 -/
-def parseRegex : Parser RegexSyntax :=
+private def regex : Parser RegexSyntax :=
   alt <*
     (eof <|>
     satisfy ("])}".contains ·) >>=
       (fun (c : Char) => fail s!"unmatched {c}"))
+
+/--
+An error of `parseRegex`.
+-/
+structure ParseRegexError where
+  /--
+  The byte offset in the pattern where parsing failed.
+  -/
+  offset : Nat
+  /--
+  The description of the error.
+  -/
+  msg    : String
+deriving Repr
+
+/--
+Parses a regular expression `s` into a concrete syntax tree (`RegexSyntax`).
+-/
+def parseRegex (s : String) : Except ParseRegexError RegexSyntax :=
+  match regex ⟨s, s.startPos⟩ with
+  | .success _ syn => pure syn
+  | .error it err  => throw { offset := it.2.offset.byteIdx, msg := toString err }
 
 end Lexgen.Internal

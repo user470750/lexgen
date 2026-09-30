@@ -6,9 +6,9 @@ Authors: Oleg Shabanov
 module
 
 public import Lexgen.Internal.Regex.Ast
+public import Lexgen.Internal.Regex.Parser
 
 import Lexgen.Internal.Regex.Desugar
-import Lexgen.Internal.Regex.Parser
 import Lexgen.Internal.Regex.Syntax
 
 public section
@@ -16,24 +16,9 @@ public section
 namespace Lexgen.Internal
 
 /--
-An error of `parse`.
--/
-structure ParseRegexError where
-  /--
-  The byte offset in the pattern where parsing failed.
-  -/
-  offset : Nat
-  /--
-  The description of the error.
-  -/
-  msg    : String
-
-/--
 Parses a regular expression `s` and desugars it into a `RegexAST`.
 -/
 def parse (s : String) : Except ParseRegexError RegexAST :=
-  match parseRegex ⟨s, s.startPos⟩ with
-  | .success _ syn => pure syn.desugar
-  | .error it err  => throw { offset := it.2.offset.byteIdx, msg := toString err }
+  (parseRegex s).map RegexSyntax.desugar
 
 end Lexgen.Internal
