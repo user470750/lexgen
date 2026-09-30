@@ -135,7 +135,7 @@ def ofNFA (nfa : NFA) : DFA :=
     let alphabet : Array DFA.Interval := alphabet nfa
 
     -- The trap goes first and the start state second.
-    let mut states    : Array (Std.HashSet Nat)            := #[{}, nfa.εClosure {} 0]
+    let mut states    : Array (Std.HashSet Nat)            := #[{}, nfa.εClosure {} NFA.start]
     let mut trans     : Array (Array (DFA.Interval × Nat)) := #[]
     let mut accepting : Std.HashMap Nat Nat                := {}
 
