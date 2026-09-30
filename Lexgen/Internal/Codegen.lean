@@ -63,7 +63,7 @@ private def stateName (state : Nat) : m Ident := do
 Builds the chain of `if`s on the next character of `input`, for a state with the
 transitions `trans`.
 -/
-private def buildTrans (input : Ident) (trans : Array (CharClass × Nat)) : m Term := do
+private def buildTrans (input : Ident) (trans : Array (DFA.Interval × Nat)) : m Term := do
   let c ← `(ident| c)
   -- No interval matched: there is nowhere to go.
   let body ← trans.foldrM (init := ← `(none)) fun (interval, next) rest => do
@@ -87,7 +87,7 @@ the input and returns the rule it matched, together with the input left after th
 or `none` if no rule matches.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
-    (trans : Array (CharClass × Nat)) : m Command := do
+    (trans : Array (DFA.Interval × Nat)) : m Command := do
   let funcName   ← stateName state
   -- One name for the input, passed to every builder: otherwise nothing guarantees that
   -- the other functions refer to the argument by the same name.

@@ -5,8 +5,6 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Internal.CharClass
-
 public section
 
 /-!
@@ -18,13 +16,34 @@ Defines the NFA representation (`NFA`).
 namespace Lexgen.Internal
 
 /--
+An item on an `NFA` edge: a literal character or a range of characters.
+-/
+inductive NFA.Range where
+  /--
+  Matches the literal character `character`.
+  -/
+  | single (character : Char)
+  /--
+  Matches a character from `lower` to `upper`, inclusive.
+  -/
+  | range (lower upper : Char)
+deriving Repr, DecidableEq, Hashable
+
+/--
+Checks whether an `NFA.Range` matches the character `c`.
+-/
+def NFA.Range.contains (c : Char) : NFA.Range → Bool
+  | .single s          => c == s
+  | .range lower upper => lower <= c && c <= upper
+
+/--
 The label type for `NFA` transitions.
 -/
 inductive NFA.Edge where
   /--
   Matches a character from `ranges`, or, if `negate`, a character outside them.
   -/
-  | charClass (negate : Bool) (ranges : Array CharClass)
+  | charClass (negate : Bool) (ranges : Array Range)
   /--
   Matches the empty string.
   -/

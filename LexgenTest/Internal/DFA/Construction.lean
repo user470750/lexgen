@@ -23,7 +23,7 @@ open Lexgen.Internal
 /--
 The characters above the surrogates: the last interval of every alphabet.
 -/
-private def aboveSurrogates : CharClass := .range '\uE000' (Char.ofNat 0x10FFFF)
+private def aboveSurrogates : DFA.Interval := .range '\uE000' (Char.ofNat 0x10FFFF)
 
 -- "a"
 #guard

@@ -5,8 +5,6 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Internal.CharClass
-
 public section
 
 /-!
@@ -17,6 +15,20 @@ for regular expressions.
 -/
 
 namespace Lexgen.Internal
+
+/--
+An item of a character class: a literal character or a range of characters.
+-/
+inductive CharClass where
+  /--
+  Matches the literal character `character`.
+  -/
+  | single (character : Char)
+  /--
+  Matches a character from `lower` to `upper`, inclusive.
+  -/
+  | range (lower upper : Char)
+deriving Repr, DecidableEq
 
 /--
 The AST representation of regular expressions.

@@ -50,7 +50,7 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 /--
 Returns all `NFA` states reachable from a node by following a single edge matching `interval`.
 -/
-private def step (interval : CharClass) : NFA.Node → List Nat
+private def step (interval : DFA.Interval) : NFA.Node → List Nat
   | .edge (.charClass negate ranges) next =>
     let c := match interval with | .single c | .range c _ => c
     if negate != ranges.any (·.contains c) then [next] else []
@@ -62,7 +62,7 @@ namespace DFA
 Maps a set of states to the new set of states reachable via a transition
 on `interval` followed by an unbounded number of ε-transitions.
 -/
-private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : CharClass) :
+private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : DFA.Interval) :
     Std.HashSet Nat :=
   let raw := states.toList.flatMap (fun state => step interval nfa.nodes[state]!)
   raw.foldl nfa.εClosure {}
@@ -75,14 +75,14 @@ The intervals are cut where some character class starts or stops matching, at `0
 `0x110000`, which bound all characters, and at `0xD800` and `0xE000`, which bound the
 surrogates.
 -/
-private def alphabet (nfa : NFA) : Array CharClass :=
+private def alphabet (nfa : NFA) : Array DFA.Interval :=
   let bounds :=
     ((nfa.nodes.filterMap nodeBounds).flatten ++ #[0, 0xD800, 0xE000, 0x110000])
     |>.mergeSort
     |>.eraseReps
   Array.zipWith (·, · - 1) bounds (bounds.extract 1)
   |>.filter (·.1 != 0xD800)
-  |>.map formClass
+  |>.map formInterval
 where
   /--
   Returns the code points at which the character class on the edge of a node starts and stops
@@ -95,10 +95,10 @@ where
         | .range lower upper => #[lower.toNat, upper.toNat + 1])
     | _ => none
   /--
-  Returns the `CharClass` of the characters from the code point `lower` to `upper`, inclusive:
-  a `single` if there is only one.
+  Returns the `DFA.Interval` of the characters from the code point `lower` to `upper`,
+  inclusive: a `single` if there is only one.
   -/
-  formClass : Nat × Nat → CharClass
+  formInterval : Nat × Nat → DFA.Interval
     | (lower, upper) =>
       if lower == upper then
         .single (Char.ofNat lower)
@@ -132,12 +132,12 @@ def ofNFA (nfa : NFA) : DFA :=
   -- TODO: Consider a functional rewrite for consistency with the rest of
   -- the codebase.
   Id.run do
-    let alphabet : Array CharClass := alphabet nfa
+    let alphabet : Array DFA.Interval := alphabet nfa
 
     -- The trap goes first and the start state second.
-    let mut states    : Array (Std.HashSet Nat)         := #[{}, nfa.εClosure {} 0]
-    let mut trans     : Array (Array (CharClass × Nat)) := #[]
-    let mut accepting : Std.HashMap Nat Nat             := {}
+    let mut states    : Array (Std.HashSet Nat)            := #[{}, nfa.εClosure {} 0]
+    let mut trans     : Array (Array (DFA.Interval × Nat)) := #[]
+    let mut accepting : Std.HashMap Nat Nat                := {}
 
     if let some rule := acceptingRule? nfa states[DFA.start]! then
       accepting := accepting.insert DFA.start rule
@@ -147,7 +147,7 @@ def ofNFA (nfa : NFA) : DFA :=
 
     -- `lastState` stops growing once every reached state for `current` is already in `states`.
     while current ≤ lastState do
-      let mut row : Array (CharClass × Nat) := #[]
+      let mut row : Array (DFA.Interval × Nat) := #[]
       for interval in alphabet do
         let reached := reachedOn nfa states[current]! interval
         match states.findIdx? (· == reached) with

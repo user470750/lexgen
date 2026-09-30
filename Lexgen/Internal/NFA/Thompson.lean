@@ -20,6 +20,13 @@ Defines Thompson's construction: translating a
 namespace Lexgen.Internal
 
 /--
+Translates an item of a character class of the `RegexAST` into an `NFA.Range`.
+-/
+private def CharClass.toNFA : CharClass → NFA.Range
+  | CharClass.single c          => NFA.Range.single c
+  | CharClass.range lower upper => NFA.Range.range lower upper
+
+/--
 Internal implementation of Thompson's algorithm.
 
 `offset` is passed explicitly at every step.
@@ -29,7 +36,7 @@ private def translate (offset : Nat) : RegexAST → NFA
   | RegexAST.ε =>
     { nodes := #[.edge NFA.ε (offset + 1)] }
   | RegexAST.charClass negate ranges =>
-    { nodes := #[.edge (NFA.charClass negate ranges) (offset + 1)] }
+    { nodes := #[.edge (NFA.charClass negate (ranges.map CharClass.toNFA)) (offset + 1)] }
   | RegexAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.

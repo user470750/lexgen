@@ -5,7 +5,6 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Internal.CharClass
 public import Std.Data.HashMap
 public import Std.Data.HashSet
 
@@ -20,6 +19,21 @@ Defines the DFA representation (`DFA`).
 namespace Lexgen.Internal
 
 /--
+The label type for `DFA` transitions: an interval of characters, which is a single character
+or a range of characters.
+-/
+inductive DFA.Interval where
+  /--
+  Matches the literal character `character`.
+  -/
+  | single (character : Char)
+  /--
+  Matches a character from `lower` to `upper`, inclusive.
+  -/
+  | range (lower upper : Char)
+deriving Repr, BEq
+
+/--
 The deterministic finite automaton representation.
 
 States are numbered from zero. State `DFA.trap` is the trap, from which no match can
@@ -31,7 +45,7 @@ structure DFA where
   the states they lead to. Indexed by state. No `NFA` edge tells apart two characters of one
   interval.
   -/
-  trans     : Array (Array (CharClass × Nat))
+  trans     : Array (Array (DFA.Interval × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
