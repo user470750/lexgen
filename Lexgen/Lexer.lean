@@ -34,15 +34,30 @@ instance [Repr α] : Repr (Spanned α) where
   reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
+The result of looking for the next token of an input.
+-/
+inductive Step (α : Type) where
+  /--
+  The token `token`, with its slice of the input `slice`, followed by the input `rest`.
+  -/
+  | token (token : α) (slice rest : String.Slice)
+  /--
+  There is no token: the input is empty, or only skip rules matched.
+  -/
+  | done
+  /--
+  No rule matches the input at the byte offset `offset` of the source.
+  -/
+  | error (offset : Nat)
+
+/--
 A type of tokens that can be lexed. The `lexer` command implements it for the type it declares.
 -/
 class Lexable (α : Type) where
   /--
-  Returns the first token of the input that is not matched by a skip rule, with its slice and
-  the rest of the input; `none` if there is no such token (the input is empty, or only skip
-  rules matched); or an error if no rule matches.
+  Returns the first token of the input that is not matched by a skip rule.
   -/
-  next : String.Slice → Except String (Option (Spanned α × String.Slice))
+  next : String.Slice → Step α
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
@@ -69,10 +84,12 @@ def Lexer.collectMap [Lexable α] (lexer : Lexer α) (f : Spanned α → β) :
   let mut s := lexer.rest
   let mut acc := #[]
   while !s.isEmpty do
-    let some (item, rest) ← Lexable.next s
-      | return acc
-    s   := rest
-    acc := acc.push (f item)
+    match Lexable.next s with
+    | .token token slice rest =>
+      s   := rest
+      acc := acc.push (f ⟨token, slice⟩)
+    | .done         => return acc
+    | .error offset => throw s!"offset {offset}: no rule matches the input"
   return acc
 
 /--

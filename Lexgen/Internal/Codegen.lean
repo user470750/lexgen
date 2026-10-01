@@ -160,26 +160,27 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let slice ← `(ident| slice)
   let branches ← rules.mapM fun
     | .simple name =>
-      `(doSeq| return some (⟨.$name, $slice⟩, $rest))
+      `(doSeq| return Lexgen.Step.token .$name $slice $rest)
     | .converted name valueType func => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
-      `(doSeq| return some (⟨.$name ($typedFunc $slice), $slice⟩, $rest))
+      `(doSeq| return Lexgen.Step.token (.$name ($typedFunc $slice)) $slice $rest)
     -- A skipped match is dropped, and lexing goes on after it.
     | .skip => `(doSeq| $input:ident := $rest)
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident := do
+      next $input:ident := Id.run do
         let mut $input:ident := $input
         while !$(input).isEmpty do
-          let some ($rule, $rest) := $startState $input
-            | throw s!"offset {$(input).startInclusive.offset.byteIdx}: no rule matches the input"
-          -- The token is the part of `input` before `rest`, which is a suffix of `input`.
-          let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
-          match $rule:ident with
-          $[| $ruleNums => $branches]*
-          | _ => throw "unknown rule"
-        return none
+          match ($startState $input) with
+          | some ($rule, $rest) =>
+            -- The token is the part of `input` before `rest`, which is a suffix of `input`.
+            let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
+            match $rule:ident with
+            $[| $ruleNums => $branches]*
+            | _ => return Lexgen.Step.error $(input).startInclusive.offset.byteIdx
+          | none => return Lexgen.Step.error $(input).startInclusive.offset.byteIdx
+        return Lexgen.Step.done
   )
 
 /--
