@@ -169,32 +169,34 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   -- in a match, and `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote (i + 1)
   let input  ← `(ident| input)
+  let start  ← `(ident| start)
   let best   ← `(ident| best)
   let stopAt ← `(ident| stopAt)
-  let slice  ← `($(input).sliceTo $stopAt)
-  let rest   ← `($(input).sliceFrom $stopAt)
+  -- A match never stops before it starts, so `slice!` never panics.
+  let slice  ← `($(input).slice! $start $stopAt)
   let branches ← rules.mapM fun
     | .simple name =>
-      `(Lexgen.Step.token .$name $rest)
+      `(Lexgen.Step.token .$name $stopAt)
     | .converted name valueType func => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
       -- Only a converted token needs its slice here.
-      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $rest)
-    | .skip => `(Lexgen.Step.skip $rest)
+      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $stopAt)
+    | .skip => `(Lexgen.Step.skip $stopAt)
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident :=
-        if $(input).isEmpty then
+      next $input:ident $start:ident :=
+        if $start = $(input).endPos then
           Lexgen.Step.done
         else
-          let $best:ident := $startState $input $(input).startPos 0
+          let $best:ident := $startState $input $start 0
           -- The end always comes from a position of `input`, so `pos!` never panics.
           let $stopAt:ident := $(input).pos! ⟨($best >>> 16).toNat⟩
           match ($best &&& 0xFFFF) with
           $[| $ruleNums => $branches]*
           -- Also the case of no match.
-          | _ => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
+          | _ => Lexgen.Step.error
+            ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
   )
 
 /--

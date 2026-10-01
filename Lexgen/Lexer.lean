@@ -34,19 +34,19 @@ instance [Repr α] : Repr (Spanned α) where
   reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
-The result of matching the start of an input.
+The result of matching the input `input` from a position.
 -/
-inductive Step (α : Type) where
+inductive Step (α : Type) (input : String.Slice) where
   /--
-  The token `token`, followed by the input `rest`, which is a suffix of the input.
+  The token `token`, which stops right before `stop`.
   -/
-  | token (token : α) (rest : String.Slice)
+  | token (token : α) (stop : input.Pos)
   /--
-  A skip rule matched, followed by the input `rest`.
+  A skip rule matched, and the match stops right before `stop`.
   -/
-  | skip (rest : String.Slice)
+  | skip (stop : input.Pos)
   /--
-  The input is empty.
+  The position is the end of the input.
   -/
   | done
   /--
@@ -59,9 +59,9 @@ A type of tokens that can be lexed. The `lexer` command implements it for the ty
 -/
 class Lexable (α : Type) where
   /--
-  Returns the result of the longest match at the start of the input.
+  Returns the result of the longest match in the input from the position `start`.
   -/
-  next : String.Slice → Step α
+  next : (input : String.Slice) → (start : input.Pos) → Step α input
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
@@ -83,15 +83,16 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 Returns the tokens of the whole input, if there are no errors.
 -/
 partial def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
-  collect lexer.rest #[]
+  collect lexer.rest lexer.rest.startPos #[]
 where
   /--
-  Returns `acc` followed by the tokens of `s`.
+  Returns `acc` followed by the tokens of `input` from `start`.
   -/
-  collect (s : String.Slice) (acc : Array α) : Except String (Array α) :=
-    match Lexable.next s with
-    | .token token rest => collect rest (acc.push token)
-    | .skip rest        => collect rest acc
+  collect (input : String.Slice) (start : input.Pos) (acc : Array α) :
+      Except String (Array α) :=
+    match Lexable.next input start with
+    | .token token stop => collect input stop (acc.push token)
+    | .skip stop        => collect input stop acc
     | .done             => .ok acc
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
 
@@ -99,17 +100,18 @@ where
 Returns the tokens of the whole input with their slices, if there are no errors.
 -/
 partial def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
-  collect lexer.rest #[]
+  collect lexer.rest lexer.rest.startPos #[]
 where
   /--
-  Returns `acc` followed by the tokens of `s` with their slices.
+  Returns `acc` followed by the tokens of `input` from `start` with their slices.
   -/
-  collect (s : String.Slice) (acc : Array (Spanned α)) : Except String (Array (Spanned α)) :=
-    match Lexable.next s with
-    | .token token rest =>
-      -- The token is the part of `s` before `rest`, which is a suffix of `s`.
-      collect rest (acc.push ⟨token, s.sliceTo (s.pos! (s.rawEndPos - rest))⟩)
-    | .skip rest        => collect rest acc
+  collect (input : String.Slice) (start : input.Pos) (acc : Array (Spanned α)) :
+      Except String (Array (Spanned α)) :=
+    match Lexable.next input start with
+    | .token token stop =>
+      -- A match never stops before it starts, so `slice!` never panics.
+      collect input stop (acc.push ⟨token, input.slice! start stop⟩)
+    | .skip stop        => collect input stop acc
     | .done             => .ok acc
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
 
