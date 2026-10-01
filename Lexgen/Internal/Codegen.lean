@@ -60,48 +60,54 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds the chain of `if`s on the next character of `input`, for a state with the
+Builds the chain of `if`s on the character of the slice `input` at `pos`, for a state with the
 transitions `trans`.
 -/
-private def buildTrans (input : Ident) (trans : Array (DFA.Interval × Nat)) : m Term := do
+private def buildTrans (input pos : Ident) (trans : Array (DFA.Interval × Nat)) : m Term := do
   let c ← `(ident| c)
+  -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
+  let h ← `(ident| h)
   -- No interval matched: there is nowhere to go.
   let body ← trans.foldrM (init := ← `(none)) fun (interval, next) rest => do
     -- The trap never leads to a match, so going there is the same as no transition.
     if next == DFA.trap then
       return rest
     -- A character of `interval` leads to a call of the function of state `next` on the
-    -- input without its first character.
-    let target ← `($(← stateName next) ($(input).drop 1))
+    -- position after the character.
+    let target ← `($(← stateName next) $input ($(pos).next $h))
     match interval with
     | .single character =>
       `(if $c:ident == $(quote character) then $target else $rest)
     | .range lower upper =>
       `(if $(quote lower) ≤ $c:ident && $c:ident ≤ $(quote upper) then $target else $rest)
-  -- `bind` returns `none` if the input is empty.
-  `($(input).front?.bind fun $c => $body)
+  -- At the end of the input, there is nowhere to go either.
+  `(if $h:ident : $pos ≠ $(input).endPos then
+      let $c:ident := $(pos).get $h
+      $body
+    else
+      none)
 
 /--
-Builds the function of state `state`. The generated function takes the rest of
-the input and returns the rule it matched, together with the input left after the match,
-or `none` if no rule matches.
+Builds the function of state `state`. The generated function takes the input slice `input` and
+the current position `pos` in it, and returns the rule it matched, together with the position
+where the match ends, or `none` if no rule matches.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : Array (DFA.Interval × Nat)) : m Command := do
   let funcName   ← stateName state
-  -- One name for the input, passed to every builder: otherwise nothing guarantees that
-  -- the other functions refer to the argument by the same name.
   let input      ← `(ident| input)
-  let transMatch ← buildTrans input trans
+  let pos        ← `(ident| pos)
+  let transMatch ← buildTrans input pos trans
   let body       ← if let some rule := dfa.accepting[state]? then
     -- An accepting state succeeds with its own rule even when going further fails, so
     -- that the longest match wins.
-    `(($transMatch) <|> some ($(quote rule), $input))
+    `(($transMatch) <|> some ($(quote rule), $pos))
   else
     pure transMatch
-  -- `partial` is needed for now: Lean cannot see that the input gets shorter with every
-  -- call.
-  `(partial def $funcName ($input : String.Slice) : Option (Nat × String.Slice) := $body)
+  -- `partial` is needed for now: Lean cannot see that the position grows with every call.
+  `(partial def $funcName ($input : String.Slice) ($pos : String.Slice.Pos $input) :
+      Option (Nat × String.Slice.Pos $input) :=
+    $body)
 
 /--
 Builds the functions of all states of `dfa` but the trap as one `mutual` block, since
@@ -154,11 +160,11 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   -- with a `match`: `ruleNums` are the rule numbers as literals, and `branches` are what
   -- is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
-  let input ← `(ident| input)
-  let rule  ← `(ident| rule)
-  let rest  ← `(ident| rest)
-  -- The token is the part of `input` before `rest`, which is a suffix of `input`.
-  let slice ← `($(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest)))
+  let input  ← `(ident| input)
+  let rule   ← `(ident| rule)
+  let stopAt ← `(ident| stopAt)
+  let slice  ← `($(input).sliceTo $stopAt)
+  let rest   ← `($(input).sliceFrom $stopAt)
   let branches ← rules.mapM fun
     | .simple name =>
       `(Lexgen.Step.token .$name $rest)
@@ -174,8 +180,8 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
         if $(input).isEmpty then
           Lexgen.Step.done
         else
-          match ($startState $input) with
-          | some ($rule, $rest) =>
+          match ($startState $input $(input).startPos) with
+          | some ($rule, $stopAt) =>
             match $rule:ident with
             $[| $ruleNums => $branches]*
             | _ => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
