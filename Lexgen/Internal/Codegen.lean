@@ -59,6 +59,49 @@ private def stateName (state : Nat) : m Ident := do
   -- generated code.
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
+/-!
+The state functions pass on and return the longest match packed into a `UInt64`, so that no
+object is allocated for it: the low `ruleBits` bits are its rule plus one, or zero if there is
+no match, and the bits above are the byte offset of its end in the input.
+-/
+
+/--
+The number of the low bits of a packed match that hold its rule.
+-/
+private def ruleBits : Nat := 16
+
+/--
+Returns the rule `rule` as it is packed in a match.
+-/
+private def packRule (rule : Nat) : Term :=
+  quote (rule + 1)
+
+/--
+Builds the packed match of no rule.
+-/
+private def packNoMatch : m Term :=
+  `(0)
+
+/--
+Builds the packed match of rule `rule` that ends at the position `pos`.
+-/
+private def packMatch (rule : Nat) (pos : Term) : m Term :=
+  `(($(pos).offset.byteIdx.toUInt64 <<< $(quote ruleBits)) ||| $(packRule rule))
+
+/--
+Builds the packed rule of the packed match `best`, as `packRule` returns it, or zero if there is
+no match.
+-/
+private def unpackRule (best : Term) : m Term :=
+  `($best &&& $(quote ((1 <<< ruleBits) - 1)))
+
+/--
+Builds the end of the packed match `best` as a position of the slice `input`.
+-/
+private def unpackEnd (input best : Term) : m Term :=
+  -- The end always comes from a position of `input`, so `pos!` never panics.
+  `($(input).pos! ⟨($best >>> $(quote ruleBits)).toNat⟩)
+
 /--
 Builds the chain of `if`s on the character of the slice `input` at `pos`, for a state with the
 transitions `trans`. `best` is the longest match so far, packed as the state functions return
@@ -91,12 +134,8 @@ private def buildTrans (input pos : Ident) (best : Term)
 
 /--
 Builds the function of state `state`. The generated function takes the input slice `input` and
-the current position `pos` in it, together with the longest match so far `best`, and returns
-the longest match in the same form.
-
-A match is packed into a `UInt64`, so that no object is allocated for it: the low 16 bits are
-its rule plus one, or zero if there is no match, and the bits above are the byte offset of its
-end in `input`.
+the current position `pos` in it, together with the packed longest match so far `best`, and
+returns the packed longest match.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : Array (DFA.Interval × Nat)) : m Command := do
@@ -106,9 +145,10 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
   let best  ← `(ident| best)
   let body  ← if let some rule := dfa.accepting[state]? then
     -- An accepting state is the longest match so far: going further can only replace it.
-    let here  ← `(ident| here)
-    let trans ← buildTrans input pos here trans
-    `(let $here:ident := ($(pos).offset.byteIdx.toUInt64 <<< 16) ||| $(quote (rule + 1))
+    let here   ← `(ident| here)
+    let packed ← packMatch rule pos
+    let trans  ← buildTrans input pos here trans
+    `(let $here:ident := $packed
       $trans)
   else
     buildTrans input pos best trans
@@ -165,13 +205,16 @@ Builds the `Lexable` instance of the type named `typeName`.
 private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Command := do
   let startState ← stateName DFA.start
   -- The rule number is only known when the lexer runs, so the generated code acts on it
-  -- with a `match`: `ruleNums` are the rule numbers plus one as literals, as they are packed
-  -- in a match, and `branches` are what is done for them.
-  let ruleNums : Array Term := rules.mapIdx fun i _ => quote (i + 1)
+  -- with a `match`: `ruleNums` are the rule numbers as they are packed in a match, and
+  -- `branches` are what is done for them.
+  let ruleNums : Array Term := rules.mapIdx fun i _ => packRule i
   let input  ← `(ident| input)
   let start  ← `(ident| start)
   let best   ← `(ident| best)
   let stopAt ← `(ident| stopAt)
+  let noMatch  ← packNoMatch
+  let bestEnd  ← unpackEnd input best
+  let bestRule ← unpackRule best
   -- A match never stops before it starts, so `slice!` never panics.
   let slice  ← `($(input).slice! $start $stopAt)
   let branches ← rules.mapM fun
@@ -189,10 +232,9 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
         if $start = $(input).endPos then
           Lexgen.Step.done
         else
-          let $best:ident := $startState $input $start 0
-          -- The end always comes from a position of `input`, so `pos!` never panics.
-          let $stopAt:ident := $(input).pos! ⟨($best >>> 16).toNat⟩
-          match ($best &&& 0xFFFF) with
+          let $best:ident := $startState $input $start $noMatch
+          let $stopAt:ident := $bestEnd
+          match ($bestRule) with
           $[| $ruleNums => $branches]*
           -- Also the case of no match.
           | _ => Lexgen.Step.error
