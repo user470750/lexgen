@@ -61,52 +61,57 @@ private def stateName (state : Nat) : m Ident := do
 
 /--
 Builds the chain of `if`s on the character of the slice `input` at `pos`, for a state with the
-transitions `trans`.
+transitions `trans`. `bestRule` is the rule of the longest match so far, or `none` if there is
+none yet, and `bestEnd` the position where it ends: they are passed on to the next state, and
+returned when there is nowhere to go.
 -/
-private def buildTrans (input pos : Ident) (trans : Array (DFA.Interval × Nat)) : m Term := do
+private def buildTrans (input pos : Ident) (bestRule bestEnd : Term)
+    (trans : Array (DFA.Interval × Nat)) : m Term := do
   let c ← `(ident| c)
   -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
   let h ← `(ident| h)
-  -- No interval matched: there is nowhere to go.
-  let body ← trans.foldrM (init := ← `(none)) fun (interval, next) rest => do
+  -- No interval matched: the longest match is the one so far.
+  let body ← trans.foldrM (init := ← `(($bestRule, $bestEnd))) fun (interval, next) rest => do
     -- The trap never leads to a match, so going there is the same as no transition.
     if next == DFA.trap then
       return rest
     -- A character of `interval` leads to a call of the function of state `next` on the
     -- position after the character.
-    let target ← `($(← stateName next) $input ($(pos).next $h))
+    let target ← `($(← stateName next) $input ($(pos).next $h) $bestRule $bestEnd)
     match interval with
     | .single character =>
       `(if $c:ident == $(quote character) then $target else $rest)
     | .range lower upper =>
       `(if $(quote lower) ≤ $c:ident && $c:ident ≤ $(quote upper) then $target else $rest)
-  -- At the end of the input, there is nowhere to go either.
+  -- At the end of the input, the longest match is also the one so far.
   `(if $h:ident : $pos ≠ $(input).endPos then
       let $c:ident := $(pos).get $h
       $body
     else
-      none)
+      ($bestRule, $bestEnd))
 
 /--
 Builds the function of state `state`. The generated function takes the input slice `input` and
-the current position `pos` in it, and returns the rule it matched, together with the position
-where the match ends, or `none` if no rule matches.
+the current position `pos` in it, together with the longest match so far: its rule, or `none`
+if there is none yet, and the position where it ends. It returns the longest match in the same
+form.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : Array (DFA.Interval × Nat)) : m Command := do
-  let funcName   ← stateName state
-  let input      ← `(ident| input)
-  let pos        ← `(ident| pos)
-  let transMatch ← buildTrans input pos trans
-  let body       ← if let some rule := dfa.accepting[state]? then
-    -- An accepting state succeeds with its own rule even when going further fails, so
-    -- that the longest match wins.
-    `(($transMatch) <|> some ($(quote rule), $pos))
+  let funcName ← stateName state
+  let input    ← `(ident| input)
+  let pos      ← `(ident| pos)
+  let lastRule ← `(ident| lastRule)
+  let lastEnd  ← `(ident| lastEnd)
+  let body     ← if let some rule := dfa.accepting[state]? then
+    -- An accepting state is the longest match so far: going further can only replace it.
+    buildTrans input pos (← `(some $(quote rule))) pos trans
   else
-    pure transMatch
+    buildTrans input pos lastRule lastEnd trans
   -- `partial` is needed for now: Lean cannot see that the position grows with every call.
-  `(partial def $funcName ($input : String.Slice) ($pos : String.Slice.Pos $input) :
-      Option (Nat × String.Slice.Pos $input) :=
+  `(partial def $funcName ($input : String.Slice) ($pos : String.Slice.Pos $input)
+      ($lastRule : Option Nat) ($lastEnd : String.Slice.Pos $input) :
+      Option Nat × String.Slice.Pos $input :=
     $body)
 
 /--
@@ -180,12 +185,12 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
         if $(input).isEmpty then
           Lexgen.Step.done
         else
-          match ($startState $input $(input).startPos) with
-          | some ($rule, $stopAt) =>
+          match ($startState $input $(input).startPos none $(input).startPos) with
+          | (some $rule, $stopAt) =>
             match $rule:ident with
             $[| $ruleNums => $branches]*
             | _ => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
-          | none => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
+          | (none, _) => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
   )
 
 /--
