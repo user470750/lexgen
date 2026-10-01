@@ -157,30 +157,29 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let input ← `(ident| input)
   let rule  ← `(ident| rule)
   let rest  ← `(ident| rest)
-  let slice ← `(ident| slice)
+  -- The token is the part of `input` before `rest`, which is a suffix of `input`.
+  let slice ← `($(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest)))
   let branches ← rules.mapM fun
     | .simple name =>
-      `(doSeq| return Lexgen.Step.token .$name $slice $rest)
+      `(Lexgen.Step.token .$name $rest)
     | .converted name valueType func => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
-      `(doSeq| return Lexgen.Step.token (.$name ($typedFunc $slice)) $slice $rest)
-    -- A skipped match is dropped, and lexing goes on after it.
-    | .skip => `(doSeq| $input:ident := $rest)
+      -- Only a converted token needs its slice here.
+      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $rest)
+    | .skip => `(Lexgen.Step.skip $rest)
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident := Id.run do
-        let mut $input:ident := $input
-        while !$(input).isEmpty do
+      next $input:ident :=
+        if $(input).isEmpty then
+          Lexgen.Step.done
+        else
           match ($startState $input) with
           | some ($rule, $rest) =>
-            -- The token is the part of `input` before `rest`, which is a suffix of `input`.
-            let $slice:ident := $(input).sliceTo ($(input).pos! ($(input).rawEndPos - $rest))
             match $rule:ident with
             $[| $ruleNums => $branches]*
-            | _ => return Lexgen.Step.error $(input).startInclusive.offset.byteIdx
-          | none => return Lexgen.Step.error $(input).startInclusive.offset.byteIdx
-        return Lexgen.Step.done
+            | _ => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
+          | none => Lexgen.Step.error $(input).startInclusive.offset.byteIdx
   )
 
 /--
