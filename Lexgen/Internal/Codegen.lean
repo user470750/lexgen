@@ -167,7 +167,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let input  ← `(ident| input)
   let start  ← `(ident| start)
-  let rule   ← `(ident| rule)
+  let packed ← `(ident| packed)
   let stopAt ← `(ident| stopAt)
   -- A match never stops before it starts, so `slice!` never panics.
   let slice  ← `($(input).slice! $start $stopAt)
@@ -182,8 +182,10 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
     | .skip => `(Lexgen.Step.skip $stopAt)
   `(
     instance : Lexgen.Lexable $typeName where
-      next := Lexgen.Internal.nextWith $startState fun $input $start $stopAt $rule =>
-        match $rule:ident with
+      next $input:ident $start:ident :=
+        let $packed:ident := $startState $input $start .noMatch
+        let $stopAt:ident := $(packed).stop
+        match ($(packed).rule) with
         $[| $ruleNums => $branches]*
         -- No match: `Packed.rule` returns a number that no rule has. No rule matches the empty
         -- string, so this is also the case at the end of the input, which is checked only here.
