@@ -104,11 +104,8 @@ def Internal.nextWith
       (input : String.Slice) → input.Pos → Internal.Packed input → Internal.Packed input)
     (action : (input : String.Slice) → (start stop : input.Pos) → UInt64 → Step α input)
     (input : String.Slice) (start : input.Pos) : Step α input :=
-  if start = input.endPos then
-    .done
-  else
-    let packed := startState input start .noMatch
-    action input start packed.stop packed.rule
+  let packed := startState input start .noMatch
+  action input start packed.stop packed.rule
 
 /--
 Encapsulates lexing a string into tokens of type `α`.

@@ -185,9 +185,13 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
       next := Lexgen.Internal.nextWith $startState fun $input $start $stopAt $rule =>
         match $rule:ident with
         $[| $ruleNums => $branches]*
-        -- No match: `Packed.rule` returns a number that no rule has.
-        | _ => Lexgen.Step.error
-          ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
+        -- No match: `Packed.rule` returns a number that no rule has. No rule matches the empty
+        -- string, so this is also the case at the end of the input, which is checked only here.
+        | _ =>
+          if $start = $(input).endPos then
+            Lexgen.Step.done
+          else
+            Lexgen.Step.error ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
   )
 
 /--
