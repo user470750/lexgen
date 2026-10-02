@@ -5,16 +5,13 @@ Authors: Oleg Shabanov
 -/
 module
 
-public import Lexgen.Internal.Pack
-
 public section
 
 /-!
 # Lexer
 
 Defines `Lexer`, which encapsulates lexing a string and provides functions to get the result,
-and `Lexable`, implemented for every token type declared with `lexer`, together with
-`Lexgen.Internal.nextWith`, the part of its implementation that is the same for every lexer.
+and `Lexable`, implemented for every token type declared with `lexer`.
 -/
 
 namespace Lexgen
@@ -94,18 +91,6 @@ class Lexable (α : Type) where
   Returns the result of the longest match in the input from the position `start`.
   -/
   next : (input : String.Slice) → (start : input.Pos) → Step α input
-
-/--
-Returns the result of one step of lexing the input `input` from the position `start`.
--/
-@[inline]
-def Internal.nextWith
-    (startState :
-      (input : String.Slice) → input.Pos → Internal.Packed input → Internal.Packed input)
-    (action : (input : String.Slice) → (start stop : input.Pos) → UInt64 → Step α input)
-    (input : String.Slice) (start : input.Pos) : Step α input :=
-  let packed := startState input start .noMatch
-  action input start packed.stop packed.rule
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
