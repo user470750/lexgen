@@ -167,7 +167,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let input  ← `(ident| input)
   let start  ← `(ident| start)
-  let best   ← `(ident| best)
+  let rule   ← `(ident| rule)
   let stopAt ← `(ident| stopAt)
   -- A match never stops before it starts, so `slice!` never panics.
   let slice  ← `($(input).slice! $start $stopAt)
@@ -182,17 +182,12 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
     | .skip => `(Lexgen.Step.skip $stopAt)
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident $start:ident :=
-        if $start = $(input).endPos then
-          Lexgen.Step.done
-        else
-          let $best:ident   := $startState $input $start Lexgen.Internal.noMatch
-          let $stopAt:ident := Lexgen.Internal.unpackEnd $input $best
-          match (Lexgen.Internal.unpackRule $best) with
-          $[| $ruleNums => $branches]*
-          -- No match: `unpackRule` returns a number that no rule has.
-          | _ => Lexgen.Step.error
-            ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
+      next := Lexgen.Internal.nextWith $startState fun $input $start $stopAt $rule =>
+        match $rule:ident with
+        $[| $ruleNums => $branches]*
+        -- No match: `unpackRule` returns a number that no rule has.
+        | _ => Lexgen.Step.error
+          ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
   )
 
 /--
