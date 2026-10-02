@@ -103,10 +103,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
   let best  ← `(ident| best)
   let body  ← if let some rule := dfa.accepting[state]? then
     -- An accepting state is the longest match so far: going further can only replace it.
-    let here  ← `(ident| here)
-    let trans ← buildTrans input pos here trans
-    `(let $here:ident := Lexgen.Internal.Packed.ofMatch $(quote rule) $pos
-      $trans)
+    buildTrans input pos (← `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)) trans
   else
     buildTrans input pos best trans
   -- `partial` is needed for now: Lean cannot see that the position grows with every call.
