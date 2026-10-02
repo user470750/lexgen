@@ -105,13 +105,13 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
     -- An accepting state is the longest match so far: going further can only replace it.
     let here  ← `(ident| here)
     let trans ← buildTrans input pos here trans
-    `(let $here:ident := Lexgen.Internal.packMatch $(quote rule) $pos
+    `(let $here:ident := Lexgen.Internal.Packed.ofMatch $(quote rule) $pos
       $trans)
   else
     buildTrans input pos best trans
   -- `partial` is needed for now: Lean cannot see that the position grows with every call.
   `(partial def $funcName ($input : String.Slice) ($pos : String.Slice.Pos $input)
-      ($best : UInt64) : UInt64 :=
+      ($best : Lexgen.Internal.Packed $input) : Lexgen.Internal.Packed $input :=
     $body)
 
 /--
@@ -185,7 +185,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
       next := Lexgen.Internal.nextWith $startState fun $input $start $stopAt $rule =>
         match $rule:ident with
         $[| $ruleNums => $branches]*
-        -- No match: `unpackRule` returns a number that no rule has.
+        -- No match: `Packed.rule` returns a number that no rule has.
         | _ => Lexgen.Step.error
           ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
   )

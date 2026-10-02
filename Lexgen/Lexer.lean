@@ -99,14 +99,16 @@ class Lexable (α : Type) where
 Returns the result of one step of lexing the input `input` from the position `start`.
 -/
 @[inline]
-def Internal.nextWith (startState : (input : String.Slice) → input.Pos → UInt64 → UInt64)
+def Internal.nextWith
+    (startState :
+      (input : String.Slice) → input.Pos → Internal.Packed input → Internal.Packed input)
     (action : (input : String.Slice) → (start stop : input.Pos) → UInt64 → Step α input)
     (input : String.Slice) (start : input.Pos) : Step α input :=
   if start = input.endPos then
     .done
   else
-    let packed := startState input start Internal.noMatch
-    action input start (Internal.unpackEnd input packed) (Internal.unpackRule packed)
+    let packed := startState input start .noMatch
+    action input start packed.stop packed.rule
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
