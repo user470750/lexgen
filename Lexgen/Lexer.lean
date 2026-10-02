@@ -17,17 +17,46 @@ and `Lexable`, implemented for every token type declared with `lexer`.
 namespace Lexgen
 
 /--
-A token together with its slice of the source.
+A token together with its position in the source.
 -/
 structure Spanned (α : Type) where
+  private mk ::
   /--
   The token.
   -/
   token : α
   /--
-  The token's slice of the source, which also gives its position.
+  The whole input the token comes from.
   -/
-  slice : String.Slice
+  private source : String.Slice
+  /--
+  The position in `source` where the token starts.
+  -/
+  private start : source.Pos
+  /--
+  The position in `source` right after the token.
+  -/
+  private stop : source.Pos
+
+/--
+Returns the token's slice of the source.
+-/
+def Spanned.slice (s : Spanned α) : String.Slice :=
+  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!`
+  -- never panics.
+  s.source.slice! s.start s.stop
+
+/--
+Returns the byte offset in the source string where the token starts.
+-/
+def Spanned.startOffset (s : Spanned α) : Nat :=
+  s.source.startInclusive.offset.byteIdx + s.start.offset.byteIdx
+
+/--
+Returns the byte offset in the source string right after the token.
+-/
+def Spanned.stopOffset (s : Spanned α) : Nat :=
+  s.source.startInclusive.offset.byteIdx + s.stop.offset.byteIdx
 
 -- `String.Slice` has no `Repr`, so the slice is shown by its text.
 instance [Repr α] : Repr (Spanned α) where
@@ -97,20 +126,18 @@ where
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
 
 /--
-Returns the tokens of the whole input with their slices, if there are no errors.
+Returns the tokens of the whole input with their positions, if there are no errors.
 -/
 partial def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
   collect lexer.rest lexer.rest.startPos #[]
 where
   /--
-  Returns `acc` followed by the tokens of `input` from `start` with their slices.
+  Returns `acc` followed by the tokens of `input` from `start` with their positions.
   -/
   collect (input : String.Slice) (start : input.Pos) (acc : Array (Spanned α)) :
       Except String (Array (Spanned α)) :=
     match Lexable.next input start with
-    | .token token stop =>
-      -- A match never stops before it starts, so `slice!` never panics.
-      collect input stop (acc.push ⟨token, input.slice! start stop⟩)
+    | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)
     | .skip stop        => collect input stop acc
     | .done             => .ok acc
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
