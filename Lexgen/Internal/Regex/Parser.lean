@@ -40,7 +40,7 @@ private def rangeSep           : Parser Unit := skipChar '-'
 /--
 `dot := "."`
 
-Parser for the dot metacharacter, matching any character.
+Parser for the dot metacharacter, matching any character but `\n`.
 -/
 private def dot : Parser RegexSyntax :=
   pchar '.' *> pure .dot

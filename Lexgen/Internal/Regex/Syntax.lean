@@ -103,7 +103,7 @@ inductive RegexSyntax where
   -/
   | namedClass (kind : NamedClass)
   /--
-  Matches any single character.
+  Matches any character but `\n`.
   -/
   | dot
   /--
