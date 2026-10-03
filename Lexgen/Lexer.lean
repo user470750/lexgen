@@ -98,9 +98,9 @@ Encapsulates lexing a string into tokens of type `α`.
 structure Lexer (α : Type) [Lexable α] where
   private mk ::
   /--
-  The input not lexed yet.
+  The input to lex.
   -/
-  private rest : String.Slice
+  private source : String.Slice
 
 /--
 Creates a lexer for `source`.
@@ -112,7 +112,7 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 Returns the tokens of the whole input, if there are no errors.
 -/
 partial def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
-  collect lexer.rest lexer.rest.startPos #[]
+  collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start`.
@@ -129,7 +129,7 @@ where
 Returns the tokens of the whole input with their positions, if there are no errors.
 -/
 partial def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
-  collect lexer.rest lexer.rest.startPos #[]
+  collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start` with their positions.
