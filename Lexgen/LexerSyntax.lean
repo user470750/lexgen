@@ -26,7 +26,7 @@ Defines the `lexer` command: its syntax and its elaboration.
 namespace Lexgen
 
 /--
-A token rule of the `lexer` command.
+Token rules of the `lexer` command
 -/
 declare_syntax_cat lexgenRule
 
