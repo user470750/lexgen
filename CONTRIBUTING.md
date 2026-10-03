@@ -14,8 +14,7 @@ match it rather than introducing a new one.
   /-!
   # Thompson's construction
 
-  Defines Thompson's construction: translating a
-  `RegexAST` into an `NFA`.
+  Defines Thompson's construction: translating a `RegexAST` into an `NFA`.
   -/
   ```
 
@@ -26,6 +25,8 @@ match it rather than introducing a new one.
 * Non-obvious steps inside a definition are explained with `--` comments; open
   questions are marked with `TODO:`.
 * Identifiers and type names in comments are wrapped in backticks, e.g. `NFA`.
+
+**Line length.** Lines are at most 100 characters long, including docstrings and comments.
 
 **Alignment.** Aligning `:=`, `:` and `=>` across adjacent `let` bindings, structure
 fields and `match` arms is encouraged:
