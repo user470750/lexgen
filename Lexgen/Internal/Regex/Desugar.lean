@@ -21,7 +21,7 @@ namespace Lexgen.Internal
 /--
 Builds a chain of `n` copies of `re` concatenated together.
 
-Produces `.ε` (the empty match) if `n` (repetitions) is zero.
+Produces `.ε` if `n` is zero.
 
 Used for the required part of a `{n,m}` range.
 -/
