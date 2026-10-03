@@ -282,7 +282,7 @@ private partial def atom : Parser RegexSyntax :=
 /--
 `subExpr := "(" alt ")"`
 
-Parser for an expression in parenthesis.
+Parser for an expression in parentheses.
 -/
 private partial def subExpr : Parser RegexSyntax :=
   leftParen *> alt <* (rightParen <|> fail "missing ), unterminated subpattern")
