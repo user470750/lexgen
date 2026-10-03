@@ -17,8 +17,7 @@ open Std.Internal.Parsec Std.Internal.Parsec.String
 /-!
 # Regular expression parser
 
-Defines a recursive-descent parser for regular expressions,
-built using parser combinators.
+Defines a recursive-descent parser for regular expressions, built using parser combinators.
 -/
 
 namespace Lexgen.Internal
@@ -109,8 +108,8 @@ private def symbol : Parser RegexSyntax := do
   return .symbol sym
 
 /--
-String containing all metacharacters in character class grammar. Other metacharacters are
-literal inside a character class.
+String containing all metacharacters in character class grammar. Other metacharacters are literal
+inside a character class.
 -/
 private def classMetaChars : String := "\\[]^-"
 
@@ -140,8 +139,8 @@ private def classChar : Parser Char :=
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
 
 /--
-Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces
-a `range` item.
+Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces a `range`
+item.
 -/
 private def charClassRange (lower : Char) : Parser ClassItem := do
   rangeSep
@@ -216,16 +215,15 @@ private def rangeQuantifier : Parser Quantity := do
   return spec
 
 /--
-Takes the already-parsed atom `re`, parses a `Quantity`, and produces
-a `repeated` CST node.
+Takes the already-parsed atom `re`, parses a `Quantity`, and produces a `repeated` CST node.
 -/
 private def quantifiedByRange (re : RegexSyntax) : Parser RegexSyntax := do
   let quantity ← rangeQuantifier
   return .repeated quantity re
 
 /--
-Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
-appears with no preceding atom to repeat.
+Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`) appears with no preceding
+atom to repeat.
 -/
 private def nothingToRepeat : Parser RegexSyntax :=
   (discard starQuantifier     <|>

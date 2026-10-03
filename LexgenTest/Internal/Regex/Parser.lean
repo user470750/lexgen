@@ -8,8 +8,7 @@ import Lexgen.Internal.Regex.Parser
 /-!
 # Tests for the regular expression parser
 
-Checks the `RegexSyntax` produced by `parseRegex`, and that invalid patterns are
-rejected.
+Checks the `RegexSyntax` produced by `parseRegex`, and that invalid patterns are rejected.
 -/
 
 open Lexgen.Internal

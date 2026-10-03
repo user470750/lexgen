@@ -10,8 +10,8 @@ public section
 /-!
 # Lexer
 
-Defines `Lexer`, which encapsulates lexing a string and provides functions to get the result,
-and `Lexable`, implemented for every token type declared with `lexer`.
+Defines `Lexer`, which encapsulates lexing a string and provides functions to get the result, and
+`Lexable`, implemented for every token type declared with `lexer`.
 -/
 
 namespace Lexgen
@@ -42,8 +42,8 @@ structure Spanned (α : Type) where
 Returns the token's slice of the source.
 -/
 def Spanned.slice (s : Spanned α) : String.Slice :=
-  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!`
-  -- never panics.
+  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!` never
+  -- panics.
   s.source.slice! s.start s.stop
 
 /--

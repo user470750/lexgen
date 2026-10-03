@@ -71,8 +71,8 @@ private unsafe def Packed.stopUnsafe {input : String.Slice} (packed : Packed inp
 Returns the position packed in `packed`, as a position of its input.
 
 Only `Packed.noMatch` and `Packed.ofMatch` build a `Packed`, so the position in it is always one of
-the input, as long as the input is shorter than `2 ^ (64 - ruleBits)` bytes. The code that runs
-does not check it, unlike `pos!` here.
+the input, as long as the input is shorter than `2 ^ (64 - ruleBits)` bytes. The code that runs does
+not check it, unlike `pos!` here.
 -/
 @[implemented_by Packed.stopUnsafe, inline]
 def Packed.stop {input : String.Slice} (packed : Packed input) : input.Pos :=

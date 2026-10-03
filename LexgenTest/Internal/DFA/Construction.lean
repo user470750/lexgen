@@ -13,12 +13,12 @@ Checks the `DFA` produced by `DFA.ofNFA` for basic regular expressions.
 
 open Lexgen.Internal
 
--- The `NFA` inputs are the ones produced by Thompson's construction for the
--- regexes given in the comments.
+-- The `NFA` inputs are the ones produced by Thompson's construction for the regexes given in the
+-- comments.
 
--- Each row is total: one entry per alphabet interval. State 0 is always the trap —
--- the empty set of `NFA` states, reached when no edge matches — looping back to
--- itself, and state 1 is the start state.
+-- Each row is total: one entry per alphabet interval. State 0 is always the trap — the empty set of
+-- `NFA` states, reached when no edge matches — looping back to itself, and state 1 is the start
+-- state.
 
 /--
 The characters above the surrogates: the last interval of every alphabet.
@@ -58,9 +58,9 @@ DFA.ofNFA { nodes := #[.edge (.charClass true #[.single '\n']) 1, .done 0] } ==
   accepting := Std.HashMap.ofList [(2, 0)]
 }
 
--- The `NFA` has no `charClass` edges, so the alphabet is just the characters below and
--- above the surrogates, and every state goes to the trap on them. State 1 accepts because
--- its ε-closure reaches `done`.
+-- The `NFA` has no `charClass` edges, so the alphabet is just the characters below and above the
+-- surrogates, and every state goes to the trap on them. State 1 accepts because its ε-closure
+-- reaches `done`.
 #guard
 DFA.ofNFA { nodes := #[.edge .ε 1, .done 0] } ==
 {
@@ -150,8 +150,8 @@ DFA.ofNFA {
   accepting := Std.HashMap.ofList [(1, 0), (2, 0)]
 }
 
--- The two cases below mix a literal with `.`, so reading `'a'` has to follow
--- the edge of `.` as well, not only the edge of the literal.
+-- The two cases below mix a literal with `.`, so reading `'a'` has to follow the edge of `.` as
+-- well, not only the edge of the literal.
 
 -- ".a"
 #guard

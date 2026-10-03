@@ -31,8 +31,7 @@ private def repeatConcat (n : Nat) (re : RegexAST) : RegexAST :=
   | m + 1 => (List.replicate m re).foldl .concat re
 
 /--
-Builds a chain of `n` optional copies of `re`, allowing to match
-at most `n` times.
+Builds a chain of `n` optional copies of `re`, allowing to match at most `n` times.
 
 Used for the optional part of a `{n,m}` range.
 -/
@@ -89,8 +88,7 @@ private def ClassItem.desugar : ClassItem → Array CharClass
 /--
 Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
 
-Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the
-basic AST constructors.
+Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the basic AST constructors.
 -/
 def RegexSyntax.desugar : RegexSyntax → RegexAST
   | RegexSyntax.alt left right =>

@@ -10,8 +10,7 @@ public section
 /-!
 # Regex AST
 
-Defines the abstract syntax tree (`RegexAST`)
-for regular expressions.
+Defines the abstract syntax tree (`RegexAST`) for regular expressions.
 -/
 
 namespace Lexgen.Internal
@@ -33,8 +32,7 @@ deriving Repr, DecidableEq
 /--
 The AST representation of regular expressions.
 
-AST covers only basic regex constructs, while
-others are desugared into them.
+AST covers only basic regex constructs, while others are desugared into them.
 -/
 inductive RegexAST where
   /--

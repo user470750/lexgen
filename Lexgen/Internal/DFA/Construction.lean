@@ -16,18 +16,17 @@ public section
 /-!
 # DFA construction
 
-Defines `DFA.ofNFA`: translating an `NFA` into a `DFA` using the
-subset construction.
+Defines `DFA.ofNFA`: translating an `NFA` into a `DFA` using the subset construction.
 -/
 
 namespace Lexgen.Internal
 
 /--
-Returns `visited` extended with the ε-closure of `node`: the states reachable
-from `node` (including `node` itself) via ε-transitions.
+Returns `visited` extended with the ε-closure of `node`: the states reachable from `node` (including
+`node` itself) via ε-transitions.
 
-States already in `visited` are not explored again, so `visited` is assumed to
-contain the ε-closure of each of its states.
+States already in `visited` are not explored again, so `visited` is assumed to contain the ε-closure
+of each of its states.
 -/
 -- TODO: Prove termination. An `Array` may be needed instead of a `HashSet`.
 private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node : Nat) :
@@ -42,9 +41,8 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
     | .done _                 => newVisited
     | .edge (.charClass ..) _ => newVisited
     | .edge .ε next           => nfa.εClosure newVisited next
-    -- When constructing the ε-closure for `next₂`,
-    -- the states in the ε-closure of `next₁`
-    -- have already been marked as visited.
+    -- When constructing the ε-closure for `next₂`, the states in the ε-closure of `next₁` have
+    -- already been marked as visited.
     | .split next₁ next₂      => nfa.εClosure (nfa.εClosure newVisited next₁) next₂
 
 /--
@@ -59,8 +57,8 @@ private def step (interval : DFA.Interval) : NFA.Node → List Nat
 namespace DFA
 
 /--
-Maps a set of states to the new set of states reachable via a transition
-on `interval` followed by an unbounded number of ε-transitions.
+Maps a set of states to the new set of states reachable via a transition on `interval` followed by
+an unbounded number of ε-transitions.
 -/
 private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : DFA.Interval) :
     Std.HashSet Nat :=
@@ -68,12 +66,11 @@ private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : DFA.Int
   raw.foldl nfa.εClosure {}
 
 /--
-Returns the alphabet of `nfa`: sorted, disjoint intervals covering every character, such that
-no edge of `nfa` tells apart two characters of one interval.
+Returns the alphabet of `nfa`: sorted, disjoint intervals covering every character, such that no
+edge of `nfa` tells apart two characters of one interval.
 
-The intervals are cut where some character class starts or stops matching, at `0` and
-`0x110000`, which bound all characters, and at `0xD800` and `0xE000`, which bound the
-surrogates.
+The intervals are cut where some character class starts or stops matching, at `0` and `0x110000`,
+which bound all characters, and at `0xD800` and `0xE000`, which bound the surrogates.
 -/
 private def alphabet (nfa : NFA) : Array DFA.Interval :=
   let bounds :=
@@ -95,8 +92,8 @@ where
         | .range lower upper => #[lower.toNat, upper.toNat + 1])
     | _ => none
   /--
-  Returns the `DFA.Interval` of the characters from the code point `lower` to `upper`,
-  inclusive: a `single` if there is only one.
+  Returns the `DFA.Interval` of the characters from the code point `lower` to `upper`, inclusive: a
+  `single` if there is only one.
   -/
   formInterval : Nat × Nat → DFA.Interval
     | (lower, upper) =>
@@ -106,11 +103,11 @@ where
         .range (Char.ofNat lower) (Char.ofNat upper)
 
 /--
-Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none`
-if none of its `NFA` states is accepting.
+Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none` if none of its `NFA`
+states is accepting.
 
-When several rules are accepted, the one with the smallest number
-(rule declared earlier) takes priority.
+When several rules are accepted, the one with the smallest number (rule declared earlier) takes
+priority.
 -/
 private def acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :=
   let rules := states.toList.filterMap fun state =>
@@ -124,13 +121,11 @@ private def acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :
 Translates an `NFA` into a `DFA` using the subset construction.
 -/
 def ofNFA (nfa : NFA) : DFA :=
-  -- The subset construction is an established imperative algorithm:
-  -- `states`, `trans` and `accepting` all need to be mutated while building
-  -- the `DFA`.
-  -- `while`/`for` loops are simpler here than splitting the logic into a
-  -- bunch of recursive helper functions, which would be more verbose.
-  -- TODO: Consider a functional rewrite for consistency with the rest of
-  -- the codebase.
+  -- The subset construction is an established imperative algorithm: `states`, `trans` and
+  -- `accepting` all need to be mutated while building the `DFA`. `while`/`for` loops are simpler
+  -- here than splitting the logic into a bunch of recursive helper functions, which would be more
+  -- verbose.
+  -- TODO: Consider a functional rewrite for consistency with the rest of the codebase.
   Id.run do
     let alphabet : Array DFA.Interval := alphabet nfa
 

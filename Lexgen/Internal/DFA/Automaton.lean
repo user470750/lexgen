@@ -19,8 +19,8 @@ Defines the DFA representation (`DFA`).
 namespace Lexgen.Internal
 
 /--
-The label type for `DFA` transitions: an interval of characters, which is a single character
-or a range of characters.
+The label type for `DFA` transitions: an interval of characters, which is a single character or a
+range of characters.
 -/
 inductive DFA.Interval where
   /--
@@ -36,14 +36,13 @@ deriving Repr, BEq
 /--
 The deterministic finite automaton representation.
 
-States are numbered from zero. State `DFA.trap` is the trap, from which no match can
-be reached, and state `DFA.start` is the start state.
+States are numbered from zero. State `DFA.trap` is the trap, from which no match can be reached, and
+state `DFA.start` is the start state.
 -/
 structure DFA where
   /--
-  Transition table: for every state, the intervals of characters leaving it together with
-  the states they lead to. Indexed by state. No `NFA` edge tells apart two characters of one
-  interval.
+  Transition table: for every state, the intervals of characters leaving it together with the states
+  they lead to. Indexed by state. No `NFA` edge tells apart two characters of one interval.
   -/
   trans     : Array (Array (DFA.Interval × Nat))
   /--
@@ -55,8 +54,8 @@ deriving Repr, BEq
 namespace DFA
 
 /--
-The number of the trap state: the empty set of `NFA` states, reached when no edge
-matches, and looping back to itself on every interval.
+The number of the trap state: the empty set of `NFA` states, reached when no edge matches, and
+looping back to itself on every interval.
 -/
 abbrev trap : Nat := 0
 

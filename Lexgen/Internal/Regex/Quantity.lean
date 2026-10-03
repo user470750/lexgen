@@ -18,8 +18,7 @@ namespace Lexgen.Internal
 /--
 A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
 
-It can be used in certain parsers to specify
-how many times an item is expected to appear.
+It can be used in certain parsers to specify how many times an item is expected to appear.
 -/
 structure Quantity where
   /--
@@ -69,8 +68,7 @@ Creates a `Quantity` requiring an exact number of occurrences.
 def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
 
 /--
-Checks whether a `Quantity`'s bounds are well-formed,
-i.e. `minimum <= maximum`.
+Checks whether a `Quantity`'s bounds are well-formed, i.e. `minimum <= maximum`.
 -/
 def Quantity.inOrder : Quantity → Bool
   | { minimum := _, maximum := none }   => true
