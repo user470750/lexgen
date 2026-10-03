@@ -59,8 +59,8 @@ def Packed.rule {input : String.Slice} (packed : Packed input) : UInt64 :=
   (packed.bits &&& ((1 <<< ruleBits.toUInt64) - 1)) - 1
 
 /--
-Returns the position packed in `packed` without checking that it is one of its input, which
-`Packed.stop` implements.
+Returns the position packed in `packed` without checking that it is one of its input: the
+implementation of `Packed.stop`.
 -/
 @[inline]
 private unsafe def Packed.stopUnsafe {input : String.Slice} (packed : Packed input) : input.Pos :=
@@ -71,8 +71,8 @@ private unsafe def Packed.stopUnsafe {input : String.Slice} (packed : Packed inp
 Returns the position packed in `packed`, as a position of its input.
 
 Only `Packed.noMatch` and `Packed.ofMatch` build a `Packed`, so the position in it is always one of
-the input, as long as the input is shorter than `2 ^ (64 - ruleBits)` bytes. The code that runs does
-not check it, unlike `pos!` here.
+the input, as long as the input is shorter than `2 ^ (64 - ruleBits)` bytes. Compiled code calls
+`Packed.stopUnsafe` instead, which skips the check.
 -/
 @[implemented_by Packed.stopUnsafe, inline]
 def Packed.stop {input : String.Slice} (packed : Packed input) : input.Pos :=
