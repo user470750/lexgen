@@ -16,9 +16,7 @@ open Lexgen.Internal
 -- The `NFA` inputs are the ones produced by Thompson's construction for the regexes given in the
 -- comments.
 
--- Each row is total: one entry per alphabet interval. State 0 is always the trap — the empty set of
--- `NFA` states, reached when no edge matches — looping back to itself, and state 1 is the start
--- state.
+-- Each row is total: one entry per alphabet interval.
 
 /--
 The characters above the surrogates: the last interval of every alphabet.
