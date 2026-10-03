@@ -13,6 +13,12 @@ import Lexgen.Internal.Regex.Syntax
 
 public section
 
+/-!
+# Regular expressions
+
+Defines `parse`, which parses a regular expression and desugars it into a `RegexAST`.
+-/
+
 namespace Lexgen.Internal
 
 /--
