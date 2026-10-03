@@ -77,8 +77,6 @@ private def simpleEscape : Parser Char := do
     | _   => c               -- impossible due to satisfy predicate
 
 /--
-`classEscape := "\" ("d" | "D" | "w" | "W" | "s" | "S")`
-
 Parser for escape sequences of named character classes.
 -/
 private def classEscape : Parser NamedClass := do
