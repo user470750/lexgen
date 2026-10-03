@@ -30,17 +30,17 @@ structure Quantity where
 deriving Repr, DecidableEq
 
 /--
-Creates a `Quantity` without bounds.
+A `Quantity` without bounds.
 -/
 def Quantity.zeroOrMore : Quantity := { minimum := 0, maximum := none }
 
 /--
-Creates a `Quantity` with a lower bound of one and no upper bound.
+A `Quantity` with a lower bound of one and no upper bound.
 -/
 def Quantity.oneOrMore : Quantity := { minimum := 1, maximum := none }
 
 /--
-Creates a `Quantity` from zero to one.
+A `Quantity` from zero to one.
 -/
 def Quantity.optionalOne : Quantity := { minimum := 0, maximum := some 1 }
 
