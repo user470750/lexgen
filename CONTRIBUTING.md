@@ -19,7 +19,7 @@ match it rather than introducing a new one.
   -/
   ```
 
-* All declarations are documented with docstrings `/-- ... -/`: required for public
+* Declarations are documented with docstrings `/-- ... -/`: required for public
   ones (checked by `linter.missingDocs`), recommended for private ones whose purpose
   isn't obvious. Plain comments are for notes that don't describe a single
   declaration.
