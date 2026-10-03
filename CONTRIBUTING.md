@@ -8,7 +8,7 @@ match it rather than introducing a new one.
 
 **Documentation.**
 
-* Every module with definitions starts with a module header:
+* Every module with definitions has a module header, followed by its `namespace`:
 
   ```lean
   /-!
