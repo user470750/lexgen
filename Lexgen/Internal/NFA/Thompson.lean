@@ -28,7 +28,7 @@ private def CharClass.toNFA : CharClass → NFA.Range
 /--
 Internal implementation of Thompson's algorithm.
 
-`offset` is passed explicitly at every step.
+Translates a regular expression into an `NFA` fragment whose states are numbered from `offset`.
 -/
 private def translate (offset : Nat) : RegexAST → NFA
   -- The single-node fragments below exit to the state right after them.
