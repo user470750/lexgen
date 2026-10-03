@@ -68,7 +68,7 @@ def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
   | first, rest => .concat first rest
 
 /--
-Checks whether `re` matches the empty string.
+Checks whether a regular expression matches the empty string.
 -/
 def RegexAST.matchesEmpty : RegexAST → Bool
   | .ε          => true

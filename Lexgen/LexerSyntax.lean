@@ -93,8 +93,8 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : Comm
     throwAbortCommand
 
 /--
-Reports `err` on the patterns it concerns: the pattern of a rule that fails to parse, or the pattern
-of each rule that matches the empty string. `patterns` are indexed by rule number.
+Reports a `ConversionError` on the patterns it concerns: the pattern of a rule that fails to parse,
+or the pattern of each rule that matches the empty string. `patterns` are indexed by rule number.
 -/
 private meta def throwConversionError (patterns : Array StrLit) :
     ConversionError → CommandElabM α

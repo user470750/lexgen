@@ -92,8 +92,8 @@ where
         | .range lower upper => #[lower.toNat, upper.toNat + 1])
     | _ => none
   /--
-  Returns the `DFA.Interval` of the characters from the code point `lower` to `upper`, inclusive: a
-  `single` if there is only one.
+  Returns the `DFA.Interval` of the characters between two code points, inclusive: a `single` if
+  there is only one.
   -/
   formInterval : Nat × Nat → DFA.Interval
     | (lower, upper) =>

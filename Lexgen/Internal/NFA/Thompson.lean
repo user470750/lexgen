@@ -72,8 +72,8 @@ private def translate (offset : Nat) : RegexAST → NFA
     }
 
 /--
-Translates the rules `first :: rest` into an `NFA` whose states are numbered from `offset` and whose
-rules are numbered from `rule`.
+Translates the rule `first`, followed by the rules of the list, into an `NFA` whose states are
+numbered from `offset` and whose rules are numbered from `rule`.
 
 Each rule's fragment ends in a `done` state labeled with its rule, and a chain of `split` states
 chooses between the rules.
