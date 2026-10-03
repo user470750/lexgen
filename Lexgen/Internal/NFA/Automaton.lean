@@ -55,7 +55,7 @@ A state of the `NFA`.
 -/
 inductive NFA.Node where
   /--
-  Accept state of `NFA` for rule `rule`. There are no transitions from it.
+  Accepting state of `NFA` for rule `rule`. There are no transitions from it.
   -/
   | done (rule : Nat)
   /--

@@ -103,8 +103,8 @@ private def translateRules (rule offset : Nat) (first : RegexAST) :
 /--
 Translates the rules `first :: rest` into a single `NFA` using Thompson's construction.
 
-Rules are numbered by position, starting from `0` for `first`, and each accept state is labeled with
-its rule.
+Rules are numbered by position, starting from `0` for `first`, and each accepting state is labeled
+with its rule.
 -/
 -- Taking `first` separately guarantees there is at least one rule.
 def NFA.ofRules (first : RegexAST) (rest : List RegexAST) : NFA :=
