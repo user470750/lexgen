@@ -73,7 +73,7 @@ The non-deterministic finite automaton representation.
 -/
 structure NFA where
   /--
-  The states of the `NFA`, indexed by state id.
+  The states of the `NFA`, indexed by state number.
   -/
   nodes : Array NFA.Node
 deriving Repr, DecidableEq
