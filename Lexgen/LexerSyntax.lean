@@ -66,6 +66,7 @@ syntax
 "lexer" ident "where"
   skipRule*
   ("|" lexgenRule)*
+  -- Skip rules after the token rules are accepted only to report them as an error.
   skipRule*
 ("deriving" ident,+)? : command
 
