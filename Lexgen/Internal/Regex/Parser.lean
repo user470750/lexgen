@@ -74,7 +74,7 @@ private def simpleEscape : Parser Char := do
     | '0' => Char.ofNat 0    -- null
     | 'a' => Char.ofNat 7    -- bell
     | 'e' => Char.ofNat 27   -- escape
-    | _   => c               -- impossible due to satisfy predicate
+    | _   => c               -- impossible due to the `satisfy` predicate
 
 /--
 Parser for escape sequences of named character classes.
@@ -88,7 +88,7 @@ private def classEscape : Parser NamedClass := do
     | 'w' => .word
     | 'W' => .nonWord
     | 's' => .space
-    | _   => .nonSpace   -- `S`, due to the satisfy predicate
+    | _   => .nonSpace   -- `S`, due to the `satisfy` predicate
 
 /--
 Parser for literal characters (except escaped).
