@@ -71,15 +71,15 @@ inductive Step (α : Type) (input : String.Slice) where
   -/
   | token (token : α) (stop : input.Pos)
   /--
-  A skip rule matched, and the match stops right before `stop`.
+  A match of a skip rule, which stops right before `stop`.
   -/
   | skip (stop : input.Pos)
   /--
-  The position is the end of the input.
+  The end of the input.
   -/
   | done
   /--
-  No rule matches the input at the byte offset `offset` of the source.
+  A failure: no rule matches the input at the byte offset `offset` of the source.
   -/
   | error (offset : Nat)
 
