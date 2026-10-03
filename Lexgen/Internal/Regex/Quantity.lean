@@ -17,8 +17,6 @@ namespace Lexgen.Internal
 
 /--
 A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
-
-It can be used in certain parsers to specify how many times an item is expected to appear.
 -/
 structure Quantity where
   /--
