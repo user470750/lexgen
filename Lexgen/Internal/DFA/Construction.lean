@@ -58,7 +58,7 @@ namespace DFA
 
 /--
 Maps a set of states to the new set of states reachable via a transition on `interval` followed by
-an unbounded number of ε-transitions.
+any number of ε-transitions.
 -/
 private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : DFA.Interval) :
     Std.HashSet Nat :=
