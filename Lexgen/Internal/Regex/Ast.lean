@@ -46,7 +46,7 @@ inductive RegexAST where
   -- Left-associative: `RegexSyntax.desugar` keeps the parser's `concat (concat a b) c`.
   | concat (first rest : RegexAST)
   /--
-  Matches repetition of a regular expression.
+  Matches zero or more repetitions of `re`.
   -/
   | repeated (re : RegexAST)
   /--
