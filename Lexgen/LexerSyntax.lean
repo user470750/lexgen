@@ -51,16 +51,16 @@ Declares a lexer: an inductive type with a constructor for each rule but the ski
 `Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer`
 for a string.
 
-Each token rule pairs a constructor with the regex it matches, written as a raw string literal:
-`name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value of type `α`, which
-`f : String.Slice → α` computes from the token's slice. The lexer always takes the longest match;
-when several rules match the same text, the one declared earlier wins. If no rule matches, lexing
-fails with the byte offset of the failure.
+Each token rule pairs a constructor with the regex it matches, usually written as a raw string
+literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value of type
+`α`, which `f : String.Slice → α` computes from the token's slice. The lexer always takes the
+longest match; when several rules match the same text, the one declared earlier wins. If no rule
+matches, lexing fails with the byte offset of the failure.
 
 Rules `skip r"…"`, written before the others, match text that is dropped, such as whitespace or
 comments; being declared first, they win over other rules matching the same text.
 
-An optional `deriving` clause after the rules derives these instances for the token type.
+An optional `deriving` clause after the rules derives the listed instances for the token type.
 -/
 syntax
 "lexer" ident "where"
