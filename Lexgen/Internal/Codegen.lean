@@ -8,6 +8,8 @@ module
 public import Lexgen.Internal.DFA.Automaton
 
 import Lean
+-- The quotations below name declarations of these modules: without the imports, the names stay
+-- hygienic, and the generated code reports them as unknown identifiers.
 import Lexgen.Internal.Pack
 import Lexgen.Lexer
 
