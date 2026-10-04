@@ -39,13 +39,13 @@ deriving Inhabited
 /--
 The `Packed` of no match.
 -/
-def Packed.noMatch {input : String.Slice} : Packed input := ⟨0⟩
+def Packed.noMatch {input : String} : Packed input := ⟨0⟩
 
 /--
 Packs the rule `rule` of a match and the position `stop` right before which it stops.
 -/
 @[inline]
-def Packed.ofMatch {input : String.Slice} (rule : Nat) (stop : input.Pos)
+def Packed.ofMatch {input : String} (rule : Nat) (stop : input.Pos)
     -- The rule must not reach the bits of the position.
     (_ : rule + 1 < 2 ^ ruleBits := by decide) : Packed input :=
   ⟨(stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64) ||| (rule + 1).toUInt64⟩
@@ -55,7 +55,7 @@ Returns the rule packed in `packed`, or a number that is no rule, `2 ^ 64 - 1`, 
 match.
 -/
 @[inline]
-def Packed.rule {input : String.Slice} (packed : Packed input) : UInt64 :=
+def Packed.rule {input : String} (packed : Packed input) : UInt64 :=
   (packed.bits &&& ((1 <<< ruleBits.toUInt64) - 1)) - 1
 
 /--
@@ -63,7 +63,7 @@ Returns the position packed in `packed` without checking that it is one of its i
 `Packed.stop` implements.
 -/
 @[inline]
-private unsafe def Packed.stopUnsafe {input : String.Slice} (packed : Packed input) : input.Pos :=
+private unsafe def Packed.stopUnsafe {input : String} (packed : Packed input) : input.Pos :=
   -- At run time a position is its byte offset.
   unsafeCast (packed.bits >>> ruleBits.toUInt64).toNat
 
@@ -75,7 +75,7 @@ the input, as long as the input is shorter than `2 ^ (64 - ruleBits)` bytes. The
 does not check it, unlike `pos!` here.
 -/
 @[implemented_by Packed.stopUnsafe, inline]
-def Packed.stop {input : String.Slice} (packed : Packed input) : input.Pos :=
+def Packed.stop {input : String} (packed : Packed input) : input.Pos :=
   input.pos! ⟨(packed.bits >>> ruleBits.toUInt64).toNat⟩
 
 end Lexgen.Internal
