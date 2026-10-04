@@ -21,10 +21,9 @@ namespace Lexgen.Internal
 /--
 Returns `dfa` with the neighbouring intervals of every state that lead to the same state merged
 into one.
-
-The intervals of a state are in order and cover every character, so two neighbours have no other
-interval between them, and their merge leaves out no character.
 -/
+-- The intervals of a state are in order and cover every character, so two neighbours have no other
+-- interval between them, and their merge leaves out no character.
 def DFA.merge (dfa : DFA) : DFA :=
   { dfa with trans := dfa.trans.map fun row =>
       row.foldl (init := #[]) fun merged (interval, target) =>

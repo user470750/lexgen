@@ -17,9 +17,6 @@ namespace Lexgen.Internal
 
 /--
 A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
-
-It can be used in certain parsers to specify
-how many times an item is expected to appear.
 -/
 structure Quantity where
   /--
@@ -33,17 +30,17 @@ structure Quantity where
 deriving Repr, DecidableEq
 
 /--
-Creates a `Quantity` without bounds.
+A `Quantity` without bounds.
 -/
 def Quantity.zeroOrMore : Quantity := { minimum := 0, maximum := none }
 
 /--
-Creates a `Quantity` with a lower bound of one and no upper bound.
+A `Quantity` with a lower bound of one and no upper bound.
 -/
 def Quantity.oneOrMore : Quantity := { minimum := 1, maximum := none }
 
 /--
-Creates a `Quantity` from zero to one.
+A `Quantity` from zero to one.
 -/
 def Quantity.optionalOne : Quantity := { minimum := 0, maximum := some 1 }
 
@@ -69,8 +66,7 @@ Creates a `Quantity` requiring an exact number of occurrences.
 def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
 
 /--
-Checks whether a `Quantity`'s bounds are well-formed,
-i.e. `minimum <= maximum`.
+Checks whether a `Quantity`'s bounds are well-formed, i.e. `minimum <= maximum`.
 -/
 def Quantity.inOrder : Quantity → Bool
   | { minimum := _, maximum := none }   => true

@@ -13,6 +13,12 @@ import Lexgen.Internal.Regex.Syntax
 
 public section
 
+/-!
+# Regex
+
+Defines `parse`, the entry point of the regex stage: parsing and desugaring.
+-/
+
 namespace Lexgen.Internal
 
 /--

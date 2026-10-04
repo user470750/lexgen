@@ -8,6 +8,8 @@ module
 public import Lexgen.Internal.DFA.Automaton
 
 import Lean
+-- The quotations below name declarations of these modules: without the imports, the names stay
+-- hygienic, and the generated code reports them as unknown identifiers.
 import Lexgen.Internal.Pack
 import Lexgen.Lexer
 
@@ -18,7 +20,7 @@ open Lean
 /-!
 # Lexer code generation
 
-Defines the translation of a `DFA` into the code of the generated lexer.
+Defines `buildLexer`: translating a `DFA` into the code of the generated lexer.
 -/
 
 namespace Lexgen.Internal
@@ -32,12 +34,12 @@ inductive RuleInfo where
   -/
   | simple (name : Ident)
   /--
-  A token named `name` with a value of type `valueType`, which `func` computes from the
-  token's slice.
+  A token named `name` with a value of type `valueType`, which `func` computes from the token's
+  slice.
   -/
   | converted (name : Ident) (valueType : Term) (func : Term)
   /--
-  A skip rule: its matches are dropped, and it has no constructor in the generated token type.
+  A skip rule.
   -/
   | skip
 
@@ -55,15 +57,14 @@ variable [Monad m] [MonadQuotation m]
 Returns the name of the generated function for state `state`.
 -/
 private def stateName (state : Nat) : m Ident := do
-  -- The name is hygienic: it cannot clash with a name of the user, such as a token called
-  -- `state0`, or with the states of another lexer, and it is not visible outside the
-  -- generated code.
+  -- The name is hygienic: it cannot clash with a name of the user, such as a token called `state0`,
+  -- or with the states of another lexer, and it is not visible outside the generated code.
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds the chain of `if`s on the character of the slice `input` at `pos`, for a state with the
-transitions `trans`. `best` is the longest match so far, packed as the state functions return
-it: it is passed on to the next state, and returned when there is nowhere to go.
+Builds the chain of `if`s on the character of `input` at `pos`, for a state with the transitions
+`trans`. `best` is the longest match so far, packed as the state functions return it: it is passed
+on to the next state, and returned when there is nowhere to go.
 -/
 private def buildTrans (input pos : Ident) (best : Term)
     (trans : Array (DFA.Interval × Nat)) : m Term := do
@@ -75,8 +76,8 @@ private def buildTrans (input pos : Ident) (best : Term)
     -- The trap never leads to a match, so going there is the same as no transition.
     if next == DFA.trap then
       return rest
-    -- A character of `interval` leads to a call of the function of state `next` on the
-    -- position after the character.
+    -- A character of `interval` leads to a call of the function of state `next` on the position
+    -- after the character.
     let target ← `($(← stateName next) $input ($(pos).next $h) $best)
     match interval with
     | .single character =>
@@ -91,9 +92,9 @@ private def buildTrans (input pos : Ident) (best : Term)
       $best)
 
 /--
-Builds the function of state `state`. The generated function takes the input slice `input` and
-the current position `pos` in it, together with the packed longest match so far `best`, and
-returns the packed longest match.
+Builds the function of state `state`. The generated function takes `input` and the current position
+`pos` in it, together with the packed longest match so far `best`, and returns the packed longest
+match.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : Array (DFA.Interval × Nat)) : m Command := do
@@ -102,7 +103,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
   let pos   ← `(ident| pos)
   let best  ← `(ident| best)
   let body  ← if let some rule := dfa.accepting[state]? then
-    -- An accepting state is the longest match so far: going further can only replace it.
+    -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
     buildTrans input pos (← `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)) trans
   else
     buildTrans input pos best trans
@@ -112,20 +113,19 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
     $body)
 
 /--
-Builds the functions of all states of `dfa` but the trap as one `mutual` block, since
-they call each other.
+Builds the functions of all states of `dfa` but the trap as one `mutual` block, since they call each
+other.
 -/
 private def buildStateFuncs (dfa : DFA) : m Command := do
-  -- The trap needs no function: no branch calls it. It comes before the start state,
-  -- and every other state comes after it.
+  -- The trap needs no function: no branch calls it. It comes before the start state, and every
+  -- other state comes after it.
   let stateFuncs ← (dfa.trans.extract DFA.start).mapIdxM
     fun i => (buildStateFunc dfa (DFA.start + i))
   `(mutual $stateFuncs* end)
 
 /--
-Builds the inductive type named `typeName`, with a constructor for each of `rules` but the
-skip rules, carrying a value if the token has one, deriving the instances in `derivings`, if
-any.
+Builds the inductive type named `typeName`, with a constructor for each of `rules` but the skip
+rules, carrying a value if the token has one, deriving the instances in `derivings`, if any.
 -/
 private def buildTokenType (typeName : Ident) (rules : Array RuleInfo)
     (derivings : Option (Array Ident)) : m Command := do
@@ -141,8 +141,8 @@ private def buildTokenType (typeName : Ident) (rules : Array RuleInfo)
   )
 
 /--
-Builds the function `lexer` in the namespace of the type named `typeName`, which creates a
-`Lexer` for a string.
+Builds the function `lexer` in the namespace of the type named `typeName`, which creates a `Lexer`
+for a string.
 -/
 private def buildLexerFunc (typeName : Ident) : m Command := do
   -- `lexer` is called by the user, so its name is not hygienic.
@@ -158,9 +158,9 @@ Builds the `Lexable` instance of the type named `typeName`.
 -/
 private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Command := do
   let startState ← stateName DFA.start
-  -- The rule number is only known when the lexer runs, so the generated code acts on it
-  -- with a `match`: `ruleNums` are the rule numbers as literals, and `branches` are what
-  -- is done for them.
+  -- The state functions return the rule of the longest match only as a number, packed, so the
+  -- generated code acts on it with a `match`: `ruleNums` are the rule numbers as literals, and
+  -- `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let input  ← `(ident| input)
   let start  ← `(ident| start)
@@ -196,14 +196,14 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
-* an inductive type named `typeName`, with a constructor for each of `rules` but the skip
-  rules, deriving the instances in `derivings`, if any;
+* an inductive type named `typeName`, with a constructor for each of `rules` but the skip rules,
+  deriving the instances in `derivings`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * the `Lexable` instance of that type;
 * a function `lexer` in the namespace of that type, which creates a `Lexer` for a string.
 
-Tokens are matched to rules by position, so `rules` must be in the same order as the
-rules `dfa` was built from.
+Tokens are matched to rules by position, so `rules` must be in the same order as the rules `dfa` was
+built from.
 -/
 def buildLexer (typeName : Ident) (rules : Array RuleInfo) (dfa : DFA)
     (derivings : Option (Array Ident)) : m (Array Command) := do

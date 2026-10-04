@@ -55,7 +55,7 @@ A state of the `NFA`.
 -/
 inductive NFA.Node where
   /--
-  Accept state of `NFA` for rule `rule`. There are no transitions from it.
+  Accepting state of `NFA` for rule `rule`. There are no transitions from it.
   -/
   | done (rule : Nat)
   /--
@@ -73,7 +73,7 @@ The non-deterministic finite automaton representation.
 -/
 structure NFA where
   /--
-  The states of the `NFA`, indexed by state id.
+  The states of the `NFA`, indexed by state number.
   -/
   nodes : Array NFA.Node
 deriving Repr, DecidableEq
@@ -85,10 +85,6 @@ The number of the start state.
 -/
 abbrev start : Nat := 0
 
-/-
-Short names for `Edge` constructors, so that `NFA.charClass` tells the `NFA`
-edge apart from the `RegexAST` node `RegexAST.charClass`.
--/
 export Edge (charClass ε)
 
 end NFA

@@ -13,8 +13,7 @@ public section
 /-!
 # Thompson's construction
 
-Defines Thompson's construction: translating a
-`RegexAST` into an `NFA`.
+Defines Thompson's construction: translating a `RegexAST` into an `NFA`.
 -/
 
 namespace Lexgen.Internal
@@ -29,8 +28,9 @@ private def CharClass.toNFA : CharClass → NFA.Range
 /--
 Internal implementation of Thompson's algorithm.
 
-`offset` is passed explicitly at every step.
+Translates a regular expression into an `NFA` fragment whose states are numbered from `offset`.
 -/
+-- The fragment exits to the state right after it.
 private def translate (offset : Nat) : RegexAST → NFA
   -- The single-node fragments below exit to the state right after them.
   | RegexAST.ε =>
@@ -73,11 +73,11 @@ private def translate (offset : Nat) : RegexAST → NFA
     }
 
 /--
-Translates the rules `first :: rest` into an `NFA` whose states are numbered
-from `offset` and whose rules are numbered from `rule`.
+Translates the rule `first`, followed by the rules of the list, into an `NFA` whose states are
+numbered from `offset` and whose rules are numbered from `rule`.
 
-Each rule's fragment ends in a `done` state labeled with its rule, and a chain of
-`split` states chooses between the rules.
+Each rule's fragment ends in a `done` state labeled with its rule, and a chain of `split` states
+chooses between the rules.
 -/
 private def translateRules (rule offset : Nat) (first : RegexAST) :
     List RegexAST → NFA
@@ -95,18 +95,17 @@ private def translateRules (rule offset : Nat) (first : RegexAST) :
         -- Chooses between this rule and the remaining ones.
         #[.split (offset + 1) restStart] ++
         translated.nodes ++
-        -- The fragment exits here, to the state right after it.
+        -- The fragment exits to the state right after it, so this rule's `done` state goes here.
         #[.done rule] ++
         -- The remaining rules, starting right after this rule's `done` state.
         (translateRules (rule + 1) restStart next rest).nodes
     }
 
 /--
-Translates the rules `first :: rest` into a single `NFA` using Thompson's
-construction.
+Translates the rules `first :: rest` into a single `NFA` using Thompson's construction.
 
-Rules are numbered by position, starting from `0` for `first`,
-and each accept state is labeled with its rule.
+Rules are numbered by position, starting from `0` for `first`, and each accepting state is labeled
+with its rule.
 -/
 -- Taking `first` separately guarantees there is at least one rule.
 def NFA.ofRules (first : RegexAST) (rest : List RegexAST) : NFA :=

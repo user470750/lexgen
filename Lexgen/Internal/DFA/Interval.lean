@@ -16,8 +16,8 @@ Defines `DFA.Interval`, the label type for `DFA` transitions.
 namespace Lexgen.Internal
 
 /--
-The label type for `DFA` transitions: an interval of characters, which is a single character
-or a range of characters.
+The label type for `DFA` transitions: an interval of characters, which is a single character or a
+range of characters.
 -/
 inductive DFA.Interval where
   /--

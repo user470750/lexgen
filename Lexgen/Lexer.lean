@@ -10,8 +10,8 @@ public section
 /-!
 # Lexer
 
-Defines `Lexer`, which encapsulates lexing a string and provides functions to get the result,
-and `Lexable`, implemented for every token type declared with `lexer`.
+Defines `Lexer`, which encapsulates lexing a string and provides functions to get the result, and
+`Lexable`, implemented for every token type declared with `lexer`.
 -/
 
 namespace Lexgen
@@ -42,8 +42,8 @@ structure Spanned (α : Type) where
 Returns the token's slice of the source.
 -/
 def Spanned.slice (s : Spanned α) : String.Slice :=
-  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!`
-  -- never panics.
+  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!` never
+  -- panics.
   s.source.slice! s.start s.stop
 
 /--
@@ -59,7 +59,7 @@ def Spanned.stopOffset (s : Spanned α) : Nat :=
   s.stop.offset.byteIdx
 
 instance [Repr α] : Repr (Spanned α) where
-  reprPrec s _ := "{ token := " ++ repr s.token ++ ", source := " ++ repr s.slice.toString ++ " }"
+  reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
 The result of matching the input `input` from a position.
@@ -70,15 +70,15 @@ inductive Step (α : Type) (input : String) where
   -/
   | token (token : α) (stop : input.Pos)
   /--
-  A skip rule matched, and the match stops right before `stop`.
+  A match of a skip rule, which stops right before `stop`.
   -/
   | skip (stop : input.Pos)
   /--
-  The position is the end of the input.
+  The end of the input.
   -/
   | done
   /--
-  No rule matches the input at the byte offset `offset` of the source.
+  A failure: no rule matches `input` at the byte offset `offset`.
   -/
   | error (offset : Nat)
 
@@ -92,14 +92,14 @@ class Lexable (α : Type) where
   next : (input : String) → (start : input.Pos) → Step α input
 
 /--
-Encapsulates lexing a string into tokens of type `α`.
+A lexer for a string, with the token type `α`.
 -/
 structure Lexer (α : Type) [Lexable α] where
   private mk ::
   /--
-  The input not lexed yet.
+  The input to lex.
   -/
-  private rest : String
+  private source : String
 
 /--
 Creates a lexer for `source`.
@@ -111,7 +111,7 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 Returns the tokens of the whole input, if there are no errors.
 -/
 partial def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
-  collect lexer.rest lexer.rest.startPos #[]
+  collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start`.
@@ -128,7 +128,7 @@ where
 Returns the tokens of the whole input with their positions, if there are no errors.
 -/
 partial def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
-  collect lexer.rest lexer.rest.startPos #[]
+  collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start` with their positions.

@@ -10,8 +10,7 @@ public section
 /-!
 # Regex AST
 
-Defines the abstract syntax tree (`RegexAST`)
-for regular expressions.
+Defines the abstract syntax tree (`RegexAST`) for regular expressions.
 -/
 
 namespace Lexgen.Internal
@@ -33,8 +32,7 @@ deriving Repr, DecidableEq
 /--
 The AST representation of regular expressions.
 
-AST covers only basic regex constructs, while
-others are desugared into them.
+AST covers only basic regex constructs, while others are desugared into them.
 -/
 inductive RegexAST where
   /--
@@ -48,7 +46,7 @@ inductive RegexAST where
   -- Left-associative: `RegexSyntax.desugar` keeps the parser's `concat (concat a b) c`.
   | concat (first rest : RegexAST)
   /--
-  Matches repetition of a regular expression.
+  Matches zero or more repetitions of `re`.
   -/
   | repeated (re : RegexAST)
   /--
@@ -70,7 +68,7 @@ def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
   | first, rest => .concat first rest
 
 /--
-Checks whether `re` matches the empty string.
+Checks whether a regular expression matches the empty string.
 -/
 def RegexAST.matchesEmpty : RegexAST → Bool
   | .ε          => true

@@ -15,10 +15,9 @@ public section
 open Std.Internal.Parsec Std.Internal.Parsec.String
 
 /-!
-# Regular expression parser
+# Regex parser
 
-Defines a recursive-descent parser for regular expressions,
-built using parser combinators.
+Defines a recursive-descent parser for regular expressions, built on parser combinators.
 -/
 
 namespace Lexgen.Internal
@@ -41,13 +40,13 @@ private def rangeSep           : Parser Unit := skipChar '-'
 /--
 `dot := "."`
 
-Parser for the dot metacharacter, matching any character.
+Parser for the dot metacharacter, matching any character but `\n`.
 -/
 private def dot : Parser RegexSyntax :=
   pchar '.' *> pure .dot
 
 /--
-String containing all metacharacters in regular expression grammar.
+All metacharacters in regular expression grammar.
 -/
 private def metaChars : String := "\\|.*+?()[]{}"
 
@@ -75,11 +74,9 @@ private def simpleEscape : Parser Char := do
     | '0' => Char.ofNat 0    -- null
     | 'a' => Char.ofNat 7    -- bell
     | 'e' => Char.ofNat 27   -- escape
-    | _   => c               -- impossible due to satisfy predicate
+    | _   => c               -- impossible due to the `satisfy` predicate
 
 /--
-`classEscape := "\" ("d" | "D" | "w" | "W" | "s" | "S")`
-
 Parser for escape sequences of named character classes.
 -/
 private def classEscape : Parser NamedClass := do
@@ -91,7 +88,7 @@ private def classEscape : Parser NamedClass := do
     | 'w' => .word
     | 'W' => .nonWord
     | 's' => .space
-    | _   => .nonSpace   -- `S`, due to the satisfy predicate
+    | _   => .nonSpace   -- `S`, due to the `satisfy` predicate
 
 /--
 Parser for literal characters (except escaped).
@@ -109,8 +106,8 @@ private def symbol : Parser RegexSyntax := do
   return .symbol sym
 
 /--
-String containing all metacharacters in character class grammar. Other metacharacters are
-literal inside a character class.
+All metacharacters in character class grammar. Other metacharacters are literal inside a character
+class.
 -/
 private def classMetaChars : String := "\\[]^-"
 
@@ -140,8 +137,8 @@ private def classChar : Parser Char :=
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
 
 /--
-Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces
-a `range` item.
+Takes the already-parsed lower bound `lower`, parses `-` and the upper bound, and produces a `range`
+item.
 -/
 private def charClassRange (lower : Char) : Parser ClassItem := do
   rangeSep
@@ -196,9 +193,9 @@ private def charClass : Parser RegexSyntax := do
   return .charClass negate items
 
 /--
-`quantity := "{" digits ("," digits?)? "}"`
+`rangeQuantifier := "{" digits ("," digits?)? "}"`
 
-Parser for a quantity.
+Parser for a range quantifier.
 -/
 private def rangeQuantifier : Parser Quantity := do
   leftBrace
@@ -216,16 +213,15 @@ private def rangeQuantifier : Parser Quantity := do
   return spec
 
 /--
-Takes the already-parsed atom `re`, parses a `Quantity`, and produces
-a `repeated` CST node.
+Takes the already-parsed atom `re`, parses a range quantifier, and produces a `repeated` CST node.
 -/
 private def quantifiedByRange (re : RegexSyntax) : Parser RegexSyntax := do
   let quantity ← rangeQuantifier
   return .repeated quantity re
 
 /--
-Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`)
-appears with no preceding atom to repeat.
+Produces a descriptive error when a quantifier (`*`, `+`, `?`, `{...}`) appears with no preceding
+atom to repeat.
 -/
 private def nothingToRepeat : Parser RegexSyntax :=
   (discard starQuantifier     <|>
@@ -258,7 +254,7 @@ private partial def concat : Parser RegexSyntax := do
   return rest.foldl .concat first
 
 /--
-`quantified := atom ("*" | "+" | "?" | quantity)?`
+`quantified := atom ("*" | "+" | "?" | rangeQuantifier)?`
 
 Parser for a quantified atom.
 -/
@@ -286,7 +282,7 @@ private partial def atom : Parser RegexSyntax :=
 /--
 `subExpr := "(" alt ")"`
 
-Parser for an expression in parenthesis.
+Parser for an expression in parentheses.
 -/
 private partial def subExpr : Parser RegexSyntax :=
   leftParen *> alt <* (rightParen <|> fail "missing ), unterminated subpattern")
@@ -295,7 +291,7 @@ end
 /--
 A recursive-descent parser for regular expressions.
 
-Built using parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
+Built on parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
 -/
 private def regex : Parser RegexSyntax :=
   alt <*

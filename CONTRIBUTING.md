@@ -8,24 +8,25 @@ match it rather than introducing a new one.
 
 **Documentation.**
 
-* Every module with definitions starts with a module header:
+* Every module with definitions has a module header, followed by its `namespace`:
 
   ```lean
   /-!
   # Thompson's construction
 
-  Defines Thompson's construction: translating a
-  `RegexAST` into an `NFA`.
+  Defines Thompson's construction: translating a `RegexAST` into an `NFA`.
   -/
   ```
 
-* All declarations are documented with docstrings `/-- ... -/`: required for public
+* Declarations are documented with docstrings `/-- ... -/`: required for public
   ones (checked by `linter.missingDocs`), recommended for private ones whose purpose
   isn't obvious. Plain comments are for notes that don't describe a single
   declaration.
 * Non-obvious steps inside a definition are explained with `--` comments; open
   questions are marked with `TODO:`.
 * Identifiers and type names in comments are wrapped in backticks, e.g. `NFA`.
+
+**Line length.** Lines are at most 100 characters long, including docstrings and comments.
 
 **Alignment.** Aligning `:=`, `:` and `=>` across adjacent `let` bindings, structure
 fields and `match` arms is encouraged:
@@ -86,7 +87,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 **Header.** `type(scope): summary`, where:
 
-* `type` is one of `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `ci`;
+* `type` is one of `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `ci`;
 * `scope` names the affected module or part of the project, e.g. `DFA`, `parser`,
   `readme`;
 * `summary` is a short imperative phrase in lowercase without a trailing period;
