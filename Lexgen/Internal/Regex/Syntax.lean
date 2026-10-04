@@ -66,7 +66,7 @@ inductive ClassItem where
 deriving Repr, DecidableEq
 
 /--
-Checks whether a `ClassItem` is well-formed, i.e. a range's `lower <= upper` by code point.
+Checks whether a `ClassItem` is well-formed: every item is, except a `range` with `lower > upper`.
 -/
 def ClassItem.isWellFormed : ClassItem → Bool
   | .range lower upper => lower <= upper
