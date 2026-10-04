@@ -62,9 +62,9 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds the chain of `if`s on the character of the slice `input` at `pos`, for a state with the
-transitions `trans`. `best` is the longest match so far, packed as the state functions return it: it
-is passed on to the next state, and returned when there is nowhere to go.
+Builds the chain of `if`s on the character of `input` at `pos`, for a state with the transitions
+`trans`. `best` is the longest match so far, packed as the state functions return it: it is passed
+on to the next state, and returned when there is nowhere to go.
 -/
 private def buildTrans (input pos : Ident) (best : Term)
     (trans : Array (DFA.Interval × Nat)) : m Term := do
@@ -92,9 +92,9 @@ private def buildTrans (input pos : Ident) (best : Term)
       $best)
 
 /--
-Builds the function of state `state`. The generated function takes the input slice `input` and the
-current position `pos` in it, together with the packed longest match so far `best`, and returns the
-packed longest match.
+Builds the function of state `state`. The generated function takes `input` and the current position
+`pos` in it, together with the packed longest match so far `best`, and returns the packed longest
+match.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat)
     (trans : Array (DFA.Interval × Nat)) : m Command := do
