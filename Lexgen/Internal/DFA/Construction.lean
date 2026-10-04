@@ -97,10 +97,7 @@ where
   -/
   formInterval : Nat × Nat → DFA.Interval
     | (lower, upper) =>
-      if lower == upper then
-        .single (Char.ofNat lower)
-      else
-        .range (Char.ofNat lower) (Char.ofNat upper)
+      DFA.Interval.ofBounds (Char.ofNat lower) (Char.ofNat upper)
 
 /--
 Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none` if none of its `NFA`
