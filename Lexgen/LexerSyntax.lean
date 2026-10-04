@@ -71,9 +71,11 @@ syntax
 ("deriving" ident,+)? : command
 
 /--
-Checks the names of a `lexer` declaration before any code is generated, so that errors are reported
-on the names themselves rather than on the generated code: the type must not be declared yet, and
-token names must be distinct and differ from `lexer`.
+Checks the names of a `lexer` declaration: the type must not be declared yet, and the token names
+must be distinct and differ from `lexer`.
+
+Runs before any code is generated, so that errors are reported on the names themselves rather than
+on the generated code.
 -/
 private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : CommandElabM Unit := do
   -- Resolves the type name as `inductive` does and fails if it is already declared.
