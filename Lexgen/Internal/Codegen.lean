@@ -20,7 +20,7 @@ open Lean
 /-!
 # Lexer code generation
 
-Defines the translation of a `DFA` into the code of the generated lexer.
+Defines `buildLexer`: translating a `DFA` into the code of the generated lexer.
 -/
 
 namespace Lexgen.Internal
