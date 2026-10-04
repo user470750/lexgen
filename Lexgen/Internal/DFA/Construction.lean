@@ -93,7 +93,7 @@ where
     | _ => none
   /--
   Returns the `DFA.Interval` of the characters between two code points, inclusive: a `single` if
-  there is only one.
+  they are the same.
   -/
   formInterval : Nat × Nat → DFA.Interval
     | (lower, upper) =>
