@@ -39,7 +39,7 @@ inductive RuleInfo where
   -/
   | converted (name : Ident) (valueType : Term) (func : Term)
   /--
-  A skip rule: its matches are dropped, and it has no constructor in the generated token type.
+  A skip rule.
   -/
   | skip
 
