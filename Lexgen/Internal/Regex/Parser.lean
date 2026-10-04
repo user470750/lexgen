@@ -46,7 +46,7 @@ private def dot : Parser RegexSyntax :=
   pchar '.' *> pure .dot
 
 /--
-String containing all metacharacters in regular expression grammar.
+All metacharacters in regular expression grammar.
 -/
 private def metaChars : String := "\\|.*+?()[]{}"
 
@@ -106,8 +106,8 @@ private def symbol : Parser RegexSyntax := do
   return .symbol sym
 
 /--
-String containing all metacharacters in character class grammar. Other metacharacters are literal
-inside a character class.
+All metacharacters in character class grammar. Other metacharacters are literal inside a character
+class.
 -/
 private def classMetaChars : String := "\\[]^-"
 
