@@ -78,7 +78,7 @@ inductive Step (α : Type) (input : String) where
   -/
   | done
   /--
-  A failure: no rule matches the input at the byte offset `offset` of the source.
+  A failure: no rule matches `input` at the byte offset `offset`.
   -/
   | error (offset : Nat)
 
