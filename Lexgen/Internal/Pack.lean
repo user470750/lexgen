@@ -12,8 +12,7 @@ public section
 
 Defines how the state functions of a generated lexer pass on and return the longest match: its rule
 and the position where it stops, packed into a `UInt64` in `Packed`, so that no object is allocated
-for them. The low `ruleBits` bits are the rule plus one, or zero if there is no match, and the bits
-above are the byte offset of the position in the input.
+for them.
 -/
 
 namespace Lexgen.Internal
@@ -31,7 +30,8 @@ number. Only `Packed.noMatch` and `Packed.ofMatch` build one, so that the positi
 structure Packed (input : String.Slice) where
   private mk ::
   /--
-  The rule and the position, packed.
+  The rule and the position, packed: the low `ruleBits` bits are the rule plus one, or zero if there
+  is no match, and the bits above are the byte offset of the position in the input.
   -/
   private bits : UInt64
 deriving Inhabited
