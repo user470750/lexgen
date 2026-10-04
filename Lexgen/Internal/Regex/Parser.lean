@@ -17,7 +17,7 @@ open Std.Internal.Parsec Std.Internal.Parsec.String
 /-!
 # Regular expression parser
 
-Defines a recursive-descent parser for regular expressions, built using parser combinators.
+Defines a recursive-descent parser for regular expressions, built on parser combinators.
 -/
 
 namespace Lexgen.Internal
@@ -291,7 +291,7 @@ end
 /--
 A recursive-descent parser for regular expressions.
 
-Built using parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
+Built on parser combinators. Produces a concrete syntax tree (`RegexSyntax`).
 -/
 private def regex : Parser RegexSyntax :=
   alt <*
