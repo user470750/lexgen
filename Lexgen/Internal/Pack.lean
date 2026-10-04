@@ -27,7 +27,7 @@ The rule of a match in the input `input` and the position where the match stops,
 number. Only `Packed.noMatch` and `Packed.ofMatch` build one, so that the position is always a valid
 position of `input`.
 -/
-structure Packed (input : String.Slice) where
+structure Packed (input : String) where
   private mk ::
   /--
   The rule and the position, packed: the low `ruleBits` bits are the rule plus one, or zero if there
