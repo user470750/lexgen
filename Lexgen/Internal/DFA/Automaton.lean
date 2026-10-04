@@ -27,8 +27,8 @@ state `DFA.start` is the start state.
 -/
 structure DFA where
   /--
-  Transition table: for every state, the intervals of characters leaving it together with the states
-  they lead to. Indexed by state. No `NFA` edge tells apart two characters of one interval.
+  Transition table: for every state, sorted, disjoint intervals covering every character, each with
+  the state it leads to. Indexed by state. No `NFA` edge tells apart two characters of one interval.
   -/
   trans     : Array (Array (DFA.Interval × Nat))
   /--
