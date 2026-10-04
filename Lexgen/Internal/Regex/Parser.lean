@@ -193,9 +193,9 @@ private def charClass : Parser RegexSyntax := do
   return .charClass negate items
 
 /--
-`quantity := "{" digits ("," digits?)? "}"`
+`rangeQuantifier := "{" digits ("," digits?)? "}"`
 
-Parser for a quantity.
+Parser for a range quantifier.
 -/
 private def rangeQuantifier : Parser Quantity := do
   leftBrace
@@ -213,7 +213,7 @@ private def rangeQuantifier : Parser Quantity := do
   return spec
 
 /--
-Takes the already-parsed atom `re`, parses a `Quantity`, and produces a `repeated` CST node.
+Takes the already-parsed atom `re`, parses a range quantifier, and produces a `repeated` CST node.
 -/
 private def quantifiedByRange (re : RegexSyntax) : Parser RegexSyntax := do
   let quantity ← rangeQuantifier
@@ -254,7 +254,7 @@ private partial def concat : Parser RegexSyntax := do
   return rest.foldl .concat first
 
 /--
-`quantified := atom ("*" | "+" | "?" | quantity)?`
+`quantified := atom ("*" | "+" | "?" | rangeQuantifier)?`
 
 Parser for a quantified atom.
 -/
