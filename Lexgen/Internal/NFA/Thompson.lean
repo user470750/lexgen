@@ -94,7 +94,7 @@ private def translateRules (rule offset : Nat) (first : RegexAST) :
         -- Chooses between this rule and the remaining ones.
         #[.split (offset + 1) restStart] ++
         translated.nodes ++
-        -- The fragment exits here, to the state right after it.
+        -- The fragment exits to the state right after it, so this rule's `done` state goes here.
         #[.done rule] ++
         -- The remaining rules, starting right after this rule's `done` state.
         (translateRules (rule + 1) restStart next rest).nodes
