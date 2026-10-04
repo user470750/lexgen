@@ -5,6 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.DFA.Interval
 public import Std.Data.HashMap
 public import Std.Data.HashSet
 
@@ -17,21 +18,6 @@ Defines the DFA representation (`DFA`).
 -/
 
 namespace Lexgen.Internal
-
-/--
-The label type for `DFA` transitions: an interval of characters, which is a single character
-or a range of characters.
--/
-inductive DFA.Interval where
-  /--
-  Matches the literal character `character`.
-  -/
-  | single (character : Char)
-  /--
-  Matches a character from `lower` to `upper`, inclusive.
-  -/
-  | range (lower upper : Char)
-deriving Repr, BEq
 
 /--
 The deterministic finite automaton representation.
