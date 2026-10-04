@@ -103,7 +103,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
   let pos   ← `(ident| pos)
   let best  ← `(ident| best)
   let body  ← if let some rule := dfa.accepting[state]? then
-    -- An accepting state is the longest match so far: going further can only replace it.
+    -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
     buildTrans input pos (← `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)) trans
   else
     buildTrans input pos best trans
