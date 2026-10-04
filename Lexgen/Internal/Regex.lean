@@ -16,7 +16,7 @@ public section
 /-!
 # Regular expressions
 
-Defines `parse`, which parses a regular expression and desugars it into a `RegexAST`.
+Defines `parse`, the entry point of the regex stage: parsing and desugaring.
 -/
 
 namespace Lexgen.Internal
