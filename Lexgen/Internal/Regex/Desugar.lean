@@ -31,7 +31,7 @@ private def repeatConcat (n : Nat) (re : RegexAST) : RegexAST :=
   | m + 1 => (List.replicate m re).foldl .concat re
 
 /--
-Builds a chain of `n` optional copies of `re`, which matches `re` at most `n` times.
+Builds a chain of `n` optional copies of `re`.
 
 Used for the optional part of a `{n,m}` range.
 -/
