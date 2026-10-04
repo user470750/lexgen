@@ -36,13 +36,13 @@ A rule of a token without a value.
 syntax ident ":=" str : lexgenRule
 
 /--
-A rule of a token with a value: the name of the token, the type of the value, the regex, and the
+A rule of a token with a value: the name of the token, the type of the value, the pattern, and the
 function computing the value from the token's slice.
 -/
 syntax ident ":" term ":=" str "=>" term : lexgenRule
 
 /--
-A skip rule of the `lexer` command: the regex of the text that is dropped.
+A skip rule of the `lexer` command: the pattern of the text that is dropped.
 -/
 syntax skipRule := "skip" str
 
@@ -51,7 +51,7 @@ Declares a lexer: an inductive type with a constructor for each rule but the ski
 `Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer`
 for a string.
 
-Each token rule pairs a constructor with the regex it matches, usually written as a raw string
+Each token rule pairs a constructor with the pattern it matches, usually written as a raw string
 literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value of type
 `α`, which `f : String.Slice → α` computes from the token's slice. The lexer always takes the
 longest match; when several rules match the same text, the one declared earlier wins. If no rule
