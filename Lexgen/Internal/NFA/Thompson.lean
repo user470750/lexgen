@@ -30,6 +30,7 @@ Internal implementation of Thompson's algorithm.
 
 Translates a regular expression into an `NFA` fragment whose states are numbered from `offset`.
 -/
+-- The fragment exits to the state right after it.
 private def translate (offset : Nat) : RegexAST → NFA
   -- The single-node fragments below exit to the state right after them.
   | RegexAST.ε =>
