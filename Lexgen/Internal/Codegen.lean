@@ -158,8 +158,9 @@ Builds the `Lexable` instance of the type named `typeName`.
 -/
 private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Command := do
   let startState ← stateName DFA.start
-  -- The rule number is only known when the lexer runs, so the generated code acts on it with a
-  -- `match`: `ruleNums` are the rule numbers as literals, and `branches` are what is done for them.
+  -- The state functions return the rule of the longest match only as a number, packed, so the
+  -- generated code acts on it with a `match`: `ruleNums` are the rule numbers as literals, and
+  -- `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let input  ← `(ident| input)
   let start  ← `(ident| start)
