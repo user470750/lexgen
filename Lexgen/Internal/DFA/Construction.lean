@@ -74,7 +74,7 @@ which bound all characters, and at `0xD800` and `0xE000`, which bound the surrog
 -/
 private def alphabet (nfa : NFA) : Array DFA.Interval :=
   let bounds :=
-    ((nfa.nodes.filterMap nodeBounds).flatten ++ #[0, 0xD800, 0xE000, 0x110000])
+    (nfa.nodes.flatMap nodeBounds ++ #[0, 0xD800, 0xE000, 0x110000])
     |>.mergeSort
     |>.eraseReps
   Array.zipWith (·, · - 1) bounds (bounds.extract 1)
@@ -83,14 +83,14 @@ private def alphabet (nfa : NFA) : Array DFA.Interval :=
 where
   /--
   Returns the code points at which the character class on the edge of a node starts and stops
-  matching, or `none` if the node has no such edge.
+  matching, or `#[]` if the node has no such edge.
   -/
-  nodeBounds : NFA.Node → Option (Array Nat)
+  nodeBounds : NFA.Node → Array Nat
     | .edge (.charClass _ ranges) _ =>
-      some (ranges.flatMap fun
+      ranges.flatMap fun
         | .single c          => #[c.toNat, c.toNat + 1]
-        | .range lower upper => #[lower.toNat, upper.toNat + 1])
-    | _ => none
+        | .range lower upper => #[lower.toNat, upper.toNat + 1]
+    | _ => #[]
   /--
   Returns the `DFA.Interval` of the characters between two code points, inclusive: a `single` if
   they are the same.
