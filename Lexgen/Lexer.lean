@@ -28,7 +28,7 @@ structure Spanned (α : Type) where
   /--
   The whole input the token comes from.
   -/
-  private source : String.Slice
+  private source : String
   /--
   The position in `source` where the token starts.
   -/
@@ -50,22 +50,21 @@ def Spanned.slice (s : Spanned α) : String.Slice :=
 Returns the byte offset in the source string where the token starts.
 -/
 def Spanned.startOffset (s : Spanned α) : Nat :=
-  s.source.startInclusive.offset.byteIdx + s.start.offset.byteIdx
+  s.start.offset.byteIdx
 
 /--
 Returns the byte offset in the source string right after the token.
 -/
 def Spanned.stopOffset (s : Spanned α) : Nat :=
-  s.source.startInclusive.offset.byteIdx + s.stop.offset.byteIdx
+  s.stop.offset.byteIdx
 
--- `String.Slice` has no `Repr`, so the slice is shown by its text.
 instance [Repr α] : Repr (Spanned α) where
   reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
 The result of matching the input `input` from a position.
 -/
-inductive Step (α : Type) (input : String.Slice) where
+inductive Step (α : Type) (input : String) where
   /--
   The token `token`, which stops right before `stop`.
   -/
@@ -90,7 +89,7 @@ class Lexable (α : Type) where
   /--
   Returns the result of the longest match in the input from the position `start`.
   -/
-  next : (input : String.Slice) → (start : input.Pos) → Step α input
+  next : (input : String) → (start : input.Pos) → Step α input
 
 /--
 Encapsulates lexing a string into tokens of type `α`.
@@ -100,13 +99,13 @@ structure Lexer (α : Type) [Lexable α] where
   /--
   The input to lex.
   -/
-  private source : String.Slice
+  private source : String
 
 /--
 Creates a lexer for `source`.
 -/
 def Lexer.new [Lexable α] (source : String) : Lexer α :=
-  ⟨source.toSlice⟩
+  ⟨source⟩
 
 /--
 Returns the tokens of the whole input, if there are no errors.
@@ -117,7 +116,7 @@ where
   /--
   Returns `acc` followed by the tokens of `input` from `start`.
   -/
-  collect (input : String.Slice) (start : input.Pos) (acc : Array α) :
+  collect (input : String) (start : input.Pos) (acc : Array α) :
       Except String (Array α) :=
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push token)
@@ -134,7 +133,7 @@ where
   /--
   Returns `acc` followed by the tokens of `input` from `start` with their positions.
   -/
-  collect (input : String.Slice) (start : input.Pos) (acc : Array (Spanned α)) :
+  collect (input : String) (start : input.Pos) (acc : Array (Spanned α)) :
       Except String (Array (Spanned α)) :=
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)

@@ -8,6 +8,7 @@ module
 public import Lexgen.Internal.DFA.Automaton
 
 import Lexgen.Internal.DFA.Construction
+import Lexgen.Internal.DFA.Merge
 import Lexgen.Internal.NFA.Thompson
 import Lexgen.Internal.Regex
 
@@ -45,7 +46,7 @@ inductive ConversionError where
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
 
 Rules are numbered by position: when several of them match the same text, the one declared earlier
-wins.
+wins. The neighbouring intervals of a state that lead to the same state are merged.
 
 Returns an error if there are no rules at all, if a rule is not a valid regular expression, or if a
 rule matches the empty string.
@@ -58,7 +59,7 @@ def rulesToDFA : List String → Except ConversionError DFA
     let emptyRules := rulesMatchingEmpty (firstRegex :: restRegexes)
     unless emptyRules.isEmpty do
       throw (.matchesEmpty emptyRules)
-    return DFA.ofNFA (NFA.ofRules firstRegex restRegexes)
+    return (DFA.ofNFA (NFA.ofRules firstRegex restRegexes)).merge
 where
   /--
   Parses the pattern of rule `rule`, tagging a parse error with the rule number.

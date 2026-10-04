@@ -108,7 +108,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
   else
     buildTrans input pos best trans
   -- `partial` is needed for now: Lean cannot see that the position grows with every call.
-  `(partial def $funcName ($input : String.Slice) ($pos : String.Slice.Pos $input)
+  `(partial def $funcName ($input : String) ($pos : String.Pos $input)
       ($best : Lexgen.Internal.Packed $input) : Lexgen.Internal.Packed $input :=
     $body)
 
@@ -189,7 +189,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
           if $start = $(input).endPos then
             Lexgen.Step.done
           else
-            Lexgen.Step.error ($(input).startInclusive.offset.byteIdx + $(start).offset.byteIdx)
+            Lexgen.Step.error $(start).offset.byteIdx
   )
 
 /--
