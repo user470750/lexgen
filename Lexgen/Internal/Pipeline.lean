@@ -17,8 +17,8 @@ public section
 /-!
 # Pipeline
 
-Defines the entry point of the regex → NFA → DFA pipeline: `rulesToDFA`, turning the rules of a
-`lexer` declaration into a single `DFA`, and its error type `ConversionError`.
+Defines `rulesToDFA`, the entry point of the regex → NFA → DFA pipeline, and its error type
+`ConversionError`.
 -/
 
 namespace Lexgen.Internal
