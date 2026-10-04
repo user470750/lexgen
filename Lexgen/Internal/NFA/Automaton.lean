@@ -85,10 +85,6 @@ The number of the start state.
 -/
 abbrev start : Nat := 0
 
-/-
-Short names for `Edge` constructors, so that `NFA.charClass` tells the `NFA` edge apart from the
-`RegexAST` node `RegexAST.charClass`.
--/
 export Edge (charClass ε)
 
 end NFA
