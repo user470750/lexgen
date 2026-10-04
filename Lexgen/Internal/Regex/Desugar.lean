@@ -11,7 +11,7 @@ public import Lexgen.Internal.Regex.Syntax
 public section
 
 /-!
-# Regular expression desugaring
+# Regex desugaring
 
 Defines `RegexSyntax.desugar` for translating a CST into an AST.
 -/

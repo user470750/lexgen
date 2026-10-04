@@ -14,7 +14,7 @@ import Lexgen.Internal.Regex.Syntax
 public section
 
 /-!
-# Regular expressions
+# Regex
 
 Defines `parse`, the entry point of the regex stage: parsing and desugaring.
 -/

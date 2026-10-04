@@ -6,7 +6,7 @@ Authors: Oleg Shabanov
 import Lexgen.Internal.Regex.Parser
 
 /-!
-# Tests for the regular expression parser
+# Tests for the regex parser
 
 Checks the `RegexSyntax` produced by `parseRegex`, and that invalid patterns are rejected.
 -/

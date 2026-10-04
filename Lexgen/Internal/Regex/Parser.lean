@@ -15,7 +15,7 @@ public section
 open Std.Internal.Parsec Std.Internal.Parsec.String
 
 /-!
-# Regular expression parser
+# Regex parser
 
 Defines a recursive-descent parser for regular expressions, built on parser combinators.
 -/
