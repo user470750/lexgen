@@ -92,7 +92,7 @@ class Lexable (α : Type) where
   next : (input : String) → (start : input.Pos) → Step α input
 
 /--
-Encapsulates lexing a string into tokens of type `α`.
+A lexer for a string, with the token type `α`.
 -/
 structure Lexer (α : Type) [Lexable α] where
   private mk ::
