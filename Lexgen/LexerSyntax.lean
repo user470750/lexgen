@@ -96,17 +96,14 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : Comm
   discard <| withRef typeName <| mkDeclName (← getCurrNamespace) {} typeName.getId
 
   let mut seen : Std.HashSet Name := {}
-  let mut failed := false
 
   for token in tokenNames do
     if token.getId == `lexer then
       logErrorAt token m!"`lexer` is taken by the generated function `{typeName}.lexer`"
-      failed := true
     else if seen.contains token.getId then
       logErrorAt token m!"duplicate token name `{token}`"
-      failed := true
     seen := seen.insert token.getId
-  if failed then
+  if ← MonadLog.hasErrors then
     throwAbortCommand
 
 /--
