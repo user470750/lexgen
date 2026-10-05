@@ -85,19 +85,19 @@ some (.repeated { minimum := 0, maximum := none } (.concat (.symbol 'a') (.symbo
 #guard_msgs in
 #eval parseRegex r"*"
 
-/-- info: Except.error { offset := 2, msg := "missing ), unterminated subpattern" } -/
+/-- info: Except.error { offset := 2, msg := "missing `)`, unterminated subpattern" } -/
 #guard_msgs in
 #eval parseRegex r"(a"
 
-/-- info: Except.error { offset := 2, msg := "unmatched )" } -/
+/-- info: Except.error { offset := 2, msg := "unmatched `)`" } -/
 #guard_msgs in
 #eval parseRegex r"a)"
 
-/-- info: Except.error { offset := 3, msg := "missing }, unterminated quantifier" } -/
+/-- info: Except.error { offset := 3, msg := "missing `}`, unterminated quantifier" } -/
 #guard_msgs in
 #eval parseRegex r"a{2"
 
-/-- info: Except.error { offset := 5, msg := "invalid range {3,1}: maximum less than minimum" } -/
+/-- info: Except.error { offset := 5, msg := "invalid range `{3,1}`: maximum less than minimum" } -/
 #guard_msgs in
 #eval parseRegex r"a{3,1}"
 

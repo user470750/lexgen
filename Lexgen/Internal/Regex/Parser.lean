@@ -133,7 +133,7 @@ Parser for a character inside a character class.
 private def classChar : Parser Char :=
   escapedClassMeta.attempt <|> simpleEscape.attempt <|> classLiteralChar <|>
     satisfy ("[^-".contains ·) >>=
-      (fun (c : Char) => (fail s!"unescaped {c} in character class"))    <|>
+      (fun (c : Char) => (fail s!"unescaped `{c}` in character class"))    <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
 
 /--
@@ -144,14 +144,14 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
   rangeSep
   let upper ←
     (classEscape.attempt *>
-      fail s!"invalid range {lower.quoteCore}-: a named class cannot bound a range") <|>
+      fail s!"invalid range `{lower.quoteCore}-`: a named class cannot bound a range") <|>
     classChar <|>
-    fail s!"missing upper bound of range {lower.quoteCore}-"
+    fail s!"missing upper bound of range `{lower.quoteCore}-`"
   let range := ClassItem.range lower upper
   if range.isWellFormed then
     pure range
   else
-    fail s!"invalid range {lower.quoteCore}-{upper.quoteCore}: upper bound less than lower bound"
+    fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 
 /--
 `charClassItem := classChar ("-" classChar)?`
@@ -187,7 +187,7 @@ private def charClass : Parser RegexSyntax := do
   leftBracket
   let negate ← classNegation
   let items ← many ((ClassItem.named <$> classEscape.attempt) <|> charClassItem)
-  rightBracket <|> fail "missing ], unterminated character class"
+  rightBracket <|> fail "missing `]`, unterminated character class"
   if items.isEmpty then
     fail "empty character class"
   return .charClass negate items
@@ -199,17 +199,17 @@ Parser for a range quantifier.
 -/
 private def rangeQuantifier : Parser Quantity := do
   leftBrace
-  let n ← digits <|> fail "missing number after {"
+  let n ← digits <|> fail "missing number after `{`"
   let spec ← (do
       skipChar ','
       (do
         let m ← digits
         let q : Quantity := .between n m
         if q.inOrder then pure q
-        else fail s!"invalid range \{{n},{m}}: maximum less than minimum"
+        else fail s!"invalid range `\{{n},{m}}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)
-  rightBrace <|> fail s!"missing }, unterminated quantifier"
+  rightBrace <|> fail s!"missing `}`, unterminated quantifier"
   return spec
 
 /--
@@ -285,7 +285,7 @@ private partial def atom : Parser RegexSyntax :=
 Parser for an expression in parentheses.
 -/
 private partial def subExpr : Parser RegexSyntax :=
-  leftParen *> alt <* (rightParen <|> fail "missing ), unterminated subpattern")
+  leftParen *> alt <* (rightParen <|> fail "missing `)`, unterminated subpattern")
 end
 
 /--
@@ -297,7 +297,7 @@ private def regex : Parser RegexSyntax :=
   alt <*
     (eof <|>
     satisfy ("])}".contains ·) >>=
-      (fun (c : Char) => fail s!"unmatched {c}"))
+      (fun (c : Char) => fail s!"unmatched `{c}`"))
 
 /--
 An error of `parseRegex`.
