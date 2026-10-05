@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 import Lexgen
+import LexgenTest.Basic
 
 /-!
 # Tests on skip rules
@@ -22,34 +23,27 @@ lexer Token where
   | ident := r"[a-zA-Z_][a-zA-Z0-9_]*"
 deriving BEq, Repr
 
-/--
-The tokens of `input` with their slices and byte offsets, if it lexes without errors.
--/
-def lex (input : String) : Option (Array (Token × String × Nat × Nat)) :=
-  (Lexer.new input).spanned.toOption.map
-    (·.map fun t => (t.token, t.slice.toString, t.startOffset, t.stopOffset))
-
-#guard lex "a // b // c -- d\ne # f\ng" == some #[
+#guard lex Token "a // b // c -- d\ne # f\ng" == some #[
   (.ident, "a", 0,  1),
   (.ident, "c", 10, 11),
   (.ident, "e", 17, 18),
   (.ident, "g", 23, 24)
 ]
 
-#guard lex "a //b\nc// d" == some #[
+#guard lex Token "a //b\nc// d" == some #[
   (.ident, "a", 0,  1),
   (.ident, "d", 10, 11)
 ]
 
-#guard lex "# // a\nb" == some #[
+#guard lex Token "# // a\nb" == some #[
   (.ident, "b", 7, 8)
 ]
 
-#guard lex "// -- a\n# b // c" == some #[
+#guard lex Token "// -- a\n# b // c" == some #[
   (.ident, "c", 15, 16)
 ]
 
-#guard lex "a -- b" == some #[
+#guard lex Token "a -- b" == some #[
   (.ident, "a", 0, 1)
 ]
 

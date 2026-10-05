@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Oleg Shabanov
 -/
 import Lexgen
+import LexgenTest.Basic
 
 /-!
 # Tests on a CSS lexer
@@ -24,14 +25,7 @@ lexer Token where
   | colon             := r":"
 deriving BEq
 
-/--
-The tokens of `input` with their slices and byte offsets, if it lexes without errors.
--/
-def lex (input : String) : Option (Array (Token × String × Nat × Nat)) :=
-  (Lexer.new input : Lexer Token).spanned.toOption.map
-    (·.map fun t => (t.token, t.slice.toString, t.startOffset, t.stopOffset))
-
-#guard lex "h2 { line-height: 3cm }" == some #[
+#guard lex Token "h2 { line-height: 3cm }" == some #[
   (.ident,             "h2",          0,  2),
   (.curlyBracketOpen,  "{",           3,  4),
   (.ident,             "line-height", 5,  16),
@@ -41,7 +35,7 @@ def lex (input : String) : Option (Array (Token × String × Nat × Nat)) :=
   (.curlyBracketClose, "}",           22, 23)
 ]
 
-#guard lex "h3 { word-spacing: 4mm }" == some #[
+#guard lex Token "h3 { word-spacing: 4mm }" == some #[
   (.ident,             "h3",           0,  2),
   (.curlyBracketOpen,  "{",            3,  4),
   (.ident,             "word-spacing", 5,  17),
@@ -51,7 +45,7 @@ def lex (input : String) : Option (Array (Token × String × Nat × Nat)) :=
   (.curlyBracketClose, "}",            23, 24)
 ]
 
-#guard lex "h3 { letter-spacing: 42em }" == some #[
+#guard lex Token "h3 { letter-spacing: 42em }" == some #[
   (.ident,             "h3",             0,  2),
   (.curlyBracketOpen,  "{",              3,  4),
   (.ident,             "letter-spacing", 5,  19),
