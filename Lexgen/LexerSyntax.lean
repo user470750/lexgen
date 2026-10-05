@@ -110,28 +110,29 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : Comm
     throwAbortCommand
 
 /--
-Reports a `ConversionError` on the patterns it concerns: the pattern of a rule that fails to parse,
-or the pattern of each rule that matches the empty string. `patterns` are indexed by rule number.
+Reports each of `errors` on the pattern of the rule it concerns. `patterns` are indexed by rule
+number.
 -/
-private meta def throwConversionError (patterns : Array StrLit) :
-    ConversionError → CommandElabM α
-  | .noRules => throwError "a lexer needs at least one rule"
-  | .invalidPattern rule offset msg =>
-    throwErrorAt patterns[rule]! m!"offset {offset}: {msg}"
-  | .matchesEmpty rules => do
-    for rule in rules do
+private meta def throwConversionErrors (patterns : Array StrLit) (errors : Array ConversionError) :
+    CommandElabM α := do
+  for error in errors do
+    match error with
+    | .noRules => logError "a lexer needs at least one rule"
+    | .invalidPattern rule offset msg =>
+      logErrorAt patterns[rule]! m!"offset {offset}: {msg}"
+    | .matchesEmpty rule =>
       logErrorAt
         patterns[rule]!
         "this rule matches the empty string, so the lexer would loop on it"
-    throwAbortCommand
+  throwAbortCommand
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
 -/
 private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA :=
   match rulesToDFA (patterns.toList.map TSyntax.getString) with
-    | .ok    dfa => pure dfa
-    | .error err => throwConversionError patterns err
+    | .ok    dfa    => pure dfa
+    | .error errors => throwConversionErrors patterns errors
 
 /--
 Reports each skip rule written after the token rules.

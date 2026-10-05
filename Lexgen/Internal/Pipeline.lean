@@ -37,10 +37,10 @@ inductive ConversionError where
   -/
   | invalidPattern (rule : Nat) (offset : Nat) (msg : String)
   /--
-  The rules `rules` match the empty string. Such a rule would make the lexer loop, since it accepts
-  a token of length zero.
+  Rule `rule` matches the empty string. Such a rule would make the lexer loop, since it accepts a
+  token of length zero.
   -/
-  | matchesEmpty (rules : List Nat)
+  | matchesEmpty (rule : Nat)
 
 /--
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
@@ -48,29 +48,27 @@ Translates the rules of a `lexer` declaration, given as regular expressions, int
 Rules are numbered by position: when several of them match the same text, the one declared earlier
 wins. The neighbouring intervals of a state that lead to the same state are merged.
 
-Returns an error if there are no rules at all, if a rule is not a valid regular expression, or if a
-rule matches the empty string.
+Returns the errors of all rules: an error for each rule that is not a valid regular expression or
+matches the empty string, or a single error if there are no rules at all.
 -/
-def rulesToDFA : List String → Except ConversionError DFA
-  | []            => throw .noRules
-  | first :: rest => do
-    let firstRegex  ← parseRule 0 first
-    let restRegexes ← (rest.zipIdx 1).mapM fun (pattern, rule) => parseRule rule pattern
-    let emptyRules := rulesMatchingEmpty (firstRegex :: restRegexes)
-    unless emptyRules.isEmpty do
-      throw (.matchesEmpty emptyRules)
-    return (DFA.ofNFA (NFA.ofRules firstRegex restRegexes)).merge
+def rulesToDFA (patterns : List String) : Except (Array ConversionError) DFA := do
+  let checked := patterns.zipIdx.map checkRule
+  let errors := checked.filterMap (if let .error err := · then some err else none)
+  unless errors.isEmpty do
+    throw errors.toArray
+  match checked.filterMap (·.toOption) with
+  | []            => throw #[.noRules]
+  | first :: rest => pure (DFA.ofNFA (NFA.ofRules first rest)).merge
 where
   /--
-  Parses the pattern of rule `rule`, tagging a parse error with the rule number.
+  Parses the pattern of a rule, paired with the rule number, and checks that it does not match the
+  empty string, tagging an error with the rule number.
   -/
-  parseRule (rule : Nat) (pattern : String) : Except ConversionError RegexAST :=
-    (parse pattern).mapError fun err => .invalidPattern rule err.offset err.msg
-  /--
-  Returns the numbers of the rules that match the empty string.
-  -/
-  rulesMatchingEmpty (rules : List RegexAST) : List Nat :=
-    rules.zipIdx.filterMap
-      (fun (regex, rule) => if regex.matchesEmpty then some rule else none)
+  checkRule : String × Nat → Except ConversionError RegexAST
+    | (pattern, rule) => do
+      let regex ← (parse pattern).mapError fun err => .invalidPattern rule err.offset err.msg
+      if regex.matchesEmpty then
+        throw (.matchesEmpty rule)
+      return regex
 
 end Lexgen.Internal
