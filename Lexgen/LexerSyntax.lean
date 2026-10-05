@@ -71,6 +71,20 @@ syntax
 ("deriving" ident,+)? : command
 
 /--
+Builds two parallel arrays from the token rules and the skip patterns of a `lexer` declaration: one
+holds the `RuleInfo` of each rule, the other its pattern.
+-/
+private meta def getRules (rules : Array (TSyntax `lexgenRule))
+    (skipPatterns : Array (TSyntax `str)) : CommandElabM (Array RuleInfo × Array StrLit) := do
+  return skipPatterns.map (RuleInfo.skip, ·) ++
+  (← rules.mapM fun
+    | `(lexgenRule| $tokenName:ident := $pattern) => pure (RuleInfo.simple tokenName, pattern)
+    | `(lexgenRule| $tokenName:ident : $valueType := $pattern => $func) =>
+      pure (RuleInfo.converted tokenName valueType func, pattern)
+    | _ => throwUnsupportedSyntax)
+  |>.unzip
+
+/--
 Checks the names of a `lexer` declaration: the type must not be declared yet, and the token names
 must be distinct and differ from `lexer`.
 
@@ -139,20 +153,7 @@ elab_rules : command
         $[| $rules:lexgenRule]*
       $[deriving $[$derivings:ident],*]?
     ) => do
-    let mut ruleInfos := #[]
-    let mut patterns := #[]
-    for pattern in skipPatterns do
-      ruleInfos := ruleInfos.push RuleInfo.skip
-      patterns  := patterns.push pattern
-    for rule in rules do
-      match rule with
-      | `(lexgenRule| $tokenName:ident := $pattern) =>
-        ruleInfos := ruleInfos.push (RuleInfo.simple tokenName)
-        patterns  := patterns.push pattern
-      | `(lexgenRule| $tokenName:ident : $valueType := $pattern => $func) =>
-        ruleInfos := ruleInfos.push (RuleInfo.converted tokenName valueType func)
-        patterns  := patterns.push pattern
-      | _ => throwUnsupportedSyntax
+    let (ruleInfos, patterns) ← getRules rules skipPatterns
     checkNames typeName (ruleInfos.filterMap (·.name))
     let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
       | .ok    dfa => pure dfa
