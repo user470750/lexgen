@@ -154,6 +154,10 @@ private meta def logDeadRules (patterns : Array StrLit) (dfa : DFA) : CommandEla
       pattern
       "this rule never produces a match: other rules always win over it"
 
+/--
+Elaborates a `lexer` declaration: checks its rules and builds their `DFA`, then generates the token
+type, a function per `DFA` state, the `Lexable` instance of the type and the function `lexer`.
+-/
 elab_rules : command
   | `(
       lexer $typeName:ident where
