@@ -199,7 +199,7 @@ Parser for a range quantifier.
 -/
 private def rangeQuantifier : Parser Quantity := do
   leftBrace
-  let n ← digits
+  let n ← digits <|> fail "missing number after {"
   let spec ← (do
       skipChar ','
       (do
