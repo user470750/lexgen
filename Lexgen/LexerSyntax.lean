@@ -126,6 +126,14 @@ private meta def throwConversionError (patterns : Array StrLit) :
     throwAbortCommand
 
 /--
+Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
+-/
+private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA :=
+  match rulesToDFA (patterns.toList.map TSyntax.getString) with
+    | .ok    dfa => pure dfa
+    | .error err => throwConversionError patterns err
+
+/--
 Reports each skip rule written after the token rules.
 -/
 private meta def throwLateSkipError (statements : Array Syntax) : CommandElabM α := do
@@ -155,9 +163,7 @@ elab_rules : command
     ) => do
     let (ruleInfos, patterns) ← getRules rules skipPatterns
     checkNames typeName (ruleInfos.filterMap (·.name))
-    let dfa ← match rulesToDFA (patterns.toList.map TSyntax.getString) with
-      | .ok    dfa => pure dfa
-      | .error err => throwConversionError patterns err
+    let dfa ← getDFA patterns
     logDeadRules patterns dfa
     for cmd in ← buildLexer typeName ruleInfos dfa derivings do
       elabCommand cmd
