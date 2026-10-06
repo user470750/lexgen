@@ -142,6 +142,9 @@ def ofNFA (nfa : NFA) : DFA :=
       let mut row : Array (DFA.Interval × Nat) := #[]
       for interval in alphabet do
         let reached := reachedOn nfa states[current]! interval
+        -- TODO: `findIdx?` searches `states` linearly for every transition, which makes the
+        -- construction `O(n^2)` in the number of states. A hash structure next to `states` may be
+        -- a solution.
         match states.findIdx? (· == reached) with
         | some existingId => row := row.push (interval, existingId)
         | none            =>
