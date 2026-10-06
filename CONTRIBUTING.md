@@ -70,15 +70,31 @@ not pull in its dependencies. After `module`, leave a blank line, list the
 group alphabetically.
 
 **Tests.** New features and bug fixes are welcome to come with tests. Tests live in
-the `LexgenTest` library, in a module whose path mirrors the module it checks:
-`LexgenTest/Internal/NFA/Thompson.lean` checks `Lexgen/Internal/NFA/Thompson.lean`.
-They are written as `#guard` commands:
+the `LexgenTest` library and check the `lexer` command end to end, a module per topic:
+a module declares a lexer and compares its tokens, with their slices and byte offsets,
+using `lex` from `LexgenTest/Basic.lean`:
 
 ```lean
--- "a"
-#guard
-NFA.ofRules (.charClass false #[.single 'a']) [] =
-{ nodes := #[.edge (.charClass false #[.single 'a']) 1, .done 0] }
+lexer Token where
+  skip r"\s+"
+  | ident := r"[a-z]+"
+  | num   := r"[0-9]+"
+deriving BEq
+
+#guard lex Token "ab 12" == some #[
+  (.ident, "ab", 0, 2),
+  (.num,   "12", 3, 5)
+]
+```
+
+Errors and warnings of the `lexer` command are checked with `#guard_msgs`:
+
+```lean
+/-- error: duplicate token name `a` -/
+#guard_msgs in
+lexer Duplicate where
+  | a := r"a"
+  | a := r"b"
 ```
 
 ## Commit Messages
