@@ -204,8 +204,8 @@ private def rangeQuantifier : Parser Quantity := do
       skipChar ','
       (do
         let m ← digits
-        let q : Quantity := .between n m
-        if q.inOrder then pure q
+        if h : n ≤ m then
+          pure (.between n m h)
         else fail s!"invalid range `\{{n},{m}}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)

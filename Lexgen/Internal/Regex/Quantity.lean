@@ -16,55 +16,37 @@ Defines `Quantity`, used to represent repetition bounds.
 namespace Lexgen.Internal
 
 /--
-A quantity bounded, inclusively, by a minimum and, optionally, a maximum.
+Repetition bounds.
 -/
-structure Quantity where
+inductive Quantity where
   /--
-  Minimum number of occurrences.
+  At least `minimum` occurrences, with no upper bound: `*`, `+` and `{n,}`.
   -/
-  minimum : Nat
+  | atLeast (minimum : Nat)
   /--
-  Optional maximum number of occurrences.
+  From `minimum` to `maximum` occurrences, inclusive: `?`, `{n}` and `{n,m}`.
   -/
-  maximum : Option Nat
+  | between (minimum maximum : Nat) (inOrder : minimum ≤ maximum)
 deriving Repr, DecidableEq
 
 /--
 A `Quantity` without bounds.
 -/
-def Quantity.zeroOrMore : Quantity := { minimum := 0, maximum := none }
+def Quantity.zeroOrMore : Quantity := .atLeast 0
 
 /--
 A `Quantity` with a lower bound of one and no upper bound.
 -/
-def Quantity.oneOrMore : Quantity := { minimum := 1, maximum := none }
+def Quantity.oneOrMore : Quantity := .atLeast 1
 
 /--
 A `Quantity` from zero to one.
 -/
-def Quantity.optionalOne : Quantity := { minimum := 0, maximum := some 1 }
-
-/--
-Creates a `Quantity` with the given lower and upper bounds.
--/
-def Quantity.between (minimum maximum : Nat) : Quantity :=
-  { minimum, maximum }
-
-/--
-Creates a `Quantity` with only a lower bound.
--/
-def Quantity.atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
+def Quantity.optionalOne : Quantity := .between 0 1 (Nat.zero_le 1)
 
 /--
 Creates a `Quantity` requiring an exact number of occurrences.
 -/
-def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
-
-/--
-Checks whether a `Quantity`'s bounds are well-formed, i.e. `minimum <= maximum`.
--/
-def Quantity.inOrder : Quantity → Bool
-  | { minimum := _, maximum := none }   => true
-  | { minimum,      maximum := some m } => minimum <= m
+def Quantity.exactly (n : Nat) : Quantity := .between n n (Nat.le_refl n)
 
 end Lexgen.Internal

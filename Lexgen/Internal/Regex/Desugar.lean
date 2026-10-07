@@ -95,13 +95,14 @@ def RegexSyntax.desugar : RegexSyntax → RegexAST
     RegexAST.alt left.desugar right.desugar
   | RegexSyntax.concat first rest =>
     RegexAST.concat first.desugar rest.desugar
-  | RegexSyntax.repeated { minimum := n, maximum := none } re =>
+  | RegexSyntax.repeated (.atLeast n) re =>
     let desugared := re.desugar
     RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (RegexAST.repeated desugared)
-  | RegexSyntax.repeated { minimum := n, maximum := some m } re =>
+  | RegexSyntax.repeated (.between n m ..) re =>
     let desugared := re.desugar
+    -- `inOrder` keeps `m - n` from truncating to zero.
     RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
