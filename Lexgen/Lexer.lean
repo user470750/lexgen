@@ -62,9 +62,9 @@ instance [Repr α] : Repr (Spanned α) where
   reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
-The result of matching the input `input` from a position.
+The result of matching the input `input` from the position `start`.
 -/
-inductive Step (α : Type) (input : String) where
+inductive Step (α : Type) (input : String) (start : input.Pos) where
   /--
   The token `token`, which stops right before `stop`.
   -/
@@ -74,9 +74,9 @@ inductive Step (α : Type) (input : String) where
   -/
   | skip (stop : input.Pos)
   /--
-  The end of the input.
+  The end of the input: `h` proves that `start` is the last position of `input`.
   -/
-  | done
+  | done (h : start = input.endPos)
   /--
   A failure: no rule matches `input` at the byte offset `offset`.
   -/
@@ -89,7 +89,7 @@ class Lexable (α : Type) where
   /--
   Returns the result of the longest match in the input from the position `start`.
   -/
-  next : (input : String) → (start : input.Pos) → Step α input
+  next : (input : String) → (start : input.Pos) → Step α input start
 
 /--
 A lexer for a string, with the token type `α`.
@@ -121,7 +121,7 @@ where
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push token)
     | .skip stop        => collect input stop acc
-    | .done             => .ok acc
+    | .done ..          => .ok acc
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
 
 /--
@@ -138,7 +138,7 @@ where
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)
     | .skip stop        => collect input stop acc
-    | .done             => .ok acc
+    | .done ..          => .ok acc
     | .error offset     => .error s!"offset {offset}: no rule matches the input"
 
 end Lexgen
