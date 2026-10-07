@@ -56,11 +56,6 @@ Creates a `Quantity` with only a lower bound.
 def Quantity.atLeast (minimum : Nat) : Quantity := { minimum, maximum := none }
 
 /--
-Creates a `Quantity` from zero to the given upper bound.
--/
-def Quantity.atMost (maximum : Nat) : Quantity := { minimum := 0, maximum }
-
-/--
 Creates a `Quantity` requiring an exact number of occurrences.
 -/
 def Quantity.exactly (n : Nat) : Quantity := { minimum := n, maximum := n }
