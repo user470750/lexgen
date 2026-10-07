@@ -164,6 +164,8 @@ elab_rules : command
       $[deriving $[$derivings:ident],*]?
     ) => do
     let (ruleInfos, patterns) ← getRules rules skipPatterns
+    if ruleInfos.size > 2 ^ ruleBits - 1 then
+      throwError "too many rules"
     checkNames typeName (ruleInfos.filterMap (·.name))
     let dfa ← getDFA patterns
     logDeadRules patterns dfa
