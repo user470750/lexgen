@@ -190,7 +190,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
           if h : $start = $(input).endPos then
             Lexgen.Step.done h
           else
-            Lexgen.Step.error $(start).offset.byteIdx
+            Lexgen.Step.error
   )
 
 /--

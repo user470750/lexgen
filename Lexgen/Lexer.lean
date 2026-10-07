@@ -78,9 +78,9 @@ inductive Step (α : Type) (input : String) (start : input.Pos) where
   -/
   | done (h : start = input.endPos)
   /--
-  A failure: no rule matches `input` at the byte offset `offset`.
+  A failure: no rule matches `input` at the position `start`.
   -/
-  | error (offset : Nat)
+  | error
 
 /--
 A type of tokens that can be lexed. The `lexer` command implements it for the type it declares.
@@ -122,7 +122,8 @@ where
     | .token token stop => collect input stop (acc.push token)
     | .skip stop        => collect input stop acc
     | .done ..          => .ok acc
-    | .error offset     => .error s!"offset {offset}: no rule matches the input"
+    | .error =>
+      .error s!"offset {start.offset.byteIdx}: no rule matches the input"
 
 /--
 Returns the tokens of the whole input with their positions, if there are no errors.
@@ -139,6 +140,7 @@ where
     | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)
     | .skip stop        => collect input stop acc
     | .done ..          => .ok acc
-    | .error offset     => .error s!"offset {offset}: no rule matches the input"
+    | .error =>
+      .error s!"offset {start.offset.byteIdx}: no rule matches the input"
 
 end Lexgen
