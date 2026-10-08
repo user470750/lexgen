@@ -171,6 +171,10 @@ elab_rules : command
     logDeadRules patterns dfa
     for cmd in ← buildLexer typeName ruleInfos dfa derivings do
       elabCommand cmd
+      -- The later declarations refer to the earlier ones, so once one of them fails the rest only
+      -- add noise.
+      if ← MonadLog.hasErrors then
+        throwAbortCommand
   | `(
       lexer $_:ident where
         $_*
