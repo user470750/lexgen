@@ -81,14 +81,15 @@ Parser for escape sequences of named character classes.
 -/
 private def classEscape : Parser NamedClass := do
   skipChar '\\'
-  let c ← satisfy ("dDwWsS".contains ·)
-  return match c with
-    | 'd' => .digit
-    | 'D' => .nonDigit
-    | 'w' => .word
-    | 'W' => .nonWord
-    | 's' => .space
-    | _   => .nonSpace   -- `S`, due to the `satisfy` predicate
+  sClass 'd' .digit    <|>
+  sClass 'D' .nonDigit <|>
+  sClass 'w' .word     <|>
+  sClass 'W' .nonWord  <|>
+  sClass 's' .space    <|>
+  sClass 'S' .nonSpace
+where
+  @[inline]
+  sClass (c : Char) (name : NamedClass) : Parser NamedClass := (skipChar c *> pure name)
 
 /--
 Parser for literal characters (except escaped).
