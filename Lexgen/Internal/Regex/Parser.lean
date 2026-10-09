@@ -148,9 +148,8 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
       fail s!"invalid range `{lower.quoteCore}-`: a named class cannot bound a range") <|>
     classChar <|>
     fail s!"missing upper bound of range `{lower.quoteCore}-`"
-  let range := ClassItem.range lower upper
-  if range.isWellFormed then
-    pure range
+  if h : lower ≤ upper then
+    pure (ClassItem.range lower upper h)
   else
     fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 

@@ -58,19 +58,12 @@ inductive ClassItem where
   /--
   Matches a character from `lower` to `upper`, inclusive.
   -/
-  | range (lower upper : Char)
+  | range (lower upper : Char) (wellFormed : lower ≤ upper)
   /--
   Matches a character of the named class `kind`.
   -/
   | named (kind : NamedClass)
 deriving Repr, DecidableEq
-
-/--
-Checks whether a `ClassItem` is well-formed: every item is, except a `range` with `lower > upper`.
--/
-def ClassItem.isWellFormed : ClassItem → Bool
-  | .range lower upper => lower <= upper
-  | _                  => true
 
 /--
 The CST representation of regular expressions.

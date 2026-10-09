@@ -26,15 +26,15 @@ inductive NFA.Range where
   /--
   Matches a character from `lower` to `upper`, inclusive.
   -/
-  | range (lower upper : Char)
+  | range (lower upper : Char) (wellFormed : lower ≤ upper)
 deriving Repr, DecidableEq, Hashable
 
 /--
 Checks whether an `NFA.Range` matches the character `c`.
 -/
 def NFA.Range.contains (c : Char) : NFA.Range → Bool
-  | .single s          => c == s
-  | .range lower upper => lower <= c && c <= upper
+  | .single s            => c == s
+  | .range lower upper _ => lower <= c && c <= upper
 
 /--
 The label type for `NFA` transitions.

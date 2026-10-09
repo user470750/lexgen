@@ -26,7 +26,7 @@ inductive CharClass where
   /--
   Matches a character from `lower` to `upper`, inclusive.
   -/
-  | range (lower upper : Char)
+  | range (lower upper : Char) (wellFormed : lower ≤ upper)
 deriving Repr, DecidableEq
 
 /--

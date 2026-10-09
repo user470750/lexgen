@@ -22,8 +22,9 @@ namespace Lexgen.Internal
 Translates an item of a character class of the `RegexAST` into an `NFA.Range`.
 -/
 private def CharClass.toNFA : CharClass → NFA.Range
-  | CharClass.single c          => NFA.Range.single c
-  | CharClass.range lower upper => NFA.Range.range lower upper
+  | CharClass.single c => NFA.Range.single c
+  | CharClass.range lower upper wellFormed =>
+    NFA.Range.range lower upper wellFormed
 
 /--
 Internal implementation of Thompson's algorithm.

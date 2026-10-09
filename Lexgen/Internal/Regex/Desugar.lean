@@ -44,46 +44,47 @@ Returns the ranges of the named character class `kind`.
 private def namedClassRanges (kind : NamedClass) : Array CharClass :=
   let max := Char.ofNat 0x10FFFF
   match kind with
-  | .digit => #[.range '0' '9']
+  | .digit => #[.range '0' '9' (by decide)]
   | .nonDigit =>
     #[
-      .range '\x00' '/',
-      .range ':' max
+      .range '\x00' '/' (by decide),
+      .range ':' max (by decide)
     ]
   | .word =>
     #[
-      .range '0' '9',
-      .range 'A' 'Z',
+      .range '0' '9' (by decide),
+      .range 'A' 'Z' (by decide),
       .single '_',
-      .range 'a' 'z'
+      .range 'a' 'z' (by decide)
     ]
   | .nonWord =>
     #[
-      .range '\x00' '/',
-      .range ':' '@',
-      .range '[' '^',
+      .range '\x00' '/' (by decide),
+      .range ':' '@' (by decide),
+      .range '[' '^' (by decide),
       .single '`',
-      .range '{' max
+      .range '{' max (by decide)
     ]
   | .space =>
     #[
-      .range '\t' '\r',
+      .range '\t' '\r' (by decide),
       .single ' '
     ]
   | .nonSpace =>
     #[
-      .range '\x00' '\x08',
-      .range '\x0e' '\x1f',
-      .range '!' max
+      .range '\x00' '\x08' (by decide),
+      .range '\x0e' '\x1f' (by decide),
+      .range '!' max (by decide)
     ]
 
 /--
 Desugars an item of a character class into the ranges it matches.
 -/
 private def ClassItem.desugar : ClassItem → Array CharClass
-  | ClassItem.single c          => #[CharClass.single c]
-  | ClassItem.range lower upper => #[CharClass.range lower upper]
-  | ClassItem.named kind        => namedClassRanges kind
+  | ClassItem.single c => #[CharClass.single c]
+  | ClassItem.range lower upper wellFormed =>
+    #[CharClass.range lower upper wellFormed]
+  | ClassItem.named kind => namedClassRanges kind
 
 /--
 Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
