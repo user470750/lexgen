@@ -215,7 +215,7 @@ private def rangeQuantifier : Parser Quantity := do
           fail s!"invalid quantifier `\{{n},{m}`: more than {maxRepetitions} repetitions"
         if h : n ≤ m then
           pure (.between n m h)
-        else fail s!"invalid range `\{{n},{m}}`: maximum less than minimum"
+        else fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)
   rightBrace <|> fail s!"missing `}`, unterminated quantifier"

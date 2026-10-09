@@ -44,7 +44,7 @@ error: offset 2: empty character class
 ---
 error: offset 3: empty character class
 ---
-error: offset 5: invalid range `{3,1}`: maximum less than minimum
+error: offset 5: invalid range `{3,1`: maximum less than minimum
 ---
 error: offset 3: missing `}`, unterminated quantifier
 ---
