@@ -37,14 +37,16 @@ structure Spanned (α : Type) where
   The position in `source` right after the token.
   -/
   private stop : source.Pos
+  /--
+  Proves that the token is not empty.
+  -/
+  private h : start < stop
 
 /--
 Returns the token's slice of the source.
 -/
 def Spanned.slice (s : Spanned α) : String.Slice :=
-  -- Only the lexer builds a `Spanned`, and a match never stops before it starts, so `slice!` never
-  -- panics.
-  s.source.slice! s.start s.stop
+  s.source.slice s.start s.stop (String.Pos.le_of_lt s.h)
 
 /--
 Returns the byte offset in the source string where the token starts.
@@ -140,7 +142,7 @@ where
   collect (input : String) (start : input.Pos) (acc : Array (Spanned α)) :
       Except String (Array (Spanned α)) :=
     match Lexable.next input start with
-    | .token token stop _ => collect input stop (acc.push ⟨token, input, start, stop⟩)
+    | .token token stop h => collect input stop (acc.push ⟨token, input, start, stop, h⟩)
     | .skip stop _        => collect input stop acc
     | .done _             => .ok acc
     | .error =>

@@ -173,8 +173,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let start  ← `(ident| start)
   let packed ← `(ident| packed)
   let stopAt ← `(ident| stopAt)
-  -- A match never stops before it starts, so `slice!` never panics.
-  let slice  ← `($(input).slice! $start $stopAt)
+  let slice  ← `($(input).slice $start $stopAt (String.Pos.le_of_lt $h))
   let mut branches ← rules.mapM fun
     | .simple name =>
       `(Lexgen.Step.token .$name $stopAt $h)
