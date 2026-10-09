@@ -77,6 +77,27 @@ private def simpleEscape : Parser Char := do
     | _   => c               -- impossible due to the `satisfy` predicate
 
 /--
+`hexEscape := "\x" hexDigit hexDigit`
+
+Parser for a character given by its code in two hex digits.
+-/
+private def hexEscape : Parser Char := do
+  skipString "\\x"
+  let high ← hexDigit <|> fail "missing two hex digits after `\\x`"
+  let low ← hexDigit <|> fail "missing two hex digits after `\\x`"
+  return Char.ofNat (16 * hexValue high + hexValue low)
+where
+  hexValue (c : Char) : Nat :=
+    if c ≤ '9' then
+      -- The code point of a digit is not its value, but the digits `0-9` have consecutive code
+      -- points, so the offset from `0` is the value.
+      c.toNat - '0'.toNat
+    else
+      -- Likewise, the letters `a-f` have consecutive code points, so the offset from `a` plus `10`
+      -- is the value; `toLower` brings `A-F` to them.
+      c.toLower.toNat - 'a'.toNat + 10
+
+/--
 Parser for escape sequences of named character classes.
 -/
 private def classEscape : Parser NamedClass := do
@@ -97,12 +118,12 @@ Parser for literal characters (except escaped).
 private def literalChar : Parser Char := satisfy (!metaChars.contains ·)
 
 /--
-`symbol := escapedMeta | simpleEscape | literalChar`
+`symbol := escapedMeta | simpleEscape | hexEscape | literalChar`
 
 Parser for literal characters, escape sequences and escaped metacharacters.
 -/
 private def symbol : Parser RegexSyntax := do
-  let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> literalChar <|>
+  let sym ← escapedMeta.attempt <|> simpleEscape.attempt <|> hexEscape <|> literalChar <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
   return .symbol sym
 
@@ -127,12 +148,12 @@ Parser for literal characters inside a character class (except escaped).
 private def classLiteralChar : Parser Char := satisfy (!classMetaChars.contains ·)
 
 /--
-`classChar := escapedClassMeta | simpleEscape | classLiteralChar`
+`classChar := escapedClassMeta | simpleEscape | hexEscape | classLiteralChar`
 
 Parser for a character inside a character class.
 -/
 private def classChar : Parser Char :=
-  escapedClassMeta.attempt <|> simpleEscape.attempt <|> classLiteralChar <|>
+  escapedClassMeta.attempt <|> simpleEscape.attempt <|> hexEscape <|> classLiteralChar <|>
     satisfy ("[^-".contains ·) >>=
       (fun (c : Char) => (fail s!"unescaped `{c}` in character class"))    <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")

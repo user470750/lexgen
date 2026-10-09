@@ -14,9 +14,6 @@ A lexer for Zig, whose elaboration exceeds the default `maxHeartbeats`.
 The lexical grammar of Zig after its own tokenizer, `lib/std/zig/tokenizer.zig` (Zig master,
 2026-10): every token tag of `std.zig.Token` but `invalid` and `eof`, with the tag names in
 camel case and the keywords prefixed with `kw`.
-
-Patterns that exclude the ASCII control characters are ordinary Lean strings, with Lean's `\x`
-escapes for the control characters, since lexgen has no `\x` escapes of its own yet.
 -/
 
 open Lexgen
@@ -25,7 +22,7 @@ set_option maxHeartbeats 400000 in
 lexer ZigToken where
   skip r"[ \t\n\r]+"
   -- A line comment that is not a doc comment: `//` followed by anything but `/` and `!`, or `////`.
-  skip "//(([^/!\x00-\x1f\x7f]|//)[^\x00-\x1f\x7f]*)?"
+  skip r"//(([^/!\x00-\x1f\x7f]|//)[^\x00-\x1f\x7f]*)?"
   | kwAddrspace                           := r"addrspace"
   | kwAlign                               := r"align"
   | kwAllowzero                           := r"allowzero"
@@ -72,14 +69,14 @@ lexer ZigToken where
   | kwVar                                 := r"var"
   | kwVolatile                            := r"volatile"
   | kwWhile                               := r"while"
-  | identifier                            := "[a-zA-Z_][a-zA-Z0-9_]*|@\"([^\"\\\\\x00-\x1f\x7f]|\\\\[^\x00-\x1f\x7f])*\""
+  | identifier                            := r#"[a-zA-Z_][a-zA-Z0-9_]*|@"([^"\\\x00-\x1f\x7f]|\\[^\x00-\x1f\x7f])*""#
   | builtin                               := r"@[a-zA-Z_][a-zA-Z0-9_]*"
-  | stringLiteral                         := "\"([^\"\\\\\x00-\x1f\x7f]|\\\\[^\x00-\x1f\x7f])*\""
-  | charLiteral                           := "'([^'\\\\\x00-\x1f\x7f]|\\\\[^\x00-\x1f\x7f])*'"
-  | multilineStringLiteralLine            := "\\\\\\\\[^\x00-\x1f\x7f]*"
+  | stringLiteral                         := r#""([^"\\\x00-\x1f\x7f]|\\[^\x00-\x1f\x7f])*""#
+  | charLiteral                           := r"'([^'\\\x00-\x1f\x7f]|\\[^\x00-\x1f\x7f])*'"
+  | multilineStringLiteralLine            := r"\\\\[^\x00-\x1f\x7f]*"
   | numberLiteral                         := r"[0-9][_a-zA-Z0-9]*(\.([_a-zA-Z0-9]|[eEpP][+\-])+|[eEpP][+\-]([_a-zA-Z0-9]|[eEpP][+\-])*)?"
-  | docComment                            := "///([^/\x00-\x1f\x7f][^\x00-\x1f\x7f]*)?"
-  | containerDocComment                   := "//![^\x00-\x1f\x7f]*"
+  | docComment                            := r"///([^/\x00-\x1f\x7f][^\x00-\x1f\x7f]*)?"
+  | containerDocComment                   := r"//![^\x00-\x1f\x7f]*"
   | bang                                  := r"!"
   | pipe                                  := r"\|"
   | pipePipe                              := r"\|\|"
