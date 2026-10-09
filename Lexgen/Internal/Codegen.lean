@@ -168,6 +168,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   -- generated code acts on it with a `match`: `ruleNums` are the rule numbers as literals, and
   -- `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
+  let h      ← `(ident| h)
   let input  ← `(ident| input)
   let start  ← `(ident| start)
   let packed ← `(ident| packed)
@@ -193,8 +194,8 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
         -- No match: `Packed.rule` returns a number that no rule has. No rule matches the empty
         -- string, so this is also the case at the end of the input, which is checked only here.
         | _ =>
-          if h : $start = $(input).endPos then
-            Lexgen.Step.done h
+          if $h:ident : $start = $(input).endPos then
+            Lexgen.Step.done $h
           else
             Lexgen.Step.error
   )
