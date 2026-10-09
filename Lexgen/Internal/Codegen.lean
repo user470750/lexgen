@@ -96,8 +96,8 @@ Builds the function of state `state`. The generated function takes `input` and t
 `pos` in it, together with the packed longest match so far `best`, and returns the packed longest
 match.
 -/
-private def buildStateFunc (dfa : DFA) (state : Nat)
-    (trans : Array (DFA.Interval × Nat)) : m Command := do
+private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
+    (recursive : Bool) : m Command := do
   let funcName ← stateName state
   let input ← `(ident| input)
   let pos   ← `(ident| pos)
@@ -107,20 +107,26 @@ private def buildStateFunc (dfa : DFA) (state : Nat)
     buildTrans input pos (← `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)) trans
   else
     buildTrans input pos best trans
-  -- `partial` is needed for now: Lean cannot see that the position grows with every call.
-  `(partial def $funcName ($input : String) ($pos : String.Pos $input)
-      ($best : Lexgen.Internal.Packed $input) : Lexgen.Internal.Packed $input :=
-    $body)
+  let termination? := if recursive then some pos else none
+  `(
+    def $funcName ($input : String) ($pos : String.Pos $input)
+        ($best : Lexgen.Internal.Packed $input) : Lexgen.Internal.Packed $input :=
+      $body
+    $[termination_by $termination?]?
+  )
 
 /--
 Builds the functions of all states of `dfa` but the trap as one `mutual` block, since they call each
 other.
 -/
 private def buildStateFuncs (dfa : DFA) : m Command := do
+  let recursiveStates := dfa.recursiveStates
   -- The trap needs no function: no branch calls it. It comes before the start state, and every
   -- other state comes after it.
   let stateFuncs ← (dfa.trans.extract DFA.start).mapIdxM
-    fun i => (buildStateFunc dfa (DFA.start + i))
+    fun i trans =>
+      let state := DFA.start + i
+      buildStateFunc dfa state trans (recursiveStates.contains state)
   `(mutual $stateFuncs* end)
 
 /--

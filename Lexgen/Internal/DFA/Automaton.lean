@@ -9,6 +9,8 @@ public import Lexgen.Internal.DFA.Interval
 public import Std.Data.HashMap
 public import Std.Data.HashSet
 
+import Lean.Util.SCC
+
 public section
 
 /-!
@@ -55,6 +57,37 @@ Returns the rules that some state of `dfa` accepts.
 -/
 def liveRules (dfa : DFA) : Std.HashSet Nat :=
   Std.HashSet.ofList dfa.accepting.values
+
+/--
+Returns the states of `dfa` that lie on a cycle of transitions.
+-/
+def recursiveStates (dfa : DFA) : Std.HashSet Nat :=
+  let components := Lean.SCC.scc
+    (List.range dfa.trans.size)
+    (Array.toList ∘ successorsOf)
+  components.foldl (init := {}) addComponent
+where
+  /--
+  Returns the states that `state` has transitions to.
+  -/
+  successorsOf (state : Nat) : Array Nat := dfa.trans[state]!.map (·.2)
+
+  /--
+  Checks whether `state` has a transition to itself.
+  -/
+  isSelfRecursive (state : Nat) : Bool := (successorsOf state).contains state
+
+  /--
+  Adds the states of a strongly connected component to `acc` if they lie on a cycle: a component of
+  several states always does, a single state only if it has a transition to itself.
+  -/
+  addComponent (acc : Std.HashSet Nat) : List Nat → Std.HashSet Nat
+  | [state] =>
+    if isSelfRecursive state then
+      acc.insert state
+    else
+      acc
+  | states => acc.insertMany states
 
 end DFA
 
