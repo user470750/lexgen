@@ -175,15 +175,17 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let stopAt ← `(ident| stopAt)
   -- A match never stops before it starts, so `slice!` never panics.
   let slice  ← `($(input).slice! $start $stopAt)
-  let branches ← rules.mapM fun
+  let mut branches ← rules.mapM fun
     | .simple name =>
-      `(Lexgen.Step.token .$name $stopAt)
+      `(Lexgen.Step.token .$name $stopAt $h)
     | .converted name valueType func => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
       -- Only a converted token needs its slice here.
-      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $stopAt)
-    | .skip => `(Lexgen.Step.skip $stopAt)
+      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $stopAt $h)
+    | .skip => `(Lexgen.Step.skip $stopAt $h)
+  branches ← branches.mapM fun step =>
+    `(if $h:ident : $start < $stopAt then $step else Lexgen.Step.error)
   `(
     instance : Lexgen.Lexable $typeName where
       next $input:ident $start:ident :=

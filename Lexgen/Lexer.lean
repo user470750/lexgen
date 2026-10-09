@@ -66,13 +66,15 @@ The result of matching the input `input` from the position `start`.
 -/
 inductive Step (α : Type) (input : String) (start : input.Pos) where
   /--
-  The token `token`, which stops right before `stop`.
+  The token `token`, which stops right before `stop`: `h` proves that the match moves the position
+  forward.
   -/
-  | token (token : α) (stop : input.Pos)
+  | token (token : α) (stop : input.Pos) (h : start < stop)
   /--
-  A match of a skip rule, which stops right before `stop`.
+  A match of a skip rule, which stops right before `stop`: `h` proves that the match moves the
+  position forward.
   -/
-  | skip (stop : input.Pos)
+  | skip (stop : input.Pos) (h : start < stop)
   /--
   The end of the input: `h` proves that `start` is the last position of `input`.
   -/
@@ -110,7 +112,7 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 /--
 Returns the tokens of the whole input, if there are no errors.
 -/
-partial def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
+def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
   collect lexer.source lexer.source.startPos #[]
 where
   /--
@@ -119,16 +121,17 @@ where
   collect (input : String) (start : input.Pos) (acc : Array α) :
       Except String (Array α) :=
     match Lexable.next input start with
-    | .token token stop => collect input stop (acc.push token)
-    | .skip stop        => collect input stop acc
-    | .done _           => .ok acc
+    | .token token stop _ => collect input stop (acc.push token)
+    | .skip stop _        => collect input stop acc
+    | .done _             => .ok acc
     | .error =>
       .error s!"offset {start.offset.byteIdx}: no rule matches the input"
+  termination_by start
 
 /--
 Returns the tokens of the whole input with their positions, if there are no errors.
 -/
-partial def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
+def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
   collect lexer.source lexer.source.startPos #[]
 where
   /--
@@ -137,10 +140,11 @@ where
   collect (input : String) (start : input.Pos) (acc : Array (Spanned α)) :
       Except String (Array (Spanned α)) :=
     match Lexable.next input start with
-    | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)
-    | .skip stop        => collect input stop acc
-    | .done _           => .ok acc
+    | .token token stop _ => collect input stop (acc.push ⟨token, input, start, stop⟩)
+    | .skip stop _        => collect input stop acc
+    | .done _             => .ok acc
     | .error =>
       .error s!"offset {start.offset.byteIdx}: no rule matches the input"
+  termination_by start
 
 end Lexgen
