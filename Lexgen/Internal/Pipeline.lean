@@ -47,20 +47,23 @@ inductive ConversionError where
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
 
 Rules are numbered by position: when several of them match the same text, the one declared earlier
-wins. The `DFA` is minimized, and the neighbouring intervals of a state that lead to the same state
-are merged.
+wins. The `DFA` is minimized if `minimization` is set, and the neighbouring intervals of a state
+that lead to the same state are merged.
 
 Returns the errors of all rules: an error for each rule that is not a valid regular expression or
 matches the empty string, or a single error if there are no rules at all.
 -/
-def rulesToDFA (patterns : List String) : Except (Array ConversionError) DFA := do
+def rulesToDFA (patterns : List String) (minimization : Bool) :
+    Except (Array ConversionError) DFA := do
   let checked := patterns.zipIdx.map checkRule
   let errors := checked.filterMap (if let .error err := · then some err else none)
   unless errors.isEmpty do
     throw errors.toArray
   match checked.filterMap (·.toOption) with
-  | []            => throw #[.noRules]
-  | first :: rest => pure (DFA.ofNFA (NFA.ofRules first rest)).minimize.merge
+  | [] => throw #[.noRules]
+  | first :: rest =>
+    let dfa := DFA.ofNFA (NFA.ofRules first rest)
+    pure (if minimization then dfa.minimize.merge else dfa.merge)
 where
   /--
   Parses the pattern of a rule, paired with the rule number, and checks that it does not match the
