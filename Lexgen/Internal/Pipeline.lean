@@ -11,7 +11,8 @@ import Lexgen.Internal.DFA.Construction
 import Lexgen.Internal.DFA.Merge
 import Lexgen.Internal.DFA.Moore
 import Lexgen.Internal.NFA.Thompson
-import Lexgen.Internal.Regex
+import Lexgen.Internal.Regex.Desugar
+import Lexgen.Internal.Regex.Parser
 
 public section
 
@@ -23,6 +24,11 @@ Defines `rulesToDFA`, the entry point of the regex → NFA → DFA pipeline, and
 -/
 
 namespace Lexgen.Internal
+
+/--
+The largest number of nodes a pattern may have once its repetitions are expanded.
+-/
+def maxRegexSize : Nat := 2000
 
 /--
 An error of `rulesToDFA`. Rules are given by their numbers, so that the `lexer` command can report
@@ -42,6 +48,11 @@ inductive ConversionError where
   token of length zero.
   -/
   | matchesEmpty (rule : Nat)
+  /--
+  Rule `rule` is too large: once its repetitions are expanded, it has more than `maxRegexSize`
+  nodes.
+  -/
+  | tooLarge (rule : Nat)
 
 /--
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
@@ -50,8 +61,8 @@ Rules are numbered by position: when several of them match the same text, the on
 wins. The `DFA` is minimized if `minimization` is set, and the neighbouring intervals of a state
 that lead to the same state are merged.
 
-Returns the errors of all rules: an error for each rule that is not a valid regular expression or
-matches the empty string, or a single error if there are no rules at all.
+Returns the errors of all rules: an error for each rule that is not a valid regular expression, is
+too large or matches the empty string, or a single error if there are no rules at all.
 -/
 def rulesToDFA (patterns : List String) (minimization : Bool) :
     Except (Array ConversionError) DFA := do
@@ -66,12 +77,15 @@ def rulesToDFA (patterns : List String) (minimization : Bool) :
     pure (if minimization then dfa.minimize.merge else dfa.merge)
 where
   /--
-  Parses the pattern of a rule, paired with the rule number, and checks that it does not match the
-  empty string, tagging an error with the rule number.
+  Parses the pattern of a rule, paired with the rule number, checks its size before desugaring it,
+  and checks that it does not match the empty string, tagging an error with the rule number.
   -/
   checkRule : String × Nat → Except ConversionError RegexAST
     | (pattern, rule) => do
-      let regex ← (parse pattern).mapError fun err => .invalidPattern rule err.offset err.msg
+      let parsed ← (parseRegex pattern).mapError fun err => .invalidPattern rule err.offset err.msg
+      if parsed.countNodes > maxRegexSize then
+        throw (.tooLarge rule)
+      let regex := parsed.desugar
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
       return regex

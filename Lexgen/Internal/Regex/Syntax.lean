@@ -105,4 +105,15 @@ inductive RegexSyntax where
   | ε
 deriving Repr, DecidableEq
 
+/--
+Estimates the size of `re` after desugaring.
+-/
+def RegexSyntax.countNodes : RegexSyntax → Nat
+  | .ε | .dot | .charClass .. | .namedClass _ | .symbol _ => 1
+  | .alt left right                => countNodes left + countNodes right
+  | .concat first second           => countNodes first + countNodes second
+  | .repeated (.atLeast n) re      => (n + 1) * countNodes re
+  -- Each of the `m - n` optional copies is an `alt` with an `ε` leaf.
+  | .repeated (.between n m _) re  => m * countNodes re + (m - n)
+
 end Lexgen.Internal

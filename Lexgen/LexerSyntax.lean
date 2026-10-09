@@ -122,6 +122,10 @@ private meta def throwConversionErrors (patterns : Array StrLit) (errors : Array
       logErrorAt
         patterns[rule]!
         "this rule matches the empty string, so the lexer would loop on it"
+    | .tooLarge rule =>
+      logErrorAt
+        patterns[rule]!
+        m!"this rule is too large: its repetitions expand into more than {maxRegexSize} AST leaves"
   throwAbortCommand
 
 /--

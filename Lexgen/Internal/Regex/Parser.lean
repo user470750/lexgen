@@ -193,6 +193,11 @@ private def charClass : Parser RegexSyntax := do
   return .charClass negate items
 
 /--
+The largest repetition count a quantifier may have.
+-/
+private def maxRepetitions : Nat := 1000
+
+/--
 `rangeQuantifier := "{" digits ("," digits?)? "}"`
 
 Parser for a range quantifier.
@@ -200,10 +205,14 @@ Parser for a range quantifier.
 private def rangeQuantifier : Parser Quantity := do
   leftBrace
   let n ← digits <|> fail "missing number after `{`"
+  if n > maxRepetitions then
+    fail s!"invalid quantifier `\{{n}`: more than {maxRepetitions} repetitions"
   let spec ← (do
       skipChar ','
       (do
         let m ← digits
+        if m > maxRepetitions then
+          fail s!"invalid quantifier `\{{n},{m}`: more than {maxRepetitions} repetitions"
         if h : n ≤ m then
           pure (.between n m h)
         else fail s!"invalid range `\{{n},{m}}`: maximum less than minimum"
