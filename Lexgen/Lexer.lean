@@ -121,7 +121,7 @@ where
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push token)
     | .skip stop        => collect input stop acc
-    | .done ..          => .ok acc
+    | .done _           => .ok acc
     | .error =>
       .error s!"offset {start.offset.byteIdx}: no rule matches the input"
 
@@ -139,7 +139,7 @@ where
     match Lexable.next input start with
     | .token token stop => collect input stop (acc.push ⟨token, input, start, stop⟩)
     | .skip stop        => collect input stop acc
-    | .done ..          => .ok acc
+    | .done _           => .ok acc
     | .error =>
       .error s!"offset {start.offset.byteIdx}: no rule matches the input"
 
