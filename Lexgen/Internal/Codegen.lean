@@ -10,6 +10,7 @@ public import Lexgen.Internal.DFA.Automaton
 import Lean
 -- The quotations below name declarations of these modules: without the imports, the names stay
 -- hygienic, and the generated code reports them as unknown identifiers.
+import Lexgen.Internal.Instances
 import Lexgen.Internal.Pack
 import Lexgen.Lexer
 
@@ -83,7 +84,12 @@ private def buildTrans (input pos : Ident) (best : Term)
     | .single character =>
       `(if $c:ident = $(quote character) then $target else $rest)
     | .range lower upper =>
-      `(if $(quote lower) ≤ $c:ident ∧ $c:ident ≤ $(quote upper) then $target else $rest)
+      `(
+        if Lexgen.Internal.inRange $c $(quote lower) $(quote upper) then
+          $target
+        else
+          $rest
+      )
   -- At the end of the input, the longest match is also the one so far.
   `(if $h:ident : $pos ≠ $(input).endPos then
       let $c:ident := $(pos).get $h
