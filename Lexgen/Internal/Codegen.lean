@@ -81,9 +81,9 @@ private def buildTrans (input pos : Ident) (best : Term)
     let target ← `($(← stateName next) $input ($(pos).next $h) $best)
     match interval with
     | .single character =>
-      `(if $c:ident == $(quote character) then $target else $rest)
+      `(if $c:ident = $(quote character) then $target else $rest)
     | .range lower upper =>
-      `(if $(quote lower) ≤ $c:ident && $c:ident ≤ $(quote upper) then $target else $rest)
+      `(if $(quote lower) ≤ $c:ident ∧ $c:ident ≤ $(quote upper) then $target else $rest)
   -- At the end of the input, the longest match is also the one so far.
   `(if $h:ident : $pos ≠ $(input).endPos then
       let $c:ident := $(pos).get $h
