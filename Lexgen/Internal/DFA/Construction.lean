@@ -57,13 +57,20 @@ private def step (interval : DFA.Interval) : NFA.Node → List Nat
 namespace DFA
 
 /--
+Returns the states of `set` in ascending order: the canonical form of a `DFA` state, so equal sets
+of `NFA` states give equal arrays.
+-/
+private def canonical (set : Std.HashSet Nat) : Array Nat :=
+  set.toArray.qsort (· < ·)
+
+/--
 Maps a set of states to the new set of states reachable via a transition on `interval` followed by
 any number of ε-transitions.
 -/
-private def reachedOn (nfa : NFA) (states : Std.HashSet Nat) (interval : DFA.Interval) :
-    Std.HashSet Nat :=
+private def reachedOn (nfa : NFA) (states : Array Nat) (interval : DFA.Interval) :
+    Array Nat :=
   let raw := states.toList.flatMap (fun state => step interval nfa.nodes[state]!)
-  raw.foldl nfa.εClosure {}
+  canonical (raw.foldl nfa.εClosure {})
 
 /--
 Returns the alphabet of `nfa`: sorted, disjoint intervals covering every character, such that no
@@ -106,8 +113,8 @@ states is accepting.
 When several rules are accepted, the one with the smallest number (rule declared earlier) takes
 priority.
 -/
-private def acceptingRule? (nfa : NFA) (states : Std.HashSet Nat) : Option Nat :=
-  let rules := states.toList.filterMap fun state =>
+private def acceptingRule? (nfa : NFA) (states : Array Nat) : Option Nat :=
+  let rules := states.filterMap fun state =>
     if let .done rule := nfa.nodes[state]! then
       some rule
     else
@@ -127,7 +134,10 @@ def ofNFA (nfa : NFA) : DFA :=
     let alphabet : Array DFA.Interval := alphabet nfa
 
     -- The trap goes first and the start state second.
-    let mut states    : Array (Std.HashSet Nat)            := #[{}, nfa.εClosure {} NFA.start]
+    let start := canonical (nfa.εClosure {} NFA.start)
+    let mut states    : Array (Array Nat)                  := #[#[], start]
+    -- The index of each set in `states`, to find a reached set without a linear search.
+    let mut ids       : Std.HashMap (Array Nat) Nat        := {(#[], DFA.trap), (start, DFA.start)}
     let mut trans     : Array (Array (DFA.Interval × Nat)) := #[]
     let mut accepting : Std.HashMap Nat Nat                := {}
 
@@ -142,14 +152,12 @@ def ofNFA (nfa : NFA) : DFA :=
       let mut row : Array (DFA.Interval × Nat) := #[]
       for interval in alphabet do
         let reached := reachedOn nfa states[current]! interval
-        -- TODO: `findIdx?` searches `states` linearly for every transition, which makes the
-        -- construction `O(n^2)` in the number of states. A hash structure next to `states` may be
-        -- a solution.
-        match states.findIdx? (· == reached) with
+        match ids[reached]? with
         | some existingId => row := row.push (interval, existingId)
         | none            =>
           lastState := lastState + 1
           states := states.push reached
+          ids := ids.insert reached lastState
           row := row.push (interval, lastState)
           if let some rule := acceptingRule? nfa reached then
             accepting := accepting.insert lastState rule
