@@ -18,7 +18,7 @@ camel case and the keywords prefixed with `kw`.
 
 open Lexgen
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 250000 in
 lexer ZigToken where
   skip r"[ \t\n\r]+"
   -- A line comment that is not a doc comment: `//` followed by anything but `/` and `!`, or `////`.

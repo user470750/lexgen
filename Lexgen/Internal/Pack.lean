@@ -44,10 +44,10 @@ def Packed.noMatch {input : String} : Packed input := ⟨0⟩
 /--
 Packs the rule `rule` of a match and the position `stop` right before which it stops.
 -/
+-- `rule + 1` must be below `2 ^ ruleBits`, so that it does not reach the bits of the position: the
+-- `lexer` command rejects a lexer with more rules.
 @[inline]
-def Packed.ofMatch {input : String} (rule : Nat) (stop : input.Pos)
-    -- The rule must not reach the bits of the position.
-    (_ : rule + 1 < 2 ^ ruleBits := by decide) : Packed input :=
+def Packed.ofMatch {input : String} (rule : Nat) (stop : input.Pos) : Packed input :=
   ⟨(stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64) ||| (rule + 1).toUInt64⟩
 
 /--
