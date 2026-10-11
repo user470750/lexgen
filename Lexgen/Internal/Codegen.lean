@@ -27,18 +27,36 @@ Defines `buildLexer`: translating a `DFA` into the code of the generated lexer.
 namespace Lexgen.Internal
 
 /--
+The token type of a `lexer` declaration.
+-/
+structure TypeInfo where
+  /--
+  The name of the type.
+  -/
+  name : Ident
+  /--
+  The docstring of the type, if any.
+  -/
+  doc? : Option (TSyntax ``Parser.Command.docComment)
+  /--
+  The instances to derive for the type, if any.
+  -/
+  derivings? : Option (Array Ident)
+
+/--
 A rule of a `lexer` declaration.
 -/
 inductive RuleInfo where
   /--
-  A token named `name`, without a value.
+  A token named `name`, without a value, with the docstring `doc?`, if any.
   -/
-  | simple (name : Ident)
+  | simple (name : Ident) (doc? : Option (TSyntax ``Parser.Command.docComment))
   /--
   A token named `name` with a value of type `valueType`, which `func` computes from the token's
-  slice.
+  slice, with the docstring `doc?`, if any.
   -/
   | converted (name : Ident) (valueType : Term) (func : Term)
+      (doc? : Option (TSyntax ``Parser.Command.docComment))
   /--
   A skip rule.
   -/
@@ -48,9 +66,9 @@ inductive RuleInfo where
 Returns the name of the token, or `none` for a skip rule.
 -/
 def RuleInfo.name : RuleInfo → Option Ident
-  | .simple name        => some name
-  | .converted name _ _ => some name
-  | .skip               => none
+  | .simple name _     => some name
+  | .converted name .. => some name
+  | .skip              => none
 
 variable [Monad m] [MonadQuotation m]
 
@@ -136,20 +154,23 @@ private def buildStateFuncs (dfa : DFA) : m Command := do
   `(mutual $stateFuncs* end)
 
 /--
-Builds the inductive type named `typeName`, with a constructor for each of `rules` but the skip
-rules, carrying a value if the token has one, deriving the instances in `derivings`, if any.
+Builds the inductive type named `typeInfo.name`, with a constructor for each of `rules` but the skip
+rules, carrying a value if the token has one. The type and its constructors get the docstrings of
+the declaration and of their rules, if any. The type derives the instances in `typeInfo.derivings?`,
+if any.
 -/
-private def buildTokenType (typeName : Ident) (rules : Array RuleInfo)
-    (derivings : Option (Array Ident)) : m Command := do
+private def buildTokenType (typeInfo : TypeInfo) (rules : Array RuleInfo) : m Command := do
   let ctors ← rules.filterMapM fun
-    | .simple name                => some <$> `(Lean.Parser.Command.ctor| | $name:ident)
-    | .converted name valueType _ =>
-      some <$> `(Lean.Parser.Command.ctor| | $name:ident (value : $valueType))
+    | .simple name doc? =>
+      some <$> `(Lean.Parser.Command.ctor| $[$doc?:docComment]? | $name:ident)
+    | .converted name valueType _ doc? =>
+      some <$> `(Lean.Parser.Command.ctor| $[$doc?:docComment]? | $name:ident (value : $valueType))
     | .skip => pure none
   `(
-    inductive $typeName where
+    $[$(typeInfo.doc?):docComment]?
+    inductive $(typeInfo.name) where
       $ctors*
-    $[deriving $[$derivings:ident],*]?
+    $[deriving $[$(typeInfo.derivings?):ident],*]?
   )
 
 /--
@@ -181,9 +202,9 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let stopAt ← `(ident| stopAt)
   let slice  ← `($(input).slice $start $stopAt (String.Pos.le_of_lt $h))
   let mut branches ← rules.mapM fun
-    | .simple name =>
+    | .simple name _ =>
       `(Lexgen.Step.token .$name $stopAt $h)
-    | .converted name valueType func => do
+    | .converted name valueType func _ => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
       -- Only a converted token needs its slice here.
@@ -210,8 +231,8 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
-* an inductive type named `typeName`, with a constructor for each of `rules` but the skip rules,
-  deriving the instances in `derivings`, if any;
+* an inductive type named `typeInfo.name`, with a constructor for each of `rules` but the skip
+  rules, with their docstrings, if any, deriving the instances in `typeInfo.derivings?`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
 * the `Lexable` instance of that type;
 * a function `lexer` in the namespace of that type, which creates a `Lexer` for a string.
@@ -219,13 +240,12 @@ Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 Tokens are matched to rules by position, so `rules` must be in the same order as the rules `dfa` was
 built from.
 -/
-def buildLexer (typeName : Ident) (rules : Array RuleInfo) (dfa : DFA)
-    (derivings : Option (Array Ident)) : m (Array Command) := do
+def buildLexer (typeInfo : TypeInfo) (rules : Array RuleInfo) (dfa : DFA) : m (Array Command) := do
   return #[
-    ← buildTokenType typeName rules derivings,
+    ← buildTokenType typeInfo rules,
     ← buildStateFuncs dfa,
-    ← buildLexableImpl typeName rules,
-    ← buildLexerFunc typeName
+    ← buildLexableImpl typeInfo.name rules,
+    ← buildLexerFunc typeInfo.name
   ]
 
 end Lexgen.Internal

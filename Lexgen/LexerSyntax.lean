@@ -32,21 +32,24 @@ Token rules of the `lexer` command
 -/
 declare_syntax_cat lexgenRule
 
+-- A rule starts with its docstring, if any, and `|`, parsed together by `atomic`: otherwise the
+-- docstring of the command after the rules would be taken for the start of one more rule.
+
 /--
 A rule of a token without a value.
 -/
-syntax ident ":=" str : lexgenRule
+syntax atomic((docComment)? "|") ident ":=" str : lexgenRule
 
 /--
 A rule of a token with a value: the name of the token, the type of the value, the pattern, and the
 function computing the value from the token's slice.
 -/
-syntax ident ":" term ":=" str "=>" term : lexgenRule
+syntax atomic((docComment)? "|") ident ":" term ":=" str "=>" term : lexgenRule
 
 /--
 A skip rule of the `lexer` command: the pattern of the text that is dropped.
 -/
-syntax skipRule := "skip" str
+syntax skipRule := atomic((docComment)? "skip") str
 
 /--
 Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
@@ -62,12 +65,16 @@ matches, lexing fails with the byte offset of the failure.
 Rules `skip r"…"`, written before the others, match text that is dropped, such as whitespace or
 comments; being declared first, they win over other rules matching the same text.
 
+A docstring before `lexer` documents the token type, and a docstring before a token rule documents
+its constructor. A docstring before a skip rule is ignored, since a skip rule declares nothing.
+
 An optional `deriving` clause after the rules derives the listed instances for the token type.
 -/
 syntax
+(docComment)?
 "lexer" ident "where"
   skipRule*
-  ("|" lexgenRule)*
+  (lexgenRule)*
   -- Skip rules after the token rules are accepted only to report them as an error.
   skipRule*
 ("deriving" ident,+)? : command
@@ -80,9 +87,10 @@ private meta def getRules (rules : Array (TSyntax `lexgenRule))
     (skipPatterns : Array (TSyntax `str)) : CommandElabM (Array RuleInfo × Array StrLit) := do
   return skipPatterns.map (RuleInfo.skip, ·) ++
   (← rules.mapM fun
-    | `(lexgenRule| $tokenName:ident := $pattern) => pure (RuleInfo.simple tokenName, pattern)
-    | `(lexgenRule| $tokenName:ident : $valueType := $pattern => $func) =>
-      pure (RuleInfo.converted tokenName valueType func, pattern)
+    | `(lexgenRule| $[$doc?]? | $tokenName:ident := $pattern) =>
+      pure (RuleInfo.simple tokenName doc?, pattern)
+    | `(lexgenRule| $[$doc?]? | $tokenName:ident : $valueType := $pattern => $func) =>
+      pure (RuleInfo.converted tokenName valueType func doc?, pattern)
     | _ => throwUnsupportedSyntax)
   |>.unzip
 
@@ -165,10 +173,11 @@ type, a function per `DFA` state, the `Lexable` instance of the type and the fun
 -/
 elab_rules : command
   | `(
+      $[$doc?]?
       lexer $typeName:ident where
-        $[skip $skipPatterns]*
-        $[| $rules:lexgenRule]*
-      $[deriving $[$derivings:ident],*]?
+        $[$[$_]? skip $skipPatterns]*
+        $[$rules:lexgenRule]*
+      $[deriving $[$derivings?:ident],*]?
     ) => do
     let (ruleInfos, patterns) ← getRules rules skipPatterns
     if ruleInfos.size > 2 ^ ruleBits - 1 then
@@ -176,17 +185,18 @@ elab_rules : command
     checkNames typeName (ruleInfos.filterMap (·.name))
     let dfa ← getDFA patterns
     logDeadRules patterns dfa
-    for cmd in ← buildLexer typeName ruleInfos dfa derivings do
+    for cmd in ← buildLexer ⟨typeName, doc?, derivings?⟩ ruleInfos dfa do
       elabCommand cmd
       -- The later declarations refer to the earlier ones, so once one of them fails the rest only
       -- add noise.
       if ← MonadLog.hasErrors then
         throwAbortCommand
   | `(
+      $[$doc?]?
       lexer $_:ident where
         $_*
-        $[| $rules:lexgenRule]*
-        $lateSkips*
+        $[$rules:lexgenRule]*
+        $lateSkips:skipRule*
       $[deriving $[$derivings:ident],*]?
     ) =>
     throwLateSkipError lateSkips
