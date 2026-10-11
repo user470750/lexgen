@@ -76,7 +76,7 @@ syntax
   skipRule*
   (lexgenRule)*
   -- Skip rules after the token rules are accepted only to report them as an error.
-  skipRule*
+  (skipRule+)?
 ("deriving" ident,+)? : command
 
 /--
