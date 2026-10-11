@@ -42,9 +42,13 @@ converting the matched text), and expands into an ordinary Lean inductive togeth
 with the lexer itself. Patterns are written as raw string literals, so regex escapes
 need no extra backslashes. Text matching a `skip` rule, such as whitespace, is
 dropped. An optional `deriving` clause derives instances for the token type, as for
-any inductive. As an example, tokens for a JSON lexer:
+any inductive. A docstring before `lexer` documents the token type, and one before a
+token rule documents its constructor. As an example, tokens for a JSON lexer:
 
 ```lean
+/--
+Tokens of JSON.
+-/
 lexer Token where
   skip r"[ \t\n\r]+"
   | lbrace          := r"\{"
@@ -57,7 +61,13 @@ lexer Token where
   | jfalse          := r"false"
   | null            := r"null"
   -- `stringToFloat` and `unquote` are user-defined conversions of the matched text
+  /--
+  A number, converted to a `Float`.
+  -/
   | number : Float  := r"-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?" => stringToFloat
+  /--
+  A string literal without its quotes, with escapes resolved.
+  -/
   | string : String := r#""([^"\\]|\\(["\\/bfnrt]|u[0-9a-fA-F]{4}))*""# => unquote
 deriving Repr, BEq
 ```
