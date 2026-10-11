@@ -180,6 +180,9 @@ elab_rules : command
       $[deriving $[$derivings?:ident],*]?
     ) => do
     let (ruleInfos, patterns) ← getRules rules skipPatterns
+    -- Do not remove this check, although real lexers have far fewer than `65535` rules: it is the
+    -- only check that keeps a rule within the bits a `Lexgen.Internal.Packed` gives it, since
+    -- `Lexgen.Internal.Packed.ofMatch` takes the rule number without a proof.
     if ruleInfos.size > 2 ^ ruleBits - 1 then
       throwError "too many rules"
     checkNames typeName (ruleInfos.filterMap (·.name))
