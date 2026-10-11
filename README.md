@@ -17,13 +17,13 @@ Add Lexgen as a dependency in `lakefile.toml`:
 [[require]]
 name = "lexgen"
 git = "https://github.com/user470750/lexgen"
-rev = "main"
+rev = "v0.1.0"
 ```
 
 or in `lakefile.lean`:
 
 ```lean
-require lexgen from git "https://github.com/user470750/lexgen" @ "main"
+require lexgen from git "https://github.com/user470750/lexgen" @ "v0.1.0"
 ```
 
 Make sure that your project uses the same Lean toolchain as Lexgen, given in its
