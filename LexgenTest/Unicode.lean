@@ -63,6 +63,6 @@ lexer Word where
   | cyrillic := r"[а-яА-ЯёЁ]+"
 deriving Repr
 
-/-- info: Except.error "offset 13: no rule matches the input" -/
+/-- info: Except.error { offset := 13 } -/
 #guard_msgs in
 #eval (Lexer.new "привет ?" : Lexer Word).tokens

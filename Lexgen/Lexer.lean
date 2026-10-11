@@ -64,6 +64,19 @@ instance [Repr α] : Repr (Spanned α) where
   reprPrec s _ := "{ token := " ++ repr s.token ++ ", slice := " ++ repr s.slice.toString ++ " }"
 
 /--
+A lexing error.
+-/
+structure LexError where
+  /--
+  The byte offset in the source string where no rule matches.
+  -/
+  offset : Nat
+deriving Repr, BEq
+
+instance : ToString LexError where
+  toString e := s!"offset {e.offset}: no rule matches the input"
+
+/--
 The result of matching the input `input` from the position `start`.
 -/
 inductive Step (α : Type) (input : String) (start : input.Pos) where
@@ -114,39 +127,40 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 /--
 Returns the tokens of the whole input, if there are no errors.
 -/
-def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except String (Array α) :=
+def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except LexError (Array α) :=
   collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start`.
   -/
   collect (input : String) (start : input.Pos) (acc : Array α) :
-      Except String (Array α) :=
+      Except LexError (Array α) :=
     match Lexable.next input start with
     | .token token stop _ => collect input stop (acc.push token)
     | .skip stop _        => collect input stop acc
     | .done _             => .ok acc
     | .error =>
-      .error s!"offset {start.offset.byteIdx}: no rule matches the input"
+      .error ⟨start.offset.byteIdx⟩
   termination_by start
 
 /--
 Returns the tokens of the whole input with their positions, if there are no errors.
 -/
-def Lexer.spanned [Lexable α] (lexer : Lexer α) : Except String (Array (Spanned α)) :=
+def Lexer.spanned [Lexable α] (lexer : Lexer α) :
+    Except LexError (Array (Spanned α)) :=
   collect lexer.source lexer.source.startPos #[]
 where
   /--
   Returns `acc` followed by the tokens of `input` from `start` with their positions.
   -/
   collect (input : String) (start : input.Pos) (acc : Array (Spanned α)) :
-      Except String (Array (Spanned α)) :=
+      Except LexError (Array (Spanned α)) :=
     match Lexable.next input start with
     | .token token stop h => collect input stop (acc.push ⟨token, input, start, stop, h⟩)
     | .skip stop _        => collect input stop acc
     | .done _             => .ok acc
     | .error =>
-      .error s!"offset {start.offset.byteIdx}: no rule matches the input"
+      .error ⟨start.offset.byteIdx⟩
   termination_by start
 
 end Lexgen

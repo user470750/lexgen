@@ -47,6 +47,6 @@ deriving BEq, Repr
   (.ident, "a", 0, 1)
 ]
 
-/-- info: Except.error "offset 2: no rule matches the input" -/
+/-- info: Except.error { offset := 2 } -/
 #guard_msgs in
 #eval (Lexer.new "a // b" : Lexer Token).tokens

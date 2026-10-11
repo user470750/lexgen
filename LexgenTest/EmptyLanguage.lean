@@ -25,6 +25,6 @@ deriving BEq, Repr
 #guard lex Nothing "" == some #[]
 #guard lex Nothing "x" == none
 
-/-- info: Except.error "offset 0: no rule matches the input" -/
+/-- info: Except.error { offset := 0 } -/
 #guard_msgs in
 #eval (Lexer.new "x" : Lexer Nothing).tokens
