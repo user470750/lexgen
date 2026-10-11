@@ -103,7 +103,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 **Header.** `type(scope): summary`, where:
 
-* `type` is one of `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `ci`;
+* `type` is one of `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `build`, `ci`;
 * `scope` names the affected module or part of the project, e.g. `DFA`, `parser`,
   `readme`;
 * `summary` is a short imperative phrase in lowercase without a trailing period;
