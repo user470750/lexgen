@@ -27,6 +27,8 @@ The rule of a match in the input `input` and the position where the match stops,
 number. Only `Packed.noMatch` and `Packed.ofMatch` build one, so that the position is always a valid
 position of `input`.
 -/
+-- The rule and the position are packed into a `UInt64` only because the `@[unbox]` attribute does
+-- not work: otherwise `Packed` would keep the position and the rule in separate fields.
 structure Packed (input : String) where
   private mk ::
   /--
