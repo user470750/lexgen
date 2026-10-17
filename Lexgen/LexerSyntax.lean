@@ -28,12 +28,13 @@ Defines the `lexer` command: its syntax and its elaboration.
 namespace Lexgen
 
 /--
-Token rules of the `lexer` command
+Rules of the `lexer` command: token rules and skip rules.
 -/
 declare_syntax_cat lexgenRule
 
--- A rule starts with its docstring, if any, and `|`, parsed together by `atomic`: otherwise the
--- docstring of the command after the rules would be taken for the start of one more rule.
+-- A rule starts with its docstring, if any, and `|` or `skip`, parsed together by `atomic`:
+-- otherwise the docstring of the command after the rules would be taken for the start of one more
+-- rule.
 
 /--
 A rule of a token without a value.
@@ -49,7 +50,7 @@ syntax atomic((docComment)? "|") ident ":" term ":=" str "=>" term : lexgenRule
 /--
 A skip rule of the `lexer` command: the pattern of the text that is dropped.
 -/
-syntax skipRule := atomic((docComment)? "skip") str
+syntax atomic((docComment)? "skip") str : lexgenRule
 
 /--
 Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
@@ -62,8 +63,8 @@ literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the cons
 longest match; when several rules match the same text, the one declared earlier wins. If no rule
 matches, lexing fails with the byte offset of the failure.
 
-Rules `skip r"…"`, written before the others, match text that is dropped, such as whitespace or
-comments; being declared first, they win over other rules matching the same text.
+Rules `skip r"…"`, which may be mixed with the token rules, match text that is dropped, such as
+whitespace or comments.
 
 A docstring before `lexer` documents the token type, and a docstring before a token rule documents
 its constructor. A docstring before a skip rule is ignored, since a skip rule declares nothing.
@@ -73,26 +74,22 @@ An optional `deriving` clause after the rules derives the listed instances for t
 syntax
 (docComment)?
 "lexer" ident "where"
-  skipRule*
   (lexgenRule)*
-  -- Skip rules after the token rules are accepted only to report them as an error.
-  (skipRule+)?
 ("deriving" ident,+)? : command
 
 /--
-Builds two parallel arrays from the token rules and the skip patterns of a `lexer` declaration: one
-holds the `RuleInfo` of each rule, the other its pattern.
+Parses the rules of a `lexer` declaration into pairs of a `RuleInfo` and a pattern.
 -/
-private meta def getRules (rules : Array (TSyntax `lexgenRule))
-    (skipPatterns : Array (TSyntax `str)) : CommandElabM (Array RuleInfo × Array StrLit) := do
-  return skipPatterns.map (RuleInfo.skip, ·) ++
-  (← rules.mapM fun
+private meta def getRules (rules : Array (TSyntax `lexgenRule)) :
+    CommandElabM (Array (RuleInfo × StrLit)) :=
+  rules.mapM fun
     | `(lexgenRule| $[$doc?]? | $tokenName:ident := $pattern) =>
       pure (RuleInfo.simple tokenName doc?, pattern)
     | `(lexgenRule| $[$doc?]? | $tokenName:ident : $valueType := $pattern => $func) =>
       pure (RuleInfo.converted tokenName valueType func doc?, pattern)
-    | _ => throwUnsupportedSyntax)
-  |>.unzip
+    | `(lexgenRule| $[$doc?]? skip $pattern) =>
+      pure (RuleInfo.skip, pattern)
+    | _ => throwUnsupportedSyntax
 
 /--
 Checks the names of a `lexer` declaration: the type must not be declared yet, and the token names
@@ -147,16 +144,6 @@ private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA := do
     | .error errors => throwConversionErrors patterns errors
 
 /--
-Reports each skip rule written after the token rules.
--/
-private meta def throwLateSkipError (statements : Array Syntax) : CommandElabM α := do
-  for statement in statements do
-    logErrorAt
-      statement
-      "skip rules must come before the token rules"
-  throwAbortCommand
-
-/--
 Warns on the pattern of each rule of `dfa` that never produces a match.
 -/
 private meta def logDeadRules (patterns : Array StrLit) (dfa : DFA) : CommandElabM Unit := do
@@ -175,11 +162,10 @@ elab_rules : command
   | `(
       $[$doc?]?
       lexer $typeName:ident where
-        $[$[$_]? skip $skipPatterns]*
         $[$rules:lexgenRule]*
       $[deriving $[$derivings?:ident],*]?
     ) => do
-    let (ruleInfos, patterns) ← getRules rules skipPatterns
+    let (ruleInfos, patterns) := (← getRules rules).unzip
     -- Do not remove this check, although real lexers have far fewer than `65535` rules: it is the
     -- only check that keeps a rule within the bits a `Lexgen.Internal.Packed` gives it, since
     -- `Lexgen.Internal.Packed.ofMatch` takes the rule number without a proof.
@@ -194,14 +180,5 @@ elab_rules : command
       -- add noise.
       if ← MonadLog.hasErrors then
         throwAbortCommand
-  | `(
-      $[$doc?]?
-      lexer $_:ident where
-        $_*
-        $[$rules:lexgenRule]*
-        $lateSkips:skipRule*
-      $[deriving $[$derivings:ident],*]?
-    ) =>
-    throwLateSkipError lateSkips
 
 end Lexgen
