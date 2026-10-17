@@ -31,13 +31,13 @@ Defines the `lexer` command: its syntax and its elaboration.
 namespace Lexgen
 
 /--
-Rules of the `lexer` command: token rules and skip rules.
+Rules of the `lexer` command: token rules, skip rules and subpattern rules.
 -/
 declare_syntax_cat lexgenRule
 
--- A rule starts with its docstring, if any, and `|` or `skip`, parsed together by `atomic`:
--- otherwise the docstring of the command after the rules would be taken for the start of one more
--- rule.
+-- A rule starts with its docstring, if any, and `|` or a keyword (`skip`, `subpattern`), parsed
+-- together by `atomic`: otherwise the docstring of the command after the rules would be taken for
+-- the start of one more rule.
 
 /--
 A rule of a token without a value.
@@ -56,9 +56,14 @@ A skip rule of the `lexer` command: the pattern of the text that is dropped.
 syntax atomic((docComment)? "skip") str : lexgenRule
 
 /--
-Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
-`Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer`
-for a string.
+A subpattern rule of the `lexer` command: a named pattern that the patterns declared after it may
+use. It declares no token.
+-/
+syntax atomic((docComment)? "subpattern") ident ":=" str : lexgenRule
+
+/--
+Declares a lexer: an inductive type with a constructor for each token rule, its `Lexgen.Lexable`
+instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer` for a string.
 
 Each token rule pairs a constructor with the pattern it matches, usually written as a raw string
 literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value of type
@@ -69,8 +74,12 @@ matches, lexing fails with the byte offset of the failure.
 Rules `skip r"…"`, which may be mixed with the token rules, match text that is dropped, such as
 whitespace or comments.
 
+A rule `subpattern name := r"…"` declares a named pattern, which the patterns declared after it may
+use.
+
 A docstring before `lexer` documents the token type, and a docstring before a token rule documents
-its constructor. A docstring before a skip rule is ignored, since a skip rule declares nothing.
+its constructor. A docstring before a skip rule or a subpattern rule is ignored, since neither
+declares a constructor.
 
 An optional `deriving` clause after the rules derives the listed instances for the token type.
 -/
