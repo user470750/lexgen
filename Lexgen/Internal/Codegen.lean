@@ -82,8 +82,8 @@ private def stateName (state : Nat) : m Ident := do
 
 /--
 Builds the function of state `state`. The generated function takes `input` and the current position
-`pos` in it, together with the packed longest match so far `best`, and returns the packed longest
-match.
+`pos` in it, together with the packed longest match so far `best` (an older one for an accepting
+state, which ignores it), and returns the packed longest match.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
     (recursive : Bool) : m Command := do
@@ -94,7 +94,8 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   let c     ← `(ident| c)
   -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
   let h     ← `(ident| h)
-  -- The longest match so far, passed on to the next state and returned when there is nowhere to go.
+  -- The longest match so far, passed on to a non-accepting state and returned when there is nowhere
+  -- to go.
   let found : Term ← if let some rule := dfa.accepting[state]? then
     -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
     `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)
@@ -107,7 +108,12 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
       return rest
     -- A character of `interval` leads to a call of the function of state `next` on the position
     -- after the character.
-    let target ← `($(← stateName next) $input ($(pos).next $h) $found)
+    -- An accepting state replaces the match it gets with its own, so it gets `best`: building
+    -- `found` for it is unnecessary.
+    let target ← if let some _ := dfa.accepting[next]? then
+      `($(← stateName next) $input ($(pos).next $h) $best)
+    else
+      `($(← stateName next) $input ($(pos).next $h) $found)
     match interval with
     | .single character =>
       `(if $c:ident = $(quote character) then $target else $rest)
