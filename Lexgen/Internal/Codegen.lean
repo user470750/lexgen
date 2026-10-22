@@ -83,7 +83,8 @@ private def stateName (state : Nat) : m Ident := do
 /--
 Builds the function of state `state`. The generated function takes `input` and the current position
 `pos` in it, together with the packed longest match so far `best` (an older one for an accepting
-state, which ignores it), and returns the packed longest match.
+state, which ignores it) and the proof `hi` that `input` is short enough to lex, and returns the
+packed longest match.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
     (recursive : Bool) : m Command := do
@@ -94,11 +95,12 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   let c     ← `(ident| c)
   -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
   let h     ← `(ident| h)
+  let hi    ← `(ident| hi)
   -- The longest match so far, passed on to a non-accepting state and returned when there is nowhere
   -- to go.
   let found : Term ← if let some rule := dfa.accepting[state]? then
     -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
-    `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)
+    `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos $hi)
   else
     pure best
   -- No interval matched: the longest match is the one so far.
@@ -111,9 +113,9 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
     -- An accepting state replaces the match it gets with its own, so it gets `best`: building
     -- `found` for it is unnecessary.
     let target ← if let some _ := dfa.accepting[next]? then
-      `($(← stateName next) $input ($(pos).next $h) $best)
+      `($(← stateName next) $input ($(pos).next $h) $best $hi)
     else
-      `($(← stateName next) $input ($(pos).next $h) $found)
+      `($(← stateName next) $input ($(pos).next $h) $found $hi)
     match interval with
     | .single character =>
       `(if $c:ident = $(quote character) then $target else $rest)
@@ -135,7 +137,9 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   let termination? := if recursive then some pos else none
   `(
     def $funcName ($input : String) ($pos : String.Pos $input)
-        ($best : Lexgen.Internal.Packed $input) : Lexgen.Internal.Packed $input :=
+        ($best : Lexgen.Internal.Packed $input)
+        ($hi : $(input).utf8ByteSize < Lexgen.maxInputSize) :
+        Lexgen.Internal.Packed $input :=
       $body
     $[termination_by $termination?]?
   )
@@ -197,6 +201,8 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   -- `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let h      ← `(ident| h)
+  let hr     ← `(ident| hr)
+  let hi     ← `(ident| hi)
   let input  ← `(ident| input)
   let start  ← `(ident| start)
   let packed ← `(ident| packed)
@@ -212,13 +218,15 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
       `(Lexgen.Step.token (.$name ($typedFunc $slice)) $stopAt $h)
     | .skip => `(Lexgen.Step.skip $stopAt $h)
   branches ← branches.mapM fun step =>
-    `(if $h:ident : $start < $stopAt then $step else Lexgen.Step.error)
+    `(
+      let $stopAt:ident := $(packed).stop ($hr ▸ by decide)
+      if $h:ident : $start < $stopAt then $step else Lexgen.Step.error
+    )
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident $start:ident :=
-        let $packed:ident := $startState $input $start .noMatch
-        let $stopAt:ident := $(packed).stop
-        match ($(packed).rule) with
+      next $input:ident $start:ident $hi:ident :=
+        let $packed:ident := $startState $input $start .noMatch $hi
+        match $hr:ident : $(packed).rule with
         $[| $ruleNums => $branches]*
         -- No match: `Packed.rule` returns a number that no rule has. No rule matches the empty
         -- string, so this is also the case at the end of the input, which is checked only here.

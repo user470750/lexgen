@@ -100,13 +100,24 @@ inductive Step (α : Type) (input : String) (start : input.Pos) where
   | error
 
 /--
+The size in bytes from which an input cannot be lexed.
+-/
+-- The value follows from the bit layout of `Lexgen.Internal.Packed`, which keeps a position in 48
+-- bits. A mismatch does not go unnoticed: the generated code passes a proof of `< maxInputSize`
+-- where `Lexgen.Internal.Packed.ofMatch` expects one of its own bound, so it would fail to
+-- elaborate.
+abbrev maxInputSize : Nat := 2 ^ 48
+
+/--
 A type of tokens that can be lexed. The `lexer` command implements it for the type it declares.
 -/
 class Lexable (α : Type) where
   /--
-  Returns the result of the longest match in the input from the position `start`.
+  Returns the result of the longest match in the input from the position `start`. The input size
+  must be less than `maxInputSize`.
   -/
-  next : (input : String) → (start : input.Pos) → Step α input start
+  next : (input : String) → (start : input.Pos) → (input.utf8ByteSize < maxInputSize) →
+    Step α input start
 
 /--
 A lexer for a string, with the token type `α`.
@@ -117,12 +128,23 @@ structure Lexer (α : Type) [Lexable α] where
   The input to lex.
   -/
   private source : String
+  /--
+  Proves that `source` is short enough to lex.
+  -/
+  private inBounds : source.utf8ByteSize < maxInputSize
+
+private instance [Lexable α] : Inhabited (Lexer α) where
+  default := ⟨"", by decide⟩
 
 /--
 Creates a lexer for `source`.
 -/
 def Lexer.new [Lexable α] (source : String) : Lexer α :=
-  ⟨source⟩
+  if inBounds : source.utf8ByteSize < maxInputSize then
+    ⟨source, inBounds⟩
+  else
+    -- Not reached in practice: the input would have to take 256 TiB.
+    panic! "input out of bounds"
 
 /--
 Returns the tokens of the whole input, if there are no errors.
@@ -135,7 +157,7 @@ where
   -/
   collect (start : lexer.source.Pos) (acc : Array α) :
       Except LexError (Array α) :=
-    match Lexable.next lexer.source start with
+    match Lexable.next lexer.source start lexer.inBounds with
     | .token token stop _ => collect stop (acc.push token)
     | .skip stop _        => collect stop acc
     | .done _             => .ok acc
@@ -155,7 +177,7 @@ where
   -/
   collect (start : lexer.source.Pos) (acc : Array (Spanned α)) :
       Except LexError (Array (Spanned α)) :=
-    match Lexable.next lexer.source start with
+    match Lexable.next lexer.source start lexer.inBounds with
     | .token token stop h => collect stop (acc.push ⟨token, lexer.source, start, stop, h⟩)
     | .skip stop _        => collect stop acc
     | .done _             => .ok acc
