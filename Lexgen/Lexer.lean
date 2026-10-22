@@ -128,16 +128,16 @@ def Lexer.new [Lexable α] (source : String) : Lexer α :=
 Returns the tokens of the whole input, if there are no errors.
 -/
 def Lexer.tokens [Lexable α] (lexer : Lexer α) : Except LexError (Array α) :=
-  collect lexer.source lexer.source.startPos #[]
+  collect lexer.source.startPos #[]
 where
   /--
-  Returns `acc` followed by the tokens of `input` from `start`.
+  Returns `acc` followed by the tokens of the input from `start`.
   -/
-  collect (input : String) (start : input.Pos) (acc : Array α) :
+  collect (start : lexer.source.Pos) (acc : Array α) :
       Except LexError (Array α) :=
-    match Lexable.next input start with
-    | .token token stop _ => collect input stop (acc.push token)
-    | .skip stop _        => collect input stop acc
+    match Lexable.next lexer.source start with
+    | .token token stop _ => collect stop (acc.push token)
+    | .skip stop _        => collect stop acc
     | .done _             => .ok acc
     | .error =>
       .error ⟨start.offset.byteIdx⟩
@@ -148,16 +148,16 @@ Returns the tokens of the whole input with their positions, if there are no erro
 -/
 def Lexer.spanned [Lexable α] (lexer : Lexer α) :
     Except LexError (Array (Spanned α)) :=
-  collect lexer.source lexer.source.startPos #[]
+  collect lexer.source.startPos #[]
 where
   /--
-  Returns `acc` followed by the tokens of `input` from `start` with their positions.
+  Returns `acc` followed by the tokens of the input from `start` with their positions.
   -/
-  collect (input : String) (start : input.Pos) (acc : Array (Spanned α)) :
+  collect (start : lexer.source.Pos) (acc : Array (Spanned α)) :
       Except LexError (Array (Spanned α)) :=
-    match Lexable.next input start with
-    | .token token stop h => collect input stop (acc.push ⟨token, input, start, stop, h⟩)
-    | .skip stop _        => collect input stop acc
+    match Lexable.next lexer.source start with
+    | .token token stop h => collect stop (acc.push ⟨token, lexer.source, start, stop, h⟩)
+    | .skip stop _        => collect stop acc
     | .done _             => .ok acc
     | .error =>
       .error ⟨start.offset.byteIdx⟩
