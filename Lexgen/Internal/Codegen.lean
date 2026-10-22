@@ -81,23 +81,33 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds the chain of `if`s on the character of `input` at `pos`, for a state with the transitions
-`trans`. `best` is the longest match so far, packed as the state functions return it: it is passed
-on to the next state, and returned when there is nowhere to go.
+Builds the function of state `state`. The generated function takes `input` and the current position
+`pos` in it, together with the packed longest match so far `best`, and returns the packed longest
+match.
 -/
-private def buildTrans (input pos : Ident) (best : Term)
-    (trans : Array (DFA.Interval × Nat)) : m Term := do
-  let c ← `(ident| c)
+private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
+    (recursive : Bool) : m Command := do
+  let funcName ← stateName state
+  let input ← `(ident| input)
+  let pos   ← `(ident| pos)
+  let best  ← `(ident| best)
+  let c     ← `(ident| c)
   -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
-  let h ← `(ident| h)
+  let h     ← `(ident| h)
+  -- The longest match so far, passed on to the next state and returned when there is nowhere to go.
+  let found : Term ← if let some rule := dfa.accepting[state]? then
+    -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
+    `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)
+  else
+    pure best
   -- No interval matched: the longest match is the one so far.
-  let body ← trans.foldrM (init := best) fun (interval, next) rest => do
+  let mut body ← trans.foldrM (init := found) fun (interval, next) rest => do
     -- The trap never leads to a match, so going there is the same as no transition.
     if next == DFA.trap then
       return rest
     -- A character of `interval` leads to a call of the function of state `next` on the position
     -- after the character.
-    let target ← `($(← stateName next) $input ($(pos).next $h) $best)
+    let target ← `($(← stateName next) $input ($(pos).next $h) $found)
     match interval with
     | .single character =>
       `(if $c:ident = $(quote character) then $target else $rest)
@@ -109,28 +119,13 @@ private def buildTrans (input pos : Ident) (best : Term)
           $rest
       )
   -- At the end of the input, the longest match is also the one so far.
-  `(if $h:ident : $pos ≠ $(input).endPos then
+  body ← `(
+    if $h:ident : $pos ≠ $(input).endPos then
       let $c:ident := $(pos).get $h
       $body
     else
-      $best)
-
-/--
-Builds the function of state `state`. The generated function takes `input` and the current position
-`pos` in it, together with the packed longest match so far `best`, and returns the packed longest
-match.
--/
-private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
-    (recursive : Bool) : m Command := do
-  let funcName ← stateName state
-  let input ← `(ident| input)
-  let pos   ← `(ident| pos)
-  let best  ← `(ident| best)
-  let body  ← if let some rule := dfa.accepting[state]? then
-    -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
-    buildTrans input pos (← `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos)) trans
-  else
-    buildTrans input pos best trans
+      $found
+  )
   let termination? := if recursive then some pos else none
   `(
     def $funcName ($input : String) ($pos : String.Pos $input)
