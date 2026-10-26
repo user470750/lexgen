@@ -85,9 +85,9 @@ where
   checkRule : String × Nat → Except ConversionError RegexAST
     | (pattern, rule) => do
       let parsed ← (parseRegex pattern).mapError fun err => .invalidPattern rule err.offset err.msg
-      if parsed.countNodes > maxRegexSize then
+      if parsed.countNodes {} > maxRegexSize then
         throw (.tooLarge rule)
-      let regex := parsed.desugar
+      let regex := parsed.desugar {}
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
       return regex

@@ -57,7 +57,7 @@ inductive RegexAST where
   Matches the empty string.
   -/
   | ε
-deriving Repr
+deriving Repr, Inhabited
 
 /--
 Wraps `concat` to avoid useless concatenation with ε.
