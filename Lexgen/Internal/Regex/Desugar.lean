@@ -90,23 +90,27 @@ private def ClassItem.desugar : ClassItem → Array CharClass
 Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
 
 Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the basic AST constructors.
+
+`subpatterns` maps the name of each subpattern used in the CST to its desugared AST.
 -/
-def RegexSyntax.desugar : RegexSyntax → RegexAST
+def RegexSyntax.desugar (subpatterns : Std.HashMap String RegexAST) : RegexSyntax → RegexAST
   | RegexSyntax.alt left right =>
-    RegexAST.alt left.desugar right.desugar
+    RegexAST.alt (left.desugar subpatterns) (right.desugar subpatterns)
   | RegexSyntax.concat first rest =>
-    RegexAST.concat first.desugar rest.desugar
+    RegexAST.concat (first.desugar subpatterns) (rest.desugar subpatterns)
   | RegexSyntax.repeated (.atLeast n) re =>
-    let desugared := re.desugar
+    let desugared := re.desugar subpatterns
     RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (RegexAST.repeated desugared)
   | RegexSyntax.repeated (.between n m ..) re =>
-    let desugared := re.desugar
+    let desugared := re.desugar subpatterns
     -- `inOrder` keeps `m - n` from truncating to zero.
     RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
+  -- TODO: Nothing checks yet that `name` is declared; the parser should reject unknown names.
+  | RegexSyntax.subpattern name => subpatterns.get! name
   | RegexSyntax.symbol c => RegexAST.charClass false #[.single c]
   | RegexSyntax.charClass negate items =>
     RegexAST.charClass negate (items.flatMap ClassItem.desugar)

@@ -6,6 +6,7 @@ Authors: Oleg Shabanov
 module
 
 public import Lexgen.Internal.Regex.Quantity
+public import Std.Data.HashMap
 
 public section
 
@@ -96,6 +97,10 @@ inductive RegexSyntax where
   -/
   | namedClass (kind : NamedClass)
   /--
+  Matches the pattern of the subpattern `name`.
+  -/
+  | subpattern (name : String)
+  /--
   Matches any character but `\n`.
   -/
   | dot
@@ -107,13 +112,18 @@ deriving Repr, DecidableEq
 
 /--
 Estimates the size of `re` after desugaring.
+
+`subpatterns` maps the name of each subpattern used in the CST to its size, as estimated by
+`countNodes`.
 -/
-def RegexSyntax.countNodes : RegexSyntax → Nat
+def RegexSyntax.countNodes (subpatterns : Std.HashMap String Nat) : RegexSyntax → Nat
   | .ε | .dot | .charClass .. | .namedClass _ | .symbol _ => 1
-  | .alt left right                => countNodes left + countNodes right
-  | .concat first second           => countNodes first + countNodes second
-  | .repeated (.atLeast n) re      => (n + 1) * countNodes re
+  | .alt left right                => countNodes subpatterns left + countNodes subpatterns right
+  | .concat first second           => countNodes subpatterns first + countNodes subpatterns second
+  | .repeated (.atLeast n) re      => (n + 1) * countNodes subpatterns re
   -- Each of the `m - n` optional copies is an `alt` with an `ε` leaf.
-  | .repeated (.between n m _) re  => m * countNodes re + (m - n)
+  | .repeated (.between n m _) re  => m * countNodes subpatterns re + (m - n)
+  -- TODO: Nothing checks yet that `name` is declared; the parser should reject unknown names.
+  | .subpattern name               => subpatterns.get! name
 
 end Lexgen.Internal
