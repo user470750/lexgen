@@ -163,11 +163,11 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident)
     throwAbortCommand
 
 /--
-Reports each of `errors` on the pattern of the rule it concerns. `patterns` are indexed by rule
+Reports each of `errors` on the pattern of the rule and subpattern it concerns. They are indexed by
 number.
 -/
-private meta def throwConversionErrors (patterns : Array StrLit) (errors : Array ConversionError) :
-    CommandElabM α := do
+private meta def throwConversionErrors (patterns : Array StrLit)
+    (subpatterns : Array StrLit) (errors : Array ConversionError) : CommandElabM α := do
   for error in errors do
     match error with
     | .noRules => logError "a lexer needs at least one rule"
@@ -181,16 +181,28 @@ private meta def throwConversionErrors (patterns : Array StrLit) (errors : Array
       logErrorAt
         patterns[rule]!
         m!"this rule is too large: its repetitions expand into more than {maxRegexSize} AST leaves"
+    | .invalidSubpattern index offset msg =>
+      logErrorAt subpatterns[index]! m!"offset {offset}: {msg}"
+    | .subpatternTooLarge index =>
+      logErrorAt
+        subpatterns[index]!
+        m!"this subpattern is too large: its repetitions expand into more than {maxRegexSize} \
+          AST leaves"
   throwAbortCommand
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
 -/
-private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA := do
+private meta def getDFA (patterns : Array StrLit) (subpatterns : Array (Ident × StrLit)) :
+    CommandElabM DFA := do
   let minimization ← lexgen.minimization.getM
-  match rulesToDFA (patterns.toList.map TSyntax.getString) minimization with
+  -- A pattern refers to a subpattern by the text of its name, so without erasing macro scopes a
+  -- subpattern declared in a macro could not be referred to.
+  let subpatternStrings := subpatterns.toList.map fun (name, pattern) =>
+    (name.getId.eraseMacroScopes.getString!, pattern.getString)
+  match rulesToDFA (patterns.toList.map TSyntax.getString) subpatternStrings minimization with
     | .ok    dfa    => pure dfa
-    | .error errors => throwConversionErrors patterns errors
+    | .error errors => throwConversionErrors patterns subpatterns.unzip.2 errors
 
 /--
 Warns on the pattern of each rule of `dfa` that never produces a match.
@@ -221,7 +233,7 @@ elab_rules : command
     if ruleInfos.size > 2 ^ ruleBits - 1 then
       throwError "too many rules"
     checkNames typeName (ruleInfos.filterMap (·.name)) subpatternNames
-    let dfa ← getDFA patterns
+    let dfa ← getDFA patterns subpatterns
     logDeadRules patterns dfa
     for cmd in ← buildLexer ⟨typeName, doc?, derivings?⟩ ruleInfos dfa do
       elabCommand cmd
