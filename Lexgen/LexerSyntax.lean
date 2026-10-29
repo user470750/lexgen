@@ -192,8 +192,8 @@ where
   Returns the pattern of the rule (or subpattern) by its position.
   -/
   patternAt : Location → StrLit
-  | .rule rule        => patterns[rule]!
-  | .subpattern index => subpatterns[index]!
+    | .rule rule        => patterns[rule]!
+    | .subpattern index => subpatterns[index]!
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
