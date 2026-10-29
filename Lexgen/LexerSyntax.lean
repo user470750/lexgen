@@ -162,7 +162,7 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident)
     throwAbortCommand
 
 /--
-Reports each of `errors` on the pattern of the rule and subpattern it concerns. They are indexed by
+Reports each of `errors` on the pattern of the rule or subpattern it concerns. They are indexed by
 number.
 -/
 private meta def throwConversionErrors (patterns : Array StrLit)
