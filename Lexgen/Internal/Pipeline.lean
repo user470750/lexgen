@@ -109,7 +109,8 @@ def rulesToDFA (patterns : List String) (subpatterns : List (String × String))
 where
   /--
   Parses the pattern of a rule, paired with the rule number, checks its size before desugaring it,
-  and checks that it does not match the empty string, tagging an error with the rule number.
+  and checks that it refers only to known subpatterns and does not match the empty string, tagging
+  an error with the rule number.
   -/
   checkRule (subpatterns : Std.HashMap String RegexAST) :
       String × Nat → Except ConversionError RegexAST
@@ -126,8 +127,8 @@ where
 
   /--
   Parses the pattern of a subpattern, paired with its index among the subpatterns, checks its size
-  before desugaring it, tagging an error with the index. Unlike a rule, a subpattern may match the
-  empty string.
+  before desugaring it, and checks that it refers only to known subpatterns, tagging an error with
+  the index. Unlike a rule, a subpattern may match the empty string.
   -/
   checkSubpattern (subpatterns : Std.HashMap String RegexAST) :
       String × Nat → Except ConversionError RegexAST
