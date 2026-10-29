@@ -334,7 +334,7 @@ private partial def atom : Parser RegexSyntax :=
 Parser for an expression in parentheses, or a reference to a subpattern.
 -/
 private partial def subExpr : Parser RegexSyntax :=
-  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated subpattern")
+  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated group")
 end
 
 /--
