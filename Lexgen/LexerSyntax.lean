@@ -132,8 +132,8 @@ private meta def getRules (rules : Array (TSyntax `lexgenRule)) :
 
 /--
 Checks the names of a `lexer` declaration: the type must not be declared yet, and the token names
-and subpattern names must all be distinct. A token name must also differ from `lexer`. A subpattern
-name must not contain `.`.
+and subpattern names must all be distinct and must not contain `.`. A token name must also differ
+from `lexer`.
 
 Runs before any code is generated, so that errors are reported on the names themselves rather than
 on the generated code.
@@ -145,6 +145,8 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident)
 
   let mut seen : Std.HashSet Name := {}
   for token in tokenNames do
+    unless token.getId.isAtomic do
+      logErrorAt token m!"token name `{token}` cannot contain `.`"
     if token.getId == `lexer then
       logErrorAt token m!"`lexer` is taken by the generated function `{typeName}.lexer`"
     else if seen.contains token.getId then
