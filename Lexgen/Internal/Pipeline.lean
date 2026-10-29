@@ -122,6 +122,7 @@ where
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
       return regex
+
   /--
   Parses the pattern of a subpattern, paired with its index among the subpatterns, checks its size
   before desugaring it, tagging an error with the index. Unlike a rule, a subpattern may match the
