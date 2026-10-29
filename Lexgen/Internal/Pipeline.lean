@@ -70,6 +70,11 @@ inductive ConversionError where
   than `maxRegexSize` nodes.
   -/
   | tooLarge (location : Location)
+  /--
+  The rule or subpattern at `location` refers to the subpattern `name`, which is not declared, or,
+  for a subpattern, not declared before it.
+  -/
+  | unknownSubpattern (location : Location) (name : String)
 
 /--
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
@@ -79,7 +84,7 @@ wins. The `DFA` is minimized if `minimization` is set, and the neighbouring inte
 that lead to the same state are merged.
 
 Subpatterns are processed first, also in the order of declaration. An error in a subpattern stops
-the conversion, since otherwise a pattern that refers to it could panic in `get!`.
+the conversion, since every pattern that refers to it would then fail as an unknown subpattern.
 
 Returns the errors of all rules: an error for each rule that is not a valid regular expression, is
 too large or matches the empty string, or a single error if there are no rules at all.
@@ -112,7 +117,8 @@ where
         .invalidPattern (.rule rule) err.offset err.msg
       if parsed.countNodes (subpatterns.map fun _ regex => regex.countNodes) > maxRegexSize then
         throw (.tooLarge (.rule rule))
-      let regex := parsed.desugar subpatterns
+      let regex ← (parsed.desugar subpatterns).mapError fun err =>
+        .unknownSubpattern (.rule rule) err.name
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
       return regex
@@ -128,6 +134,7 @@ where
         .invalidPattern (.subpattern index) err.offset err.msg
       if parsed.countNodes (subpatterns.map fun _ regex => regex.countNodes) > maxRegexSize then
         throw (.tooLarge (.subpattern index))
-      return parsed.desugar subpatterns
+      (parsed.desugar subpatterns).mapError fun err =>
+        .unknownSubpattern (.subpattern index) err.name
 
 end Lexgen.Internal

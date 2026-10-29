@@ -123,7 +123,8 @@ def RegexSyntax.countNodes (subpatterns : Std.HashMap String Nat) : RegexSyntax 
   | .repeated (.atLeast n) re      => (n + 1) * countNodes subpatterns re
   -- Each of the `m - n` optional copies is an `alt` with an `ε` leaf.
   | .repeated (.between n m _) re  => m * countNodes subpatterns re + (m - n)
-  -- TODO: Nothing checks yet that `name` is declared; the parser should reject unknown names.
-  | .subpattern name               => subpatterns.get! name
+  -- The size of an unknown subpattern cannot be counted, and reporting it is not the job of
+  -- `countNodes`, so it counts as zero.
+  | .subpattern name               => subpatterns.getD name 0
 
 end Lexgen.Internal
