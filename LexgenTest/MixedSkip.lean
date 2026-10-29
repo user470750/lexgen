@@ -12,8 +12,6 @@ import LexgenTest.Basic
 Skip rules may come anywhere among the token rules. On a tie the earlier rule wins.
 -/
 
-open Lexgen
-
 lexer Token where
   skip   r" +"
   | kwIf := r"if"

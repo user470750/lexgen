@@ -119,7 +119,7 @@ Estimates the size of `re` after desugaring.
 def RegexSyntax.countNodes (subpatterns : Std.HashMap String Nat) : RegexSyntax → Nat
   | .ε | .dot | .charClass .. | .namedClass _ | .symbol _ => 1
   | .alt left right                => countNodes subpatterns left + countNodes subpatterns right
-  | .concat first second           => countNodes subpatterns first + countNodes subpatterns second
+  | .concat first rest             => countNodes subpatterns first + countNodes subpatterns rest
   | .repeated (.atLeast n) re      => (n + 1) * countNodes subpatterns re
   -- Each of the `m - n` optional copies is an `alt` with an `ε` leaf.
   | .repeated (.between n m _) re  => m * countNodes subpatterns re + (m - n)

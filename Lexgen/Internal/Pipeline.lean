@@ -104,7 +104,7 @@ def rulesToDFA (patterns : List String) (subpatterns : List (String × String))
   | [] => throw #[.noRules]
   | first :: rest =>
     let dfa := DFA.ofNFA (NFA.ofRules first rest)
-    pure (if minimization then dfa.minimize.merge else dfa.merge)
+    return if minimization then dfa.minimize.merge else dfa.merge
 where
   /--
   Parses the pattern of a rule, paired with the rule number, checks its size before desugaring it,
@@ -122,6 +122,7 @@ where
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
       return regex
+
   /--
   Parses the pattern of a subpattern, paired with its index among the subpatterns, checks its size
   before desugaring it, tagging an error with the index. Unlike a rule, a subpattern may match the

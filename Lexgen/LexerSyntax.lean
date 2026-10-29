@@ -144,7 +144,6 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident)
   discard <| withRef typeName <| mkDeclName (← getCurrNamespace) {} typeName.getId
 
   let mut seen : Std.HashSet Name := {}
-
   for token in tokenNames do
     if token.getId == `lexer then
       logErrorAt token m!"`lexer` is taken by the generated function `{typeName}.lexer`"
@@ -193,8 +192,8 @@ where
   Returns the pattern of the rule (or subpattern) by its position.
   -/
   patternAt : Location → StrLit
-  | .rule rule        => patterns[rule]!
-  | .subpattern index => subpatterns[index]!
+    | .rule rule        => patterns[rule]!
+    | .subpattern index => subpatterns[index]!
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
@@ -207,7 +206,7 @@ private meta def getDFA (patterns : Array StrLit) (subpatterns : Array (Ident ×
   let subpatternStrings := subpatterns.toList.map fun (name, pattern) =>
     (name.getId.eraseMacroScopes.getString!, pattern.getString)
   match rulesToDFA (patterns.toList.map TSyntax.getString) subpatternStrings minimization with
-    | .ok    dfa    => pure dfa
+    | .ok    dfa    => return dfa
     | .error errors => throwConversionErrors patterns subpatterns.unzip.2 errors
 
 /--

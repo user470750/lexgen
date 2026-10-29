@@ -12,8 +12,6 @@ import LexgenTest.Basic
 Ported from logos's `tests/tests/css.rs`.
 -/
 
-open Lexgen
-
 lexer Token where
   skip r"[ \t\n\f]+"
   | relativeLength    := r"em|ex|ch|rem|vw|vh|vmin|vmax"

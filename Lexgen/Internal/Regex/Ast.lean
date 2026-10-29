@@ -73,11 +73,11 @@ def normalizedConcat : RegexAST → RegexAST → RegexAST
 Checks whether a regular expression matches the empty string.
 -/
 def matchesEmpty : RegexAST → Bool
-  | .ε          => true
+  | .ε            => true
   | .charClass .. => false
-  | .alt l r    => l.matchesEmpty || r.matchesEmpty
-  | .concat f s => f.matchesEmpty && s.matchesEmpty
-  | .repeated _ => true
+  | .alt l r      => l.matchesEmpty || r.matchesEmpty
+  | .concat f r   => f.matchesEmpty && r.matchesEmpty
+  | .repeated _   => true
 
 /--
 Counts the leaves of a regular expression: the size that `RegexSyntax.countNodes` estimates before

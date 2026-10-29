@@ -34,7 +34,7 @@ Checks whether an `NFA.Range` matches the character `c`.
 -/
 def NFA.Range.contains (c : Char) : NFA.Range → Bool
   | .single s            => c == s
-  | .range lower upper _ => lower <= c && c <= upper
+  | .range lower upper _ => lower ≤ c && c ≤ upper
 
 /--
 The label type for `NFA` transitions.

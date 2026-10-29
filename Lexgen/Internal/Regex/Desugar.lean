@@ -127,6 +127,6 @@ def RegexSyntax.desugar (subpatterns : Std.HashMap String RegexAST) :
   | RegexSyntax.namedClass kind =>
     .ok (RegexAST.charClass false (namedClassRanges kind))
   | RegexSyntax.dot => .ok (RegexAST.charClass true #[.single '\n'])
-  | RegexSyntax.ε   => .ok (RegexAST.ε)
+  | RegexSyntax.ε   => .ok RegexAST.ε
 
 end Lexgen.Internal

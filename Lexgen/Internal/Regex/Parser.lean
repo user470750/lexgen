@@ -110,7 +110,7 @@ private def classEscape : Parser NamedClass := do
   sClass 'S' .nonSpace
 where
   @[inline]
-  sClass (c : Char) (name : NamedClass) : Parser NamedClass := (skipChar c *> pure name)
+  sClass (c : Char) (name : NamedClass) : Parser NamedClass := skipChar c *> pure name
 
 /--
 Parser for literal characters (except escaped).
@@ -155,7 +155,7 @@ Parser for a character inside a character class.
 private def classChar : Parser Char :=
   escapedClassMeta.attempt <|> simpleEscape.attempt <|> hexEscape <|> classLiteralChar <|>
     satisfy ("[^-".contains ·) >>=
-      (fun (c : Char) => (fail s!"unescaped `{c}` in character class"))    <|>
+      (fun (c : Char) => (fail s!"unescaped `{c}` in character class")) <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
 
 /--
@@ -170,7 +170,7 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
     classChar <|>
     fail s!"missing upper bound of range `{lower.quoteCore}-`"
   if h : lower ≤ upper then
-    pure (ClassItem.range lower upper h)
+    return ClassItem.range lower upper h
   else
     fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 
@@ -235,8 +235,9 @@ private def rangeQuantifier : Parser Quantity := do
         if m > maxRepetitions then
           fail s!"invalid quantifier `\{{n},{m}`: more than {maxRepetitions} repetitions"
         if h : n ≤ m then
-          pure (.between n m h)
-        else fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
+          return .between n m h
+        else
+          fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)
   rightBrace <|> fail s!"missing `}`, unterminated quantifier"
@@ -279,7 +280,7 @@ mutual
 Parser for alternatives in the regular expression grammar. Top-level rule.
 -/
 private partial def alt : Parser RegexSyntax := do
-  let left ← concat <|> (pure .ε)
+  let left ← concat <|> pure .ε
   let alts ← many (altSep *> (concat <|> pure .ε))
   -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
   return alts.foldl .alt left
@@ -352,7 +353,7 @@ structure ParseRegexError where
   /--
   The description of the error.
   -/
-  msg    : String
+  msg : String
 deriving Repr
 
 /--
