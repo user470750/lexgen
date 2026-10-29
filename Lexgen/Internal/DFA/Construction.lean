@@ -98,6 +98,7 @@ where
         | .single c            => #[c.toNat, c.toNat + 1]
         | .range lower upper _ => #[lower.toNat, upper.toNat + 1]
     | _ => #[]
+
   /--
   Returns the `DFA.Interval` of the characters between two code points, inclusive: a `single` if
   they are the same.
