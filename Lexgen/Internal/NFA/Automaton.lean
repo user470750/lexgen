@@ -55,11 +55,11 @@ A state of the `NFA`.
 -/
 inductive NFA.Node where
   /--
-  Accepting state of `NFA` for rule `rule`. There are no transitions from it.
+  An accepting state of the `NFA` for rule `rule`. There are no transitions from it.
   -/
   | done (rule : Nat)
   /--
-  Node labeled by a real edge (`charClass`/`ε`), not a control node.
+  A node labeled by a real edge (`charClass`/`ε`), not a control node.
   -/
   | edge (e : NFA.Edge) (next : Nat)
   /--
