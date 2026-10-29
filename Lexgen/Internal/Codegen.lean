@@ -96,6 +96,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
   let h     ← `(ident| h)
   let hi    ← `(ident| hi)
+
   -- The longest match so far, passed on to a non-accepting state and returned when there is nowhere
   -- to go.
   let found : Term ← if let some rule := dfa.accepting[state]? then
@@ -103,6 +104,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
     `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos $hi)
   else
     pure best
+
   -- No interval matched: the longest match is the one so far.
   let mut body ← trans.foldrM (init := found) fun (interval, next) rest => do
     -- The trap never leads to a match, so going there is the same as no transition.
@@ -126,6 +128,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
         else
           $rest
       )
+
   -- At the end of the input, the longest match is also the one so far.
   body ← `(
     if $h:ident : $pos ≠ $(input).endPos then
@@ -196,18 +199,19 @@ Builds the `Lexable` instance of the type named `typeName`.
 -/
 private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Command := do
   let startState ← stateName DFA.start
+  let h          ← `(ident| h)
+  let hr         ← `(ident| hr)
+  let hi         ← `(ident| hi)
+  let input      ← `(ident| input)
+  let start      ← `(ident| start)
+  let packed     ← `(ident| packed)
+  let stopAt     ← `(ident| stopAt)
+  let slice      ← `($(input).slice $start $stopAt (String.Pos.le_of_lt $h))
+
   -- The state functions return the rule of the longest match only as a number, packed, so the
   -- generated code acts on it with a `match`: `ruleNums` are the rule numbers as literals, and
   -- `branches` are what is done for them.
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
-  let h      ← `(ident| h)
-  let hr     ← `(ident| hr)
-  let hi     ← `(ident| hi)
-  let input  ← `(ident| input)
-  let start  ← `(ident| start)
-  let packed ← `(ident| packed)
-  let stopAt ← `(ident| stopAt)
-  let slice  ← `($(input).slice $start $stopAt (String.Pos.le_of_lt $h))
   let mut branches ← rules.mapM fun
     | .simple name _ =>
       `(Lexgen.Step.token .$name $stopAt $h)
@@ -222,6 +226,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
       let $stopAt:ident := $(packed).stop ($hr ▸ by decide)
       if $h:ident : $start < $stopAt then $step else Lexgen.Step.error
     )
+
   `(
     instance : Lexgen.Lexable $typeName where
       next $input:ident $start:ident $hi:ident :=
