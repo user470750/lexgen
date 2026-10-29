@@ -87,7 +87,8 @@ Subpatterns are processed first, also in the order of declaration. An error in a
 the conversion, since every pattern that refers to it would then fail as an unknown subpattern.
 
 Returns the errors of all rules: an error for each rule that is not a valid regular expression, is
-too large or matches the empty string, or a single error if there are no rules at all.
+too large, refers to an unknown subpattern or matches the empty string, or a single error if there
+are no rules at all.
 -/
 def rulesToDFA (patterns : List String) (subpatterns : List (String × String))
     (minimization : Bool) : Except (Array ConversionError) DFA := do
