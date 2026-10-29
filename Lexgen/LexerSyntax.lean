@@ -15,6 +15,9 @@ public import Lexgen.Internal.Instances
 public import Lexgen.Internal.Pack
 public import Lexgen.Lexer
 
+meta import Lexgen.Internal.DFA.Automaton
+meta import Std.Data.HashSet
+
 public section
 
 open Lean Elab Command Lexgen.Internal

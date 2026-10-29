@@ -11,8 +11,10 @@ import Lexgen.Internal.DFA.Construction
 import Lexgen.Internal.DFA.Merge
 import Lexgen.Internal.DFA.Moore
 import Lexgen.Internal.NFA.Thompson
+import Lexgen.Internal.Regex.Ast
 import Lexgen.Internal.Regex.Desugar
 import Lexgen.Internal.Regex.Parser
+import Lexgen.Internal.Regex.Syntax
 
 public section
 

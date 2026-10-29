@@ -7,6 +7,8 @@ module
 
 public import Lexgen.Internal.DFA.Automaton
 
+import Std.Data.HashMap
+
 public section
 
 /-!
