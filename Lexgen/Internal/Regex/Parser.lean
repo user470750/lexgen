@@ -110,7 +110,7 @@ private def classEscape : Parser NamedClass := do
   sClass 'S' .nonSpace
 where
   @[inline]
-  sClass (c : Char) (name : NamedClass) : Parser NamedClass := (skipChar c *> pure name)
+  sClass (c : Char) (name : NamedClass) : Parser NamedClass := skipChar c *> pure name
 
 /--
 Parser for literal characters (except escaped).
@@ -268,7 +268,7 @@ mutual
 Parser for alternatives in the regular expression grammar. Top-level rule.
 -/
 private partial def alt : Parser RegexSyntax := do
-  let left ← concat <|> (pure .ε)
+  let left ← concat <|> pure .ε
   let alts ← many (altSep *> (concat <|> pure .ε))
   -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
   return alts.foldl .alt left
