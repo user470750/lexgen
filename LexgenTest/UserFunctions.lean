@@ -12,8 +12,6 @@ import LexgenTest.Basic
 Token values computed by user functions: numbers in several bases and string literals with escapes.
 -/
 
-open Lexgen
-
 /--
 The value of the digits in base `base` after a two-character prefix such as `0x`.
 -/

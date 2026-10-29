@@ -32,7 +32,7 @@ structure DFA where
   Transition table: for every state, sorted, disjoint intervals covering every character, each with
   the state it leads to. Indexed by state.
   -/
-  trans     : Array (Array (DFA.Interval × Nat))
+  trans : Array (Array (DFA.Interval × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
@@ -82,12 +82,12 @@ where
   several states always does, a single state only if it has a transition to itself.
   -/
   addComponent (acc : Std.HashSet Nat) : List Nat → Std.HashSet Nat
-  | [state] =>
-    if isSelfRecursive state then
-      acc.insert state
-    else
-      acc
-  | states => acc.insertMany states
+    | [state] =>
+      if isSelfRecursive state then
+        acc.insert state
+      else
+        acc
+    | states => acc.insertMany states
 
 end DFA
 

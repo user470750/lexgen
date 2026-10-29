@@ -116,7 +116,7 @@ where
   Parser for the letter `c` of the named class `name`.
   -/
   @[inline]
-  sClass (c : Char) (name : NamedClass) : Parser NamedClass := (skipChar c *> pure name)
+  sClass (c : Char) (name : NamedClass) : Parser NamedClass := skipChar c *> pure name
 
 /--
 Parser for literal characters (except escaped).
@@ -161,7 +161,7 @@ Parser for a character inside a character class.
 private def classChar : Parser Char :=
   escapedClassMeta.attempt <|> simpleEscape.attempt <|> hexEscape <|> classLiteralChar <|>
     satisfy ("[^-".contains ·) >>=
-      (fun (c : Char) => (fail s!"unescaped `{c}` in character class"))    <|>
+      (fun (c : Char) => (fail s!"unescaped `{c}` in character class")) <|>
     (skipChar '\\' *> fail "bad escape (end of pattern or unknown escape)")
 
 /--
@@ -176,7 +176,7 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
     classChar <|>
     fail s!"missing upper bound of range `{lower.quoteCore}-`"
   if h : lower ≤ upper then
-    pure (ClassItem.range lower upper h)
+    return ClassItem.range lower upper h
   else
     fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 
@@ -241,8 +241,9 @@ private def rangeQuantifier : Parser Quantity := do
         if m > maxRepetitions then
           fail s!"invalid quantifier `\{{n},{m}`: more than {maxRepetitions} repetitions"
         if h : n ≤ m then
-          pure (.between n m h)
-        else fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
+          return .between n m h
+        else
+          fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)
   rightBrace <|> fail s!"missing `}`, unterminated quantifier"
@@ -266,6 +267,18 @@ private def nothingToRepeat : Parser RegexSyntax :=
    discard rangeQuantifier)
   *> fail "nothing to repeat"
 
+/--
+`ref := "?&" ident`
+
+Parser for a reference to a subpattern, whose name is an atomic Lean identifier: `(?&name)` without
+the parentheses.
+-/
+private def ref : Parser RegexSyntax := do
+  skipString "?&"
+  let first ← satisfy Lean.isIdFirst <|> fail "missing subpattern name after `(?&`"
+  let rest  ← manyChars (satisfy Lean.isIdRest)
+  return .subpattern (first.toString ++ rest)
+
 mutual
 /--
 `alt := concat? ("|" concat?)*`
@@ -273,7 +286,7 @@ mutual
 Parser for alternatives in the regular expression grammar. Top-level rule.
 -/
 private partial def alt : Parser RegexSyntax := do
-  let left ← concat <|> (pure .ε)
+  let left ← concat <|> pure .ε
   let alts ← many (altSep *> (concat <|> pure .ε))
   -- `foldl` makes alternation left-associative: `a|b|c` is `alt (alt a b) c`.
   return alts.foldl .alt left
@@ -316,12 +329,12 @@ private partial def atom : Parser RegexSyntax :=
   nothingToRepeat
 
 /--
-`subExpr := "(" alt ")"`
+`subExpr := "(" (ref | alt) ")"`
 
-Parser for an expression in parentheses.
+Parser for an expression in parentheses, or a reference to a subpattern.
 -/
 private partial def subExpr : Parser RegexSyntax :=
-  leftParen *> alt <* (rightParen <|> fail "missing `)`, unterminated subpattern")
+  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated subpattern")
 end
 
 /--
@@ -346,7 +359,7 @@ structure ParseRegexError where
   /--
   The description of the error.
   -/
-  msg    : String
+  msg : String
 deriving Repr
 
 /--
