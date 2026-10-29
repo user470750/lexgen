@@ -64,7 +64,7 @@ error: offset 3: nothing to repeat
 ---
 error: offset 3: nothing to repeat
 ---
-error: offset 2: missing `)`, unterminated subpattern
+error: offset 2: missing `)`, unterminated group
 ---
 error: offset 2: unmatched `)`
 ---

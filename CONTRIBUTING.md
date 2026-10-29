@@ -38,8 +38,8 @@ let rightStart := leftStart + leftNFA.nodes.size + 1
 ```
 
 ```lean
-| .single c          => #[c.toNat, c.toNat + 1]
-| .range lower upper => #[lower.toNat, upper.toNat + 1]
+| .single c            => #[c.toNat, c.toNat + 1]
+| .range lower upper _ => #[lower.toNat, upper.toNat + 1]
 ```
 
 When an arm's body goes on the next line, no padding is needed.
@@ -66,8 +66,9 @@ to the leading dot: name the type, so that it is clear which one is meant.
 
 **Imports.** Use a plain `import` wherever possible, so that importing a module does
 not pull in its dependencies. After `module`, leave a blank line, list the
-`public import`s, leave another blank line, then list the plain `import`s. Sort each
-group alphabetically.
+`public import`s (`public meta import`s first), leave another blank line, list the
+plain `import`s (`meta import`s first), then `public section`, any `open`s and the
+module header. Sort each group alphabetically.
 
 **Tests.** New features and bug fixes are welcome to come with tests. Tests live in
 the `LexgenTest` library and check the `lexer` command end to end, a module per topic:

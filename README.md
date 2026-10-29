@@ -2,7 +2,8 @@
 
 ## Description
 
-Lexgen is a compile-time, declarative, regex-based lexer generator for the Lean programming language.
+Lexgen is a compile-time, declarative, regex-based lexer generator for the Lean
+programming language.
 
 ## Goals
 
@@ -78,5 +79,6 @@ an error if some part of the input matches no rule:
 
 ```lean
 #eval (Token.lexer r#"{"a": 1, "b": true}"#).tokens
--- Except.ok #[lbrace, string "a", colon, number 1, comma, string "b", colon, jtrue, rbrace]
+-- Except.ok #[Token.lbrace, Token.string "a", Token.colon, Token.number 1.000000, Token.comma,
+--   Token.string "b", Token.colon, Token.jtrue, Token.rbrace]
 ```

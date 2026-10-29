@@ -111,7 +111,7 @@ inductive RegexSyntax where
 deriving Repr, DecidableEq
 
 /--
-Estimates the size of `re` after desugaring.
+Estimates the size of a regex after desugaring.
 
 `subpatterns` maps the name of each subpattern used in the CST to its size, as estimated by
 `countNodes`.

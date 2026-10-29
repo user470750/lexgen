@@ -28,7 +28,7 @@ Defines `rulesToDFA`, the entry point of the regex → NFA → DFA pipeline, and
 namespace Lexgen.Internal
 
 /--
-The largest number of nodes a pattern may have once its repetitions are expanded.
+The largest number of leaves a pattern may have once its repetitions are expanded.
 -/
 def maxRegexSize : Nat := 2000
 
@@ -67,7 +67,7 @@ inductive ConversionError where
   | matchesEmpty (rule : Nat)
   /--
   The rule or subpattern at `location` is too large: once its repetitions are expanded, it has more
-  than `maxRegexSize` nodes.
+  than `maxRegexSize` leaves.
   -/
   | tooLarge (location : Location)
   /--
@@ -87,7 +87,8 @@ Subpatterns are processed first, also in the order of declaration. An error in a
 the conversion, since every pattern that refers to it would then fail as an unknown subpattern.
 
 Returns the errors of all rules: an error for each rule that is not a valid regular expression, is
-too large or matches the empty string, or a single error if there are no rules at all.
+too large, refers to an unknown subpattern or matches the empty string, or a single error if there
+are no rules at all.
 -/
 def rulesToDFA (patterns : List String) (subpatterns : List (String × String))
     (minimization : Bool) : Except (Array ConversionError) DFA := do
@@ -108,7 +109,8 @@ def rulesToDFA (patterns : List String) (subpatterns : List (String × String))
 where
   /--
   Parses the pattern of a rule, paired with the rule number, checks its size before desugaring it,
-  and checks that it does not match the empty string, tagging an error with the rule number.
+  and checks that it refers only to known subpatterns and does not match the empty string, tagging
+  an error with the rule number.
   -/
   checkRule (subpatterns : Std.HashMap String RegexAST) :
       String × Nat → Except ConversionError RegexAST
@@ -125,8 +127,8 @@ where
 
   /--
   Parses the pattern of a subpattern, paired with its index among the subpatterns, checks its size
-  before desugaring it, tagging an error with the index. Unlike a rule, a subpattern may match the
-  empty string.
+  before desugaring it, and checks that it refers only to known subpatterns, tagging an error with
+  the index. Unlike a rule, a subpattern may match the empty string.
   -/
   checkSubpattern (subpatterns : Std.HashMap String RegexAST) :
       String × Nat → Except ConversionError RegexAST

@@ -87,6 +87,9 @@ private def hexEscape : Parser Char := do
   let low ← hexDigit <|> fail "missing two hex digits after `\\x`"
   return Char.ofNat (16 * hexValue high + hexValue low)
 where
+  /--
+  Returns the value of the hex digit `c`.
+  -/
   hexValue (c : Char) : Nat :=
     if c ≤ '9' then
       -- The code point of a digit is not its value, but the digits `0-9` have consecutive code
@@ -109,6 +112,9 @@ private def classEscape : Parser NamedClass := do
   sClass 's' .space    <|>
   sClass 'S' .nonSpace
 where
+  /--
+  Parser for the letter `c` of the named class `name`.
+  -/
   @[inline]
   sClass (c : Char) (name : NamedClass) : Parser NamedClass := skipChar c *> pure name
 
@@ -328,7 +334,7 @@ private partial def atom : Parser RegexSyntax :=
 Parser for an expression in parentheses, or a reference to a subpattern.
 -/
 private partial def subExpr : Parser RegexSyntax :=
-  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated subpattern")
+  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated group")
 end
 
 /--
