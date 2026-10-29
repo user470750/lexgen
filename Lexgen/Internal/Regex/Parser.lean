@@ -261,6 +261,18 @@ private def nothingToRepeat : Parser RegexSyntax :=
    discard rangeQuantifier)
   *> fail "nothing to repeat"
 
+/--
+`ref := "?&" ident`
+
+Parser for a reference to a subpattern, whose name is an atomic Lean identifier: `(?&name)` without
+the parentheses.
+-/
+private def ref : Parser RegexSyntax := do
+  skipString "?&"
+  let first ← satisfy Lean.isIdFirst <|> fail "missing subpattern name after `(?&`"
+  let rest  ← manyChars (satisfy Lean.isIdRest)
+  return .subpattern (first.toString ++ rest)
+
 mutual
 /--
 `alt := concat? ("|" concat?)*`
@@ -311,12 +323,12 @@ private partial def atom : Parser RegexSyntax :=
   nothingToRepeat
 
 /--
-`subExpr := "(" alt ")"`
+`subExpr := "(" (ref | alt) ")"`
 
-Parser for an expression in parentheses.
+Parser for an expression in parentheses, or a reference to a subpattern.
 -/
 private partial def subExpr : Parser RegexSyntax :=
-  leftParen *> alt <* (rightParen <|> fail "missing `)`, unterminated subpattern")
+  leftParen *> (ref <|> alt) <* (rightParen <|> fail "missing `)`, unterminated subpattern")
 end
 
 /--

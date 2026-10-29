@@ -31,13 +31,13 @@ Defines the `lexer` command: its syntax and its elaboration.
 namespace Lexgen
 
 /--
-Rules of the `lexer` command: token rules and skip rules.
+Rules of the `lexer` command: token rules, skip rules and subpattern rules.
 -/
 declare_syntax_cat lexgenRule
 
--- A rule starts with its docstring, if any, and `|` or `skip`, parsed together by `atomic`:
--- otherwise the docstring of the command after the rules would be taken for the start of one more
--- rule.
+-- A rule starts with its docstring, if any, and `|` or a keyword (`skip`, `subpattern`), parsed
+-- together by `atomic`: otherwise the docstring of the command after the rules would be taken for
+-- the start of one more rule.
 
 /--
 A rule of a token without a value.
@@ -56,9 +56,15 @@ A skip rule of the `lexer` command: the pattern of the text that is dropped.
 syntax atomic((docComment)? "skip") str : lexgenRule
 
 /--
-Declares a lexer: an inductive type with a constructor for each rule but the skip rules, its
-`Lexgen.Lexable` instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer`
-for a string.
+A subpattern rule of the `lexer` command: a named pattern that the other patterns may use. Token
+and skip rules may use any subpattern, declared before or after them; a subpattern may use only the
+subpatterns declared before it. It declares no token.
+-/
+syntax atomic((docComment)? "subpattern") ident ":=" str : lexgenRule
+
+/--
+Declares a lexer: an inductive type with a constructor for each token rule, its `Lexgen.Lexable`
+instance, and a function `lexer` in its namespace, which creates a `Lexgen.Lexer` for a string.
 
 Each token rule pairs a constructor with the pattern it matches, usually written as a raw string
 literal: `name := r"…"`. A rule `name : α := r"…" => f` also gives the constructor a value of type
@@ -69,8 +75,13 @@ matches, lexing fails with the byte offset of the failure.
 Rules `skip r"…"`, which may be mixed with the token rules, match text that is dropped, such as
 whitespace or comments.
 
+A rule `subpattern name := r"…"` declares a named pattern for the other patterns to use: token and
+skip rules may use any subpattern, declared before or after them, and a subpattern only the
+subpatterns declared before it.
+
 A docstring before `lexer` documents the token type, and a docstring before a token rule documents
-its constructor. A docstring before a skip rule is ignored, since a skip rule declares nothing.
+its constructor. A docstring before a skip rule or a subpattern rule is ignored, since neither
+declares a constructor.
 
 An optional `deriving` clause after the rules derives the listed instances for the token type.
 -/
@@ -81,27 +92,54 @@ syntax
 ("deriving" ident,+)? : command
 
 /--
-Parses the rules of a `lexer` declaration into pairs of a `RuleInfo` and a pattern.
+The parsed rules of a `lexer` declaration, split into the rules that get a number and the
+subpattern rules.
+-/
+private structure Patterns where
+  /--
+  The token and skip rules, each paired with its pattern, in the order of declaration: the index of
+  a rule is its number.
+  -/
+  rules : Array (RuleInfo × StrLit)
+  /--
+  The subpattern rules: the name of each subpattern paired with its pattern, in the order of
+  declaration.
+  -/
+  subpatterns : Array (Ident × StrLit)
+
+/--
+Parses the rules of a `lexer` declaration into `Patterns`.
 -/
 private meta def getRules (rules : Array (TSyntax `lexgenRule)) :
-    CommandElabM (Array (RuleInfo × StrLit)) :=
-  rules.mapM fun
+    CommandElabM Patterns := do
+  let mut numberedRules := {}
+  let mut subpatterns   := {}
+
+  for rule in rules do
+    match rule with
     | `(lexgenRule| $[$doc?]? | $tokenName:ident := $pattern) =>
-      pure (RuleInfo.simple tokenName doc?, pattern)
+      numberedRules := numberedRules.push (RuleInfo.simple tokenName doc?, pattern)
     | `(lexgenRule| $[$doc?]? | $tokenName:ident : $valueType := $pattern => $func) =>
-      pure (RuleInfo.converted tokenName valueType func doc?, pattern)
+      numberedRules := numberedRules.push
+        (RuleInfo.converted tokenName valueType func doc?, pattern)
     | `(lexgenRule| $[$doc?]? skip $pattern) =>
-      pure (RuleInfo.skip, pattern)
+      numberedRules := numberedRules.push (RuleInfo.skip, pattern)
+    | `(lexgenRule| $[$doc?]? subpattern $subpatternName:ident := $pattern) =>
+      subpatterns := subpatterns.push (subpatternName, pattern)
     | _ => throwUnsupportedSyntax
+
+  return ⟨numberedRules, subpatterns⟩
 
 /--
 Checks the names of a `lexer` declaration: the type must not be declared yet, and the token names
-must be distinct and differ from `lexer`.
+and subpattern names must all be distinct. A token name must also differ from `lexer`. A subpattern
+name must not contain `.`.
 
 Runs before any code is generated, so that errors are reported on the names themselves rather than
 on the generated code.
 -/
-private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : CommandElabM Unit := do
+private meta def checkNames (typeName : Ident) (tokenNames : Array Ident)
+    (subpatternNames : Array Ident) : CommandElabM Unit := do
   -- Resolves the type name as `inductive` does and fails if it is already declared.
   discard <| withRef typeName <| mkDeclName (← getCurrNamespace) {} typeName.getId
 
@@ -113,38 +151,63 @@ private meta def checkNames (typeName : Ident) (tokenNames : Array Ident) : Comm
       logErrorAt token m!"duplicate token name `{token}`"
     seen := seen.insert token.getId
 
+  for subpatternName in subpatternNames do
+    unless subpatternName.getId.eraseMacroScopes.isAtomic do
+      logErrorAt subpatternName m!"subpattern name `{subpatternName}` cannot contain `.`"
+    if seen.contains subpatternName.getId then
+      logErrorAt subpatternName m!"duplicate name `{subpatternName}`"
+    seen := seen.insert subpatternName.getId
+
   if ← MonadLog.hasErrors then
     throwAbortCommand
 
 /--
-Reports each of `errors` on the pattern of the rule it concerns. `patterns` are indexed by rule
+Reports each of `errors` on the pattern of the rule and subpattern it concerns. They are indexed by
 number.
 -/
-private meta def throwConversionErrors (patterns : Array StrLit) (errors : Array ConversionError) :
-    CommandElabM α := do
+private meta def throwConversionErrors (patterns : Array StrLit)
+    (subpatterns : Array StrLit) (errors : Array ConversionError) : CommandElabM α := do
   for error in errors do
     match error with
     | .noRules => logError "a lexer needs at least one rule"
-    | .invalidPattern rule offset msg =>
-      logErrorAt patterns[rule]! m!"offset {offset}: {msg}"
+    | .invalidPattern location offset msg =>
+      logErrorAt (patternAt location) m!"offset {offset}: {msg}"
     | .matchesEmpty rule =>
       logErrorAt
         patterns[rule]!
         "this rule matches the empty string, so the lexer would loop on it"
-    | .tooLarge rule =>
+    | .tooLarge location =>
+      let kind := if location matches .rule _ then "rule" else "subpattern"
       logErrorAt
-        patterns[rule]!
-        m!"this rule is too large: its repetitions expand into more than {maxRegexSize} AST leaves"
+        (patternAt location)
+        m!"this {kind} is too large: its repetitions expand into more than {maxRegexSize} AST \
+          leaves"
+    | .unknownSubpattern location name =>
+      logErrorAt
+        (patternAt location)
+        m!"unknown subpattern name: `{name}`"
   throwAbortCommand
+where
+  /--
+  Returns the pattern of the rule (or subpattern) by its position.
+  -/
+  patternAt : Location → StrLit
+  | .rule rule        => patterns[rule]!
+  | .subpattern index => subpatterns[index]!
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
 -/
-private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA := do
+private meta def getDFA (patterns : Array StrLit) (subpatterns : Array (Ident × StrLit)) :
+    CommandElabM DFA := do
   let minimization ← lexgen.minimization.getM
-  match rulesToDFA (patterns.toList.map TSyntax.getString) minimization with
+  -- A pattern refers to a subpattern by the text of its name, so without erasing macro scopes a
+  -- subpattern declared in a macro could not be referred to.
+  let subpatternStrings := subpatterns.toList.map fun (name, pattern) =>
+    (name.getId.eraseMacroScopes.getString!, pattern.getString)
+  match rulesToDFA (patterns.toList.map TSyntax.getString) subpatternStrings minimization with
     | .ok    dfa    => return dfa
-    | .error errors => throwConversionErrors patterns errors
+    | .error errors => throwConversionErrors patterns subpatterns.unzip.2 errors
 
 /--
 Warns on the pattern of each rule of `dfa` that never produces a match.
@@ -168,11 +231,14 @@ elab_rules : command
         $[$rules:lexgenRule]*
       $[deriving $[$derivings?:ident],*]?
     ) => do
-    let (ruleInfos, patterns) := (← getRules rules).unzip
+    let ⟨numberedRules, subpatterns⟩ ← getRules rules
+    let (ruleInfos, patterns) := numberedRules.unzip
+    let (subpatternNames, _)  := subpatterns.unzip
+
     if ruleInfos.size > 2 ^ ruleBits - 1 then
       throwError "too many rules"
-    checkNames typeName (ruleInfos.filterMap (·.name))
-    let dfa ← getDFA patterns
+    checkNames typeName (ruleInfos.filterMap (·.name)) subpatternNames
+    let dfa ← getDFA patterns subpatterns
     logDeadRules patterns dfa
     for cmd in ← buildLexer ⟨typeName, doc?, derivings?⟩ ruleInfos dfa do
       elabCommand cmd

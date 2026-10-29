@@ -87,32 +87,46 @@ private def ClassItem.desugar : ClassItem → Array CharClass
   | ClassItem.named kind => namedClassRanges kind
 
 /--
+An error of `RegexSyntax.desugar`: a reference to a subpattern that is not among the given ones.
+-/
+structure UnknownSubpattern where
+  /--
+  The name of the subpattern.
+  -/
+  name : String
+
+/--
 Desugars CST (`RegexSyntax`) to AST (`RegexAST`).
 
 Expresses complex constructs (e.g. `+`, `?`, `{n,m}`) in terms of the basic AST constructors.
+
+`subpatterns` maps the names of subpatterns to their desugared ASTs. A reference to a subpattern
+that is not in `subpatterns` fails with `UnknownSubpattern`.
 -/
-def RegexSyntax.desugar : RegexSyntax → RegexAST
-  | RegexSyntax.alt left right =>
-    RegexAST.alt left.desugar right.desugar
-  | RegexSyntax.concat first rest =>
-    RegexAST.concat first.desugar rest.desugar
-  | RegexSyntax.repeated (.atLeast n) re =>
-    let desugared := re.desugar
-    RegexAST.normalizedConcat
+def RegexSyntax.desugar (subpatterns : Std.HashMap String RegexAST) :
+    RegexSyntax → Except UnknownSubpattern RegexAST
+  | RegexSyntax.alt left right => do
+    return RegexAST.alt (← left.desugar subpatterns) (← right.desugar subpatterns)
+  | RegexSyntax.concat first rest => do
+    return RegexAST.concat (← first.desugar subpatterns) (← rest.desugar subpatterns)
+  | RegexSyntax.repeated (.atLeast n) re => do
+    let desugared ← re.desugar subpatterns
+    return RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (RegexAST.repeated desugared)
-  | RegexSyntax.repeated (.between n m ..) re =>
-    let desugared := re.desugar
+  | RegexSyntax.repeated (.between n m ..) re => do
+    let desugared ← re.desugar subpatterns
     -- `inOrder` keeps `m - n` from truncating to zero.
-    RegexAST.normalizedConcat
+    return RegexAST.normalizedConcat
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
-  | RegexSyntax.symbol c => RegexAST.charClass false #[.single c]
+  | RegexSyntax.subpattern name => (subpatterns.get? name).getDM (.error ⟨name⟩)
+  | RegexSyntax.symbol c => .ok (RegexAST.charClass false #[.single c])
   | RegexSyntax.charClass negate items =>
-    RegexAST.charClass negate (items.flatMap ClassItem.desugar)
+    .ok (RegexAST.charClass negate (items.flatMap ClassItem.desugar))
   | RegexSyntax.namedClass kind =>
-    RegexAST.charClass false (namedClassRanges kind)
-  | RegexSyntax.dot      => RegexAST.charClass true #[.single '\n']
-  | RegexSyntax.ε        => RegexAST.ε
+    .ok (RegexAST.charClass false (namedClassRanges kind))
+  | RegexSyntax.dot => .ok (RegexAST.charClass true #[.single '\n'])
+  | RegexSyntax.ε   => .ok (RegexAST.ε)
 
 end Lexgen.Internal

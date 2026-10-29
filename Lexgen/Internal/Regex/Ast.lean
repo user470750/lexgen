@@ -57,12 +57,14 @@ inductive RegexAST where
   Matches the empty string.
   -/
   | ε
-deriving Repr
+deriving Repr, Inhabited
+
+namespace RegexAST
 
 /--
 Wraps `concat` to avoid useless concatenation with ε.
 -/
-def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
+def normalizedConcat : RegexAST → RegexAST → RegexAST
   | .ε,    rest => rest
   | first, .ε   => first
   | first, rest => .concat first rest
@@ -70,11 +72,23 @@ def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
 /--
 Checks whether a regular expression matches the empty string.
 -/
-def RegexAST.matchesEmpty : RegexAST → Bool
+def matchesEmpty : RegexAST → Bool
   | .ε            => true
   | .charClass .. => false
   | .alt l r      => l.matchesEmpty || r.matchesEmpty
   | .concat f r   => f.matchesEmpty && r.matchesEmpty
   | .repeated _   => true
+
+/--
+Counts the leaves of a regular expression: the size that `RegexSyntax.countNodes` estimates before
+desugaring.
+-/
+def countNodes : RegexAST → Nat
+  | .ε | .charClass .. => 1
+  | .alt left right    => countNodes left + countNodes right
+  | .concat first rest => countNodes first + countNodes rest
+  | .repeated re       => countNodes re
+
+end RegexAST
 
 end Lexgen.Internal
