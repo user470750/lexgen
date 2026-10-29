@@ -77,7 +77,7 @@ whitespace or comments.
 
 A rule `subpattern name := r"…"` declares a named pattern for the other patterns to use: token and
 skip rules may use any subpattern, declared before or after them, and a subpattern only the
-subpatterns declared before it.
+subpatterns declared before it. A pattern refers to a subpattern as `(?&name)`.
 
 A docstring before `lexer` documents the token type, and a docstring before a token rule documents
 its constructor. A docstring before a skip rule or a subpattern rule is ignored, since neither
