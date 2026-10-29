@@ -341,7 +341,7 @@ structure ParseRegexError where
   /--
   The description of the error.
   -/
-  msg    : String
+  msg : String
 deriving Repr
 
 /--

@@ -32,7 +32,7 @@ structure DFA where
   Transition table: for every state, sorted, disjoint intervals covering every character, each with
   the state it leads to. Indexed by state.
   -/
-  trans     : Array (Array (DFA.Interval × Nat))
+  trans : Array (Array (DFA.Interval × Nat))
   /--
   Accepting (final) states, each mapped to the rule it accepts.
   -/
