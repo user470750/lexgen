@@ -28,7 +28,7 @@ Defines `rulesToDFA`, the entry point of the regex → NFA → DFA pipeline, and
 namespace Lexgen.Internal
 
 /--
-The largest number of nodes a pattern may have once its repetitions are expanded.
+The largest number of leaves a pattern may have once its repetitions are expanded.
 -/
 def maxRegexSize : Nat := 2000
 
@@ -52,7 +52,7 @@ inductive ConversionError where
   | matchesEmpty (rule : Nat)
   /--
   Rule `rule` is too large: once its repetitions are expanded, it has more than `maxRegexSize`
-  nodes.
+  leaves.
   -/
   | tooLarge (rule : Nat)
 
