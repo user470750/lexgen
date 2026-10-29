@@ -12,8 +12,6 @@ import LexgenTest.Basic
 The lexer is built with `lexgen.minimization` off, so its DFA keeps redundant states.
 -/
 
-open Lexgen
-
 -- For `(a|b)*abb` the subset construction gives one state more than the minimal DFA.
 set_option lexgen.minimization false in
 lexer Token where

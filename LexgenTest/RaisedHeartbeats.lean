@@ -16,8 +16,6 @@ The lexical grammar of Zig after its own tokenizer, `lib/std/zig/tokenizer.zig` 
 camel case and the keywords prefixed with `kw`.
 -/
 
-open Lexgen
-
 set_option maxHeartbeats 250000 in
 lexer ZigToken where
   skip r"[ \t\n\r]+"
