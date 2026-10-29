@@ -2,7 +2,8 @@
 
 ## Description
 
-Lexgen is a compile-time, declarative, regex-based lexer generator for the Lean programming language.
+Lexgen is a compile-time, declarative, regex-based lexer generator for the Lean
+programming language.
 
 ## Goals
 
