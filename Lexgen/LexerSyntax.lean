@@ -171,24 +171,26 @@ private meta def throwConversionErrors (patterns : Array StrLit)
   for error in errors do
     match error with
     | .noRules => logError "a lexer needs at least one rule"
-    | .invalidPattern rule offset msg =>
-      logErrorAt patterns[rule]! m!"offset {offset}: {msg}"
+    | .invalidPattern location offset msg =>
+      logErrorAt (patternAt location) m!"offset {offset}: {msg}"
     | .matchesEmpty rule =>
       logErrorAt
         patterns[rule]!
         "this rule matches the empty string, so the lexer would loop on it"
-    | .tooLarge rule =>
+    | .tooLarge location =>
+      let kind := if location matches .rule _ then "rule" else "subpattern"
       logErrorAt
-        patterns[rule]!
-        m!"this rule is too large: its repetitions expand into more than {maxRegexSize} AST leaves"
-    | .invalidSubpattern index offset msg =>
-      logErrorAt subpatterns[index]! m!"offset {offset}: {msg}"
-    | .subpatternTooLarge index =>
-      logErrorAt
-        subpatterns[index]!
-        m!"this subpattern is too large: its repetitions expand into more than {maxRegexSize} \
-          AST leaves"
+        (patternAt location)
+        m!"this {kind} is too large: its repetitions expand into more than {maxRegexSize} AST \
+          leaves"
   throwAbortCommand
+where
+  /--
+  Returns the pattern of the rule (or subpattern) by its position.
+  -/
+  patternAt : Location → StrLit
+  | .rule rule        => patterns[rule]!
+  | .subpattern index => subpatterns[index]!
 
 /--
 Builds the `DFA` from the patterns, or throws an error if they cannot be converted.
