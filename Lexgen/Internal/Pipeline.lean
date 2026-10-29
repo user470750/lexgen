@@ -33,6 +33,20 @@ The largest number of nodes a pattern may have once its repetitions are expanded
 def maxRegexSize : Nat := 2000
 
 /--
+The location of an error of `rulesToDFA`: a rule or a subpattern, given by its position among the
+declarations of rules or of subpatterns respectively.
+-/
+inductive Location where
+  /--
+  The rule at position `rule` among the rules, which is its number.
+  -/
+  | rule (rule : Nat)
+  /--
+  The subpattern at position `subpattern` among the subpatterns.
+  -/
+  | subpattern (subpattern : Nat)
+
+/--
 An error of `rulesToDFA`. Rules (and subpatterns) are given by their numbers, so that the `lexer`
 command can report each error on the rule it concerns.
 -/
@@ -42,29 +56,20 @@ inductive ConversionError where
   -/
   | noRules
   /--
-  Rule `rule` is not a valid regular expression: parsing failed at the byte `offset` of its pattern.
+  The rule or subpattern at `location` is not a valid regular expression: parsing failed at the
+  byte `offset` of its pattern.
   -/
-  | invalidPattern (rule : Nat) (offset : Nat) (msg : String)
+  | invalidPattern (location : Location) (offset : Nat) (msg : String)
   /--
   Rule `rule` matches the empty string. Such a rule would make the lexer loop, since it accepts a
   token of length zero.
   -/
   | matchesEmpty (rule : Nat)
   /--
-  Rule `rule` is too large: once its repetitions are expanded, it has more than `maxRegexSize`
-  nodes.
+  The rule or subpattern at `location` is too large: once its repetitions are expanded, it has more
+  than `maxRegexSize` nodes.
   -/
-  | tooLarge (rule : Nat)
-  /--
-  Subpattern `subpattern` is not a valid regular expression: parsing failed at the byte `offset` of
-  its pattern.
-  -/
-  | invalidSubpattern (subpattern : Nat) (offset : Nat) (msg : String)
-  /--
-  Subpattern `subpattern` is too large: once its repetitions are expanded, it has more than
-  `maxRegexSize` nodes.
-  -/
-  | subpatternTooLarge (subpattern : Nat)
+  | tooLarge (location : Location)
 
 /--
 Translates the rules of a `lexer` declaration, given as regular expressions, into a single `DFA`.
@@ -103,9 +108,10 @@ where
   checkRule (subpatterns : Std.HashMap String RegexAST) :
       String × Nat → Except ConversionError RegexAST
     | (pattern, rule) => do
-      let parsed ← (parseRegex pattern).mapError fun err => .invalidPattern rule err.offset err.msg
+      let parsed ← (parseRegex pattern).mapError fun err =>
+        .invalidPattern (.rule rule) err.offset err.msg
       if parsed.countNodes (subpatterns.map fun _ regex => regex.countNodes) > maxRegexSize then
-        throw (.tooLarge rule)
+        throw (.tooLarge (.rule rule))
       let regex := parsed.desugar subpatterns
       if regex.matchesEmpty then
         throw (.matchesEmpty rule)
@@ -119,9 +125,9 @@ where
       String × Nat → Except ConversionError RegexAST
     | (pattern, index) => do
       let parsed ← (parseRegex pattern).mapError fun err =>
-        .invalidSubpattern index err.offset err.msg
+        .invalidPattern (.subpattern index) err.offset err.msg
       if parsed.countNodes (subpatterns.map fun _ regex => regex.countNodes) > maxRegexSize then
-        throw (.subpatternTooLarge index)
+        throw (.tooLarge (.subpattern index))
       return parsed.desugar subpatterns
 
 end Lexgen.Internal
