@@ -170,7 +170,7 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
     classChar <|>
     fail s!"missing upper bound of range `{lower.quoteCore}-`"
   if h : lower ≤ upper then
-    pure (ClassItem.range lower upper h)
+    return ClassItem.range lower upper h
   else
     fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 
@@ -235,7 +235,7 @@ private def rangeQuantifier : Parser Quantity := do
         if m > maxRepetitions then
           fail s!"invalid quantifier `\{{n},{m}`: more than {maxRepetitions} repetitions"
         if h : n ≤ m then
-          pure (.between n m h)
+          return .between n m h
         else fail s!"invalid range `\{{n},{m}`: maximum less than minimum"
       ) <|> pure (.atLeast n)
     ) <|> pure (.exactly n)

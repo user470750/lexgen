@@ -76,7 +76,7 @@ def rulesToDFA (patterns : List String) (minimization : Bool) :
   | [] => throw #[.noRules]
   | first :: rest =>
     let dfa := DFA.ofNFA (NFA.ofRules first rest)
-    pure (if minimization then dfa.minimize.merge else dfa.merge)
+    return if minimization then dfa.minimize.merge else dfa.merge
 where
   /--
   Parses the pattern of a rule, paired with the rule number, checks its size before desugaring it,

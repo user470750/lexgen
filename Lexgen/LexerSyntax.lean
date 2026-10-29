@@ -143,7 +143,7 @@ Builds the `DFA` from the patterns, or throws an error if they cannot be convert
 private meta def getDFA (patterns : Array StrLit) : CommandElabM DFA := do
   let minimization ← lexgen.minimization.getM
   match rulesToDFA (patterns.toList.map TSyntax.getString) minimization with
-    | .ok    dfa    => pure dfa
+    | .ok    dfa    => return dfa
     | .error errors => throwConversionErrors patterns errors
 
 /--
