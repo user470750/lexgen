@@ -106,7 +106,7 @@ inductive RegexSyntax where
 deriving Repr, DecidableEq
 
 /--
-Estimates the size of `re` after desugaring.
+Estimates the size of a regex after desugaring.
 -/
 def RegexSyntax.countNodes : RegexSyntax → Nat
   | .ε | .dot | .charClass .. | .namedClass _ | .symbol _ => 1

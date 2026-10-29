@@ -38,14 +38,14 @@ def DFA.Interval.ofBounds (lower upper : Char) : DFA.Interval :=
   if lower == upper then .single lower else .range lower upper
 
 /--
-Returns the first character of `interval`.
+Returns the first character of an interval.
 -/
 def DFA.Interval.lower : DFA.Interval → Char
   | .single character => character
   | .range lower _    => lower
 
 /--
-Returns the last character of `interval`.
+Returns the last character of an interval.
 -/
 def DFA.Interval.upper : DFA.Interval → Char
   | .single character => character
