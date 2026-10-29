@@ -183,6 +183,10 @@ private meta def throwConversionErrors (patterns : Array StrLit)
         (patternAt location)
         m!"this {kind} is too large: its repetitions expand into more than {maxRegexSize} AST \
           leaves"
+    | .unknownSubpattern location name =>
+      logErrorAt
+        (patternAt location)
+        m!"unknown subpattern name: `{name}`"
   throwAbortCommand
 where
   /--
