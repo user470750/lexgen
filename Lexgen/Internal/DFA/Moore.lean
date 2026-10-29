@@ -102,7 +102,7 @@ def DFA.minimize (dfa : DFA) : DFA :=
   else
     let groupOf         := groupOfStates ordered
     let representatives := ordered.map (·[0]!)
-    let trans  := representatives.map fun state =>
+    let trans := representatives.map fun state =>
       dfa.trans[state]!.map fun (interval, target) => (interval, groupOf[target]!)
     -- Every state of a group accepts the same rule, since the first groups are split by rule.
     let accepting := Std.HashMap.ofList

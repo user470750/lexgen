@@ -154,7 +154,7 @@ def ofNFA (nfa : NFA) : DFA :=
         let reached := reachedOn nfa states[current]! interval
         match ids[reached]? with
         | some existingId => row := row.push (interval, existingId)
-        | none            =>
+        | none =>
           lastState := lastState + 1
           states := states.push reached
           ids := ids.insert reached lastState

@@ -82,12 +82,12 @@ where
   several states always does, a single state only if it has a transition to itself.
   -/
   addComponent (acc : Std.HashSet Nat) : List Nat → Std.HashSet Nat
-  | [state] =>
-    if isSelfRecursive state then
-      acc.insert state
-    else
-      acc
-  | states => acc.insertMany states
+    | [state] =>
+      if isSelfRecursive state then
+        acc.insert state
+      else
+        acc
+    | states => acc.insertMany states
 
 end DFA
 

@@ -71,10 +71,10 @@ def RegexAST.normalizedConcat : RegexAST → RegexAST → RegexAST
 Checks whether a regular expression matches the empty string.
 -/
 def RegexAST.matchesEmpty : RegexAST → Bool
-  | .ε          => true
+  | .ε            => true
   | .charClass .. => false
-  | .alt l r    => l.matchesEmpty || r.matchesEmpty
-  | .concat f s => f.matchesEmpty && s.matchesEmpty
-  | .repeated _ => true
+  | .alt l r      => l.matchesEmpty || r.matchesEmpty
+  | .concat f s   => f.matchesEmpty && s.matchesEmpty
+  | .repeated _   => true
 
 end Lexgen.Internal
