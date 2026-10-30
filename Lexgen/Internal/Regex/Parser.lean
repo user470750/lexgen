@@ -177,7 +177,7 @@ private def charClassRange (lower : Char) : Parser ClassItem := do
     classChar <|>
     fail s!"missing upper bound of range `{lower.quoteCore}-`"
   if h : lower ≤ upper then
-    return ClassItem.range lower upper h
+    return ClassItem.range ⟨lower, upper, h⟩
   else
     fail s!"invalid range `{lower.quoteCore}-{upper.quoteCore}`: upper bound less than lower bound"
 

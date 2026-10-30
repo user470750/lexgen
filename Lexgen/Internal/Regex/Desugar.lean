@@ -41,54 +41,6 @@ private def optionalTail (n : Nat) (re : RegexAST) : RegexAST :=
   repeatConcat n (.alt re .ε)
 
 /--
-Returns the ranges of the named character class `kind`.
--/
-private def namedClassRanges (kind : NamedClass) : Array CharClass :=
-  let max := Char.ofNat 0x10FFFF
-  match kind with
-  | .digit => #[.range '0' '9' (by decide)]
-  | .nonDigit =>
-    #[
-      .range '\x00' '/' (by decide),
-      .range ':' max (by decide)
-    ]
-  | .word =>
-    #[
-      .range '0' '9' (by decide),
-      .range 'A' 'Z' (by decide),
-      .single '_',
-      .range 'a' 'z' (by decide)
-    ]
-  | .nonWord =>
-    #[
-      .range '\x00' '/' (by decide),
-      .range ':' '@' (by decide),
-      .range '[' '^' (by decide),
-      .single '`',
-      .range '{' max (by decide)
-    ]
-  | .space =>
-    #[
-      .range '\t' '\r' (by decide),
-      .single ' '
-    ]
-  | .nonSpace =>
-    #[
-      .range '\x00' '\x08' (by decide),
-      .range '\x0e' '\x1f' (by decide),
-      .range '!' max (by decide)
-    ]
-
-/--
-Desugars an item of a character class into the ranges it matches.
--/
-private def ClassItem.desugar : ClassItem → Array CharClass
-  | ClassItem.single c => #[CharClass.single c]
-  | ClassItem.range lower upper wellFormed =>
-    #[CharClass.range lower upper wellFormed]
-  | ClassItem.named kind => namedClassRanges kind
-
-/--
 An error of `RegexSyntax.desugar`: a reference to a subpattern that is not among the given ones.
 -/
 structure UnknownSubpattern where
@@ -123,12 +75,12 @@ def RegexSyntax.desugar (subpatterns : Std.HashMap String RegexAST) :
       (repeatConcat n desugared)
       (optionalTail (m - n) desugared)
   | RegexSyntax.subpattern name => (subpatterns.get? name).getDM (.error ⟨name⟩)
-  | RegexSyntax.symbol c => .ok (RegexAST.charClass false #[.single c])
+  | RegexSyntax.symbol c => .ok (RegexAST.charClass #[⟨c, c, c.le_refl⟩])
   | RegexSyntax.charClass negate items =>
-    .ok (RegexAST.charClass negate (items.flatMap ClassItem.desugar))
+    .ok (RegexAST.charClass (ClassItem.normalize negate items))
   | RegexSyntax.namedClass kind =>
-    .ok (RegexAST.charClass false (namedClassRanges kind))
-  | RegexSyntax.dot => .ok (RegexAST.charClass true #[.single '\n'])
+    .ok (RegexAST.charClass (ClassItem.normalize false #[ClassItem.named kind]))
+  | RegexSyntax.dot => .ok (RegexAST.charClass (ClassItem.normalize true #[ClassItem.single '\n']))
   | RegexSyntax.ε   => .ok RegexAST.ε
 
 end Lexgen.Internal

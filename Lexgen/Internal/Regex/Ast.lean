@@ -5,6 +5,8 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.Regex.ClassItem
+
 public section
 
 /-!
@@ -14,20 +16,6 @@ Defines the abstract syntax tree (`RegexAST`) for regular expressions.
 -/
 
 namespace Lexgen.Internal
-
-/--
-An item of a character class: a literal character or a range of characters.
--/
-inductive CharClass where
-  /--
-  Matches the literal character `character`.
-  -/
-  | single (character : Char)
-  /--
-  Matches a character from `lower` to `upper`, inclusive.
-  -/
-  | range (lower upper : Char) (wellFormed : lower ≤ upper)
-deriving Repr, DecidableEq
 
 /--
 The AST representation of regular expressions.
@@ -50,9 +38,9 @@ inductive RegexAST where
   -/
   | repeated (re : RegexAST)
   /--
-  Matches a character from `ranges`, or, if `negate`, a character outside them.
+  Matches a character from `ranges`.
   -/
-  | charClass (negate : Bool) (ranges : Array CharClass)
+  | charClass (ranges : Array RangeItem)
   /--
   Matches the empty string.
   -/
