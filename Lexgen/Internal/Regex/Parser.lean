@@ -7,6 +7,7 @@ module
 
 public import Lexgen.Internal.Regex.Syntax
 
+import Lexgen.Internal.Regex.ClassItem
 import Std.Internal.Parsec
 import Std.Internal.Parsec.String
 

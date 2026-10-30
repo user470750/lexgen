@@ -8,6 +8,8 @@ module
 public import Lexgen.Internal.Regex.Ast
 public import Lexgen.Internal.Regex.Syntax
 
+import Lexgen.Internal.Regex.ClassItem
+
 public section
 
 /-!

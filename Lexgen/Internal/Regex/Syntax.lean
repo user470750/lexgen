@@ -5,6 +5,7 @@ Authors: Oleg Shabanov
 -/
 module
 
+public import Lexgen.Internal.Regex.ClassItem
 public import Lexgen.Internal.Regex.Quantity
 public import Std.Data.HashMap
 
@@ -17,54 +18,6 @@ Defines the concrete syntax tree (`RegexSyntax`) for regular expressions.
 -/
 
 namespace Lexgen.Internal
-
-/--
-A named character class. The classes are ASCII.
--/
-inductive NamedClass where
-  /--
-  `\d`: a digit.
-  -/
-  | digit
-  /--
-  `\D`: any character but a digit.
-  -/
-  | nonDigit
-  /--
-  `\w`: a word character.
-  -/
-  | word
-  /--
-  `\W`: any character but a word character.
-  -/
-  | nonWord
-  /--
-  `\s`: a whitespace character.
-  -/
-  | space
-  /--
-  `\S`: any character but a whitespace character.
-  -/
-  | nonSpace
-deriving Repr, DecidableEq
-
-/--
-An item of a character class in the CST.
--/
-inductive ClassItem where
-  /--
-  Matches the literal character `character`.
-  -/
-  | single (character : Char)
-  /--
-  Matches a character from `lower` to `upper`, inclusive.
-  -/
-  | range (lower upper : Char) (wellFormed : lower ≤ upper)
-  /--
-  Matches a character of the named class `kind`.
-  -/
-  | named (kind : NamedClass)
-deriving Repr, DecidableEq
 
 /--
 The CST representation of regular expressions.
