@@ -64,4 +64,43 @@ inductive ClassItem where
   | named (kind : NamedClass)
 deriving Repr, DecidableEq
 
+/--
+Returns the ranges of the named character class `kind`.
+-/
+def NamedClass.ranges (kind : NamedClass) : Array ClassItem :=
+  let max := Char.ofNat 0x10FFFF
+  match kind with
+  | .digit => #[.range '0' '9' (by decide)]
+  | .nonDigit =>
+    #[
+      .range '\x00' '/' (by decide),
+      .range ':' max (by decide)
+    ]
+  | .word =>
+    #[
+      .range '0' '9' (by decide),
+      .range 'A' 'Z' (by decide),
+      .single '_',
+      .range 'a' 'z' (by decide)
+    ]
+  | .nonWord =>
+    #[
+      .range '\x00' '/' (by decide),
+      .range ':' '@' (by decide),
+      .range '[' '^' (by decide),
+      .single '`',
+      .range '{' max (by decide)
+    ]
+  | .space =>
+    #[
+      .range '\t' '\r' (by decide),
+      .single ' '
+    ]
+  | .nonSpace =>
+    #[
+      .range '\x00' '\x08' (by decide),
+      .range '\x0e' '\x1f' (by decide),
+      .range '!' max (by decide)
+    ]
+
 end Lexgen.Internal
