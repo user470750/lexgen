@@ -49,9 +49,9 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 Returns all `NFA` states reachable from a node by following a single edge matching `interval`.
 -/
 private def step (interval : DFA.Interval) : NFA.Node → List Nat
-  | .edge (.charClass negate ranges) next =>
+  | .edge (.charClass ranges) next =>
     let c := match interval with | .single c | .range c _ => c
-    if negate != ranges.any (·.contains c) then [next] else []
+    if ranges.any (·.contains c) then [next] else []
   | _ => []
 
 namespace DFA
@@ -93,10 +93,8 @@ where
   matching, or `#[]` if the node has no such edge.
   -/
   nodeBounds : NFA.Node → Array Nat
-    | .edge (.charClass _ ranges) _ =>
-      ranges.flatMap fun
-        | .single c            => #[c.toNat, c.toNat + 1]
-        | .range lower upper _ => #[lower.toNat, upper.toNat + 1]
+    | .edge (.charClass ranges) _ =>
+      ranges.flatMap fun r => #[r.lower.toNat, r.upper.toNat + 1]
     | _ => #[]
 
   /--

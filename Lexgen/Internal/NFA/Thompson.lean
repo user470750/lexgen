@@ -8,8 +8,6 @@ module
 public import Lexgen.Internal.NFA.Automaton
 public import Lexgen.Internal.Regex.Ast
 
-import Lexgen.Internal.Regex.ClassItem
-
 public section
 
 /-!
@@ -19,12 +17,6 @@ Defines Thompson's construction: translating a `RegexAST` into an `NFA`.
 -/
 
 namespace Lexgen.Internal
-
-/--
-Translates a range of a character class of the `RegexAST` into an `NFA.Range`.
--/
-private def RangeItem.toNFA (r : RangeItem) : NFA.Range :=
-  NFA.Range.range r.lower r.upper r.wellFormed
 
 /--
 Internal implementation of Thompson's algorithm.
@@ -37,7 +29,7 @@ private def translate (offset : Nat) : RegexAST → NFA
   | RegexAST.ε =>
     { nodes := #[.edge NFA.ε (offset + 1)] }
   | RegexAST.charClass ranges =>
-    { nodes := #[.edge (NFA.charClass false (ranges.map RangeItem.toNFA)) (offset + 1)] }
+    { nodes := #[.edge (NFA.charClass (ranges.map fun r => { r with })) (offset + 1)] }
   | RegexAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.

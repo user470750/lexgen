@@ -16,34 +16,37 @@ Defines the NFA representation (`NFA`).
 namespace Lexgen.Internal
 
 /--
-An item on an `NFA` edge: a literal character or a range of characters.
+A range of characters on an `NFA` edge, from `lower` to `upper`, inclusive.
 -/
-inductive NFA.Range where
+structure NFA.Range where
   /--
-  Matches the literal character `character`.
+  The lower bound of the range.
   -/
-  | single (character : Char)
+  lower : Char
   /--
-  Matches a character from `lower` to `upper`, inclusive.
+  The upper bound of the range.
   -/
-  | range (lower upper : Char) (wellFormed : lower ≤ upper)
+  upper : Char
+  /--
+  Proves that the bounds of the range are valid.
+  -/
+  wellFormed : lower ≤ upper
 deriving Repr, DecidableEq, Hashable
 
 /--
 Checks whether an `NFA.Range` matches the character `c`.
 -/
-def NFA.Range.contains (c : Char) : NFA.Range → Bool
-  | .single s            => c == s
-  | .range lower upper _ => lower ≤ c && c ≤ upper
+def NFA.Range.contains (c : Char) (r : NFA.Range) : Bool :=
+  r.lower ≤ c && c ≤ r.upper
 
 /--
 The label type for `NFA` transitions.
 -/
 inductive NFA.Edge where
   /--
-  Matches a character from `ranges`, or, if `negate`, a character outside them.
+  Matches a character from `ranges`.
   -/
-  | charClass (negate : Bool) (ranges : Array Range)
+  | charClass (ranges : Array Range)
   /--
   Matches the empty string.
   -/
