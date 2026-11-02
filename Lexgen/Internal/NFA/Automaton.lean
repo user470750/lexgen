@@ -16,37 +16,34 @@ Defines the NFA representation (`NFA`).
 namespace Lexgen.Internal
 
 /--
-A range of characters on an `NFA` edge, from `lower` to `upper`, inclusive.
+A range of bytes on an `NFA` edge, from `lower` to `upper`, inclusive.
 -/
+-- TODO: restore the field `wellFormed : lower ≤ upper`, proved where the ranges are built.
 structure NFA.Range where
   /--
   The lower bound of the range.
   -/
-  lower : Char
+  lower : UInt8
   /--
   The upper bound of the range.
   -/
-  upper : Char
-  /--
-  Proves that the bounds of the range are valid.
-  -/
-  wellFormed : lower ≤ upper
+  upper : UInt8
 deriving Repr, DecidableEq, Hashable
 
 /--
-Checks whether an `NFA.Range` matches the character `c`.
+Checks whether an `NFA.Range` matches the byte `b`.
 -/
-def NFA.Range.contains (c : Char) (r : NFA.Range) : Bool :=
-  r.lower ≤ c && c ≤ r.upper
+def NFA.Range.contains (b : UInt8) (r : NFA.Range) : Bool :=
+  r.lower ≤ b && b ≤ r.upper
 
 /--
 The label type for `NFA` transitions.
 -/
 inductive NFA.Edge where
   /--
-  Matches a character from `ranges`.
+  Matches a byte from `range`, or nothing if it is `none`.
   -/
-  | charClass (ranges : Array Range)
+  | charClass (range : Option Range)
   /--
   Matches the empty string.
   -/

@@ -29,8 +29,8 @@ state `DFA.start` is the start state.
 -/
 structure DFA where
   /--
-  Transition table: for every state, sorted, disjoint intervals covering every character, each with
-  the state it leads to. Indexed by state.
+  Transition table: for every state, sorted, disjoint intervals covering every byte, each with the
+  state it leads to. Indexed by state.
   -/
   trans : Array (Array (DFA.Interval × Nat))
   /--
@@ -88,6 +88,39 @@ where
       else
         acc
     | states => acc.insertMany states
+
+/--
+Returns, for every state of `dfa` but the trap, the number of continuation bytes that remain to be
+read before the current character ends: `0` at a character boundary.
+-/
+-- TODO: Prove termination: this is an ordinary depth-first search, which visits every state once.
+-- TODO: Duplicate the checks that elaborating the generated code makes, so that a broken invariant
+-- is reported with a clearer message than an error in the generated code.
+partial def pending (dfa : DFA) : Std.HashMap Nat Nat :=
+  pendingFromState DFA.start {(DFA.start, 0)}
+where
+  /--
+  Returns `counts` extended with the counts of the states reachable from `state`.
+  -/
+  pendingFromState (state : Nat) (counts : Std.HashMap Nat Nat) : Std.HashMap Nat Nat :=
+    let count := counts.get! state
+    dfa.trans[state]!.foldl (init := counts) fun counts (interval, target) =>
+      if target != DFA.trap && !counts.contains target then
+        let targetCount := if count == 0 then leadCount interval.lower else count - 1
+        pendingFromState target (counts.insert target targetCount)
+      else
+        counts
+
+  /--
+  Returns the number of continuation bytes after the first byte `b` of a character.
+  -/
+  leadCount (b : UInt8) : Nat :=
+    if h : b.IsUTF8FirstByte then
+      b.utf8ByteSize h - 1
+    else
+      -- Not reached: from a character boundary, a byte that cannot start a character leads to the
+      -- trap, which is not visited.
+      panic! "not a first byte"
 
 end DFA
 

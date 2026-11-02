@@ -49,9 +49,8 @@ private partial def NFA.εClosure (nfa : NFA) (visited : Std.HashSet Nat) (node 
 Returns all `NFA` states reachable from a node by following a single edge matching `interval`.
 -/
 private def step (interval : DFA.Interval) : NFA.Node → List Nat
-  | .edge (.charClass ranges) next =>
-    let c := match interval with | .single c | .range c _ => c
-    if ranges.any (·.contains c) then [next] else []
+  | .edge (.charClass r?) next =>
+    if r?.any (·.contains interval.lower) then [next] else []
   | _ => []
 
 namespace DFA
@@ -73,37 +72,27 @@ private def reachedOn (nfa : NFA) (states : Array Nat) (interval : DFA.Interval)
   canonical (raw.foldl nfa.εClosure {})
 
 /--
-Returns the alphabet of `nfa`: sorted, disjoint intervals covering every character, such that no
-edge of `nfa` tells apart two characters of one interval.
+Returns the alphabet of `nfa`: sorted, disjoint intervals covering every byte, such that no edge of
+`nfa` tells apart two bytes of one interval.
 
-The intervals are cut where some character class starts or stops matching, at `0` and `0x110000`,
-which bound all characters, and at `0xD800` and `0xE000`, which bound the surrogates.
+The intervals are cut where some range starts or stops matching, and at `0` and `0x100`, so that the
+intervals cover the bytes from `0` to `0xFF`.
 -/
 private def alphabet (nfa : NFA) : Array DFA.Interval :=
   let bounds :=
-    (nfa.nodes.flatMap nodeBounds ++ #[0, 0xD800, 0xE000, 0x110000])
+    (nfa.nodes.flatMap nodeBounds ++ #[0, 0x100])
     |>.mergeSort
     |>.eraseReps
   Array.zipWith (·, · - 1) bounds (bounds.extract 1)
-  |>.filter (·.1 != 0xD800)
-  |>.map formInterval
+  |>.map fun (lower, upper) => ⟨lower.toUInt8, upper.toUInt8⟩
 where
   /--
-  Returns the code points at which the character class on the edge of a node starts and stops
-  matching, or `#[]` if the node has no such edge.
+  Returns the bytes at which the range on the edge of a node starts and stops matching, or `#[]`
+  if the node has no such edge.
   -/
   nodeBounds : NFA.Node → Array Nat
-    | .edge (.charClass ranges) _ =>
-      ranges.flatMap fun r => #[r.lower.toNat, r.upper.toNat + 1]
+    | .edge (.charClass (some r)) _ => #[r.lower.toNat, r.upper.toNat + 1]
     | _ => #[]
-
-  /--
-  Returns the `DFA.Interval` of the characters between two code points, inclusive: a `single` if
-  they are the same.
-  -/
-  formInterval : Nat × Nat → DFA.Interval
-    | (lower, upper) =>
-      DFA.Interval.ofBounds (Char.ofNat lower) (Char.ofNat upper)
 
 /--
 Returns the rule accepted by a `DFA` state (a set of `NFA` states), or `none` if none of its `NFA`

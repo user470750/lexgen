@@ -12,7 +12,10 @@ import Lean
 -- hygienic, and the generated code reports them as unknown identifiers.
 import Lexgen.Internal.Instances
 import Lexgen.Internal.Pack
+import Lexgen.Internal.Positions
 import Lexgen.Lexer
+
+import Std.Data.HashMap
 
 public section
 
@@ -81,14 +84,20 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
-Builds the function of state `state`. The generated function takes `input` and the current position
-`pos` in it, together with the packed longest match so far `best` (an older one for an accepting
-state, which ignores it) and the proof `hi` that `input` is short enough to lex, and returns the
-packed longest match.
+Builds the function of state `state`. The generated function takes `input`, the current position in
+it, the packed longest match so far `best` (an older one for an accepting state, which ignores it)
+and the proof `hi` that `input` is short enough to lex, and returns the packed longest match.
+
+At a character boundary, the current position is `pos : input.Pos`. Inside a character, it is
+`pos : String.Pos.Raw`, followed by `hk : (⟨pos.byteIdx + count⟩ : String.Pos.Raw).IsValid input`,
+where `count` is the pending count of `state`.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
-    (recursive : Bool) : m Command := do
+    (recursive : Bool) (pendings : Std.HashMap Nat Nat) : m Command := do
   let funcName ← stateName state
+
+  let count := pendings[state]!
+
   -- The longest match so far, passed on to a non-accepting state and returned when there is nowhere
   -- to go.
   let found : Term ← if let some rule := dfa.accepting[state]? then
@@ -102,43 +111,86 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
     -- The trap never leads to a match, so going there is the same as no transition.
     if next == DFA.trap then
       return rest
-    -- A character of `interval` leads to a call of the function of state `next` on the position
-    -- after the character.
-    -- An accepting state replaces the match it gets with its own, so it gets `best`: building
-    -- `found` for it is unnecessary.
+    -- A byte of `interval` leads to a call of the function of state `next` on the position
+    -- after the byte.
+    let nextArgs : Array Term ← stateArgs count pendings[next]!
     let target ← if let some _ := dfa.accepting[next]? then
-      `($(← stateName next) input (pos.next h) best hi)
+      -- An accepting state replaces the match it gets with its own, so it gets `best`: building
+      -- `found` for it is unnecessary.
+      `($(← stateName next) input $nextArgs* best hi)
     else
-      `($(← stateName next) input (pos.next h) $found hi)
-    match interval with
-    | .single character =>
-      `(if c = $(quote character) then $target else $rest)
-    | .range lower upper =>
-      `(
-        if Lexgen.Internal.inRange c $(quote lower) $(quote upper) then
-          $target
-        else
-          $rest
-      )
+      `($(← stateName next) input $nextArgs* $found hi)
+    let lower := quote interval.lower.toNat
+    let upper := quote interval.upper.toNat
+    -- `stateArgs` refers to `hc` from a character boundary: the class of the first byte gives the
+    -- length of the character.
+    `(if hc : Lexgen.Internal.inRange c $lower $upper then $target else $rest)
 
-  -- At the end of the input, the longest match is also the one so far.
-  body ← `(
-    if h : pos ≠ input.endPos then
-      let c := pos.get h
+  -- `hp` bounds `pos` for `decreasing_by`.
+  body ← if count == 0 then
+    `(
+      if h : pos ≠ input.endPos then
+        have hp : pos.offset < input.rawEndPos := String.Pos.offset_lt_rawEndPos_iff.mpr h
+        let c := pos.byte h
+        $body
+      else
+        -- At the end of the input, the longest match is also the one so far.
+        $found
+    )
+  else
+    -- The input cannot end inside a character, so the byte at `pos` is read without checking for
+    -- the end of the input.
+    `(
+      have hp : pos < input.rawEndPos :=
+        Nat.lt_of_lt_of_le (Nat.lt_add_of_pos_right (by decide)) hk.le_rawEndPos
+      let c := input.getUTF8Byte pos hp
       $body
-    else
-      $found
-  )
-  let pos ← `(ident| pos)
-  let termination? := if recursive then some pos else none
+    )
+
+  let byteIdx : Term ← if count == 0 then `(pos.offset.byteIdx) else `(pos.byteIdx)
+  let termination? := if recursive then some byteIdx else none
+  let decreasing? ← if recursive then
+    some <$> `(tacticSeq| all_goals exact Nat.sub_lt_sub_left hp (Nat.lt_add_one _))
+  else
+    pure none
   `(
-    def $funcName (input : String) (pos : String.Pos input)
+    def $funcName (input : String) $(← posBinders count)*
         (best : Lexgen.Internal.Packed input)
         (hi : input.utf8ByteSize < Lexgen.maxInputSize) :
         Lexgen.Internal.Packed input :=
       $body
-    $[termination_by $termination?]?
+    -- The measure is the number of bytes after `pos`.
+    $[termination_by input.utf8ByteSize - $termination?]?
+    $[decreasing_by $decreasing?]?
   )
+where
+  /--
+  Returns the position arguments that a state passes to the function of the next state, depending
+  on the pending counts of the two states.
+  -/
+  stateArgs (count nextCount : Nat) : m (Array Term) := do
+    -- From a character boundary: the end of the character that the byte `c` starts is valid.
+    let valid ← `(
+      Lexgen.Internal.isValid_next (Lexgen.Internal.utf8ByteSize_eq $(quote nextCount) hc))
+    match count, nextCount with
+    -- From a character boundary to a character boundary.
+    | 0, 0 => return #[← `(input.pos ⟨pos.offset.byteIdx + 1⟩ $valid)]
+    -- From a character boundary to inside a character.
+    | 0, _ => return #[← `(⟨pos.offset.byteIdx + 1⟩), valid]
+    -- From inside a character to a character boundary.
+    | 1, _ => return #[← `(input.pos ⟨pos.byteIdx + 1⟩ hk)]
+    -- From inside a character to inside the same character.
+    | _, _ => return #[← `(⟨pos.byteIdx + 1⟩), ← `(hk)]
+
+  /--
+  Returns the position parameters of the function of a state, depending on its pending count.
+  -/
+  posBinders : Nat → m (Array (TSyntax ``Parser.Term.bracketedBinderF))
+    | 0     => return #[← `(Parser.Term.bracketedBinderF| (pos : String.Pos input))]
+    | count => return #[
+        ← `(Parser.Term.bracketedBinderF| (pos : String.Pos.Raw)),
+        ← `(Parser.Term.bracketedBinderF|
+          (hk : (⟨pos.byteIdx + $(quote count)⟩ : String.Pos.Raw).IsValid input))]
 
 /--
 Builds the functions of all states of `dfa` but the trap as one `mutual` block, since they call each
@@ -146,12 +198,13 @@ other.
 -/
 private def buildStateFuncs (dfa : DFA) : m Command := do
   let recursiveStates := dfa.recursiveStates
+  let pendings := dfa.pending
   -- The trap needs no function: no branch calls it. It comes before the start state, and every
   -- other state comes after it.
   let stateFuncs ← (dfa.trans.extract DFA.start).mapIdxM
     fun i trans =>
       let state := DFA.start + i
-      buildStateFunc dfa state trans (recursiveStates.contains state)
+      buildStateFunc dfa state trans (recursiveStates.contains state) pendings
   `(mutual $stateFuncs* end)
 
 /--

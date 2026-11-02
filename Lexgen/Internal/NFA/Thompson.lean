@@ -8,6 +8,8 @@ module
 public import Lexgen.Internal.NFA.Automaton
 public import Lexgen.Internal.Regex.Ast
 
+import Lexgen.Internal.NFA.UTF8
+
 public section
 
 /-!
@@ -25,11 +27,12 @@ Translates a regular expression into an `NFA` fragment whose states are numbered
 -/
 -- The fragment exits to the state right after it.
 private def translate (offset : Nat) : RegexAST → NFA
-  -- The single-node fragments below exit to the state right after them.
+  -- A single-node fragment, which exits to the state right after it.
   | RegexAST.ε =>
     { nodes := #[.edge NFA.ε (offset + 1)] }
   | RegexAST.charClass ranges =>
-    { nodes := #[.edge (NFA.charClass (ranges.map fun r => { r with })) (offset + 1)] }
+    let seqs := ranges.toList.flatMap fun ⟨lo, hi, _⟩ => UTF8.split lo.val hi.val
+    classFragment offset (offset + classSize seqs) seqs
   | RegexAST.concat first rest =>
     let fstNFA := translate offset first
     -- The second fragment starts right after the first one.
@@ -64,6 +67,61 @@ private def translate (offset : Nat) : RegexAST → NFA
         rightNFA.nodes ++
         #[.edge NFA.ε endState]
     }
+where
+  /--
+  Builds the fragment of a character class from its byte sequences, numbering its states from
+  `offset`: a chain of `split`s chooses a sequence, and every sequence exits to `endState`, the
+  state right after the whole fragment.
+  -/
+  classFragment (offset endState : Nat) : List UTF8.Sequence → NFA
+    | []          => edgeFragment offset none
+    | seq :: []   => sequenceFragment offset seq
+    | seq :: seqs =>
+      -- `+ 1` skips the `split` at `offset`.
+      let seqStart  := offset + 1
+      let seqNFA    := sequenceFragment seqStart seq
+      -- `+ 1` skips the `ε`-edge that exits the sequence.
+      let restStart := seqStart + seqNFA.nodes.size + 1
+      let restNFA   := classFragment restStart endState seqs
+      {
+        nodes :=
+          #[.split seqStart restStart] ++
+          seqNFA.nodes ++
+          #[.edge NFA.ε endState] ++
+          restNFA.nodes
+      }
+
+  /--
+  Returns the number of states in the fragment of a class from its byte sequences.
+  -/
+  -- It must agree with the layout of `classFragment`.
+  classSize : List UTF8.Sequence → Nat
+    -- An empty class: an edge that matches nothing.
+    | []          => 1
+    | seq :: []   => seq.val.length
+    -- A `split` and an `ε`-edge for every sequence but the last.
+    | seq :: seqs => seq.val.length + 2 + classSize seqs
+
+  /--
+  Builds the fragment of a byte sequence, numbering its states from `offset`: an edge for each
+  range, each leading to the next.
+  -/
+  sequenceFragment (offset : Nat) : UTF8.Sequence → NFA
+    | ⟨r :: [], _⟩        => edgeFragment offset (some r)
+    | ⟨r₁ :: r₂ :: rs, _⟩ =>
+      let edgeNFA : NFA := edgeFragment offset (some r₁)
+      let restNFA :=
+        sequenceFragment
+          (offset + edgeNFA.nodes.size)
+          ⟨r₂ :: rs, List.cons_ne_nil _ _⟩
+      { nodes := edgeNFA.nodes ++ restNFA.nodes }
+
+  /--
+  Builds a fragment of one edge that matches a byte from `r?`, or nothing if it is `none`,
+  numbering its state `offset`.
+  -/
+  edgeFragment (offset : Nat) (r? : Option NFA.Range) : NFA :=
+    { nodes := #[.edge (NFA.charClass r?) (offset + 1)] }
 
 /--
 Translates the rule `first`, followed by the rules of the list, into an `NFA` whose states are

@@ -10,23 +10,23 @@ public section
 /-!
 # Instances
 
-Defines `inRange`, the test of a transition on a range of characters in the generated code. Its own
+Defines `inRange`, the test of a transition on a range of bytes in the generated code. Its own
 `Decidable` instance lets the elaboration of the generated `if`s find one in a single step, instead
-of the three that `lo ≤ c ∧ c ≤ hi` would need.
+of the three that `lo ≤ b ∧ b ≤ hi` would need.
 -/
 
 namespace Lexgen.Internal
 
 /--
-Checks whether `c` lies between `lo` and `hi`, inclusive.
+Checks whether `b` lies between `lo` and `hi`, inclusive.
 -/
--- Exposed, so that the instance below can see that `inRange c lo hi` is `lo ≤ c ∧ c ≤ hi`: public
+-- Exposed, so that the instance below can see that `inRange b lo hi` is `lo ≤ b ∧ b ≤ hi`: public
 -- declarations, such as instances, do not see the body of a definition unless it is exposed.
 @[expose]
-def inRange (c lo hi : Char) : Prop := lo ≤ c ∧ c ≤ hi
+def inRange (b lo hi : UInt8) : Prop := lo ≤ b ∧ b ≤ hi
 
 @[inline]
-instance (c lo hi : Char) : Decidable (inRange c lo hi) :=
+instance (b lo hi : UInt8) : Decidable (inRange b lo hi) :=
   instDecidableAnd
 
 end Lexgen.Internal

@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -/
 module
 
+public import Lexgen.Internal.NFA.Automaton
+
 public section
 
 /-!
@@ -51,7 +53,13 @@ split at the surrogates from `ScalarRange::split` in regex-syntax's [`src/utf8.r
 [regex-syntax]: https://github.com/rust-lang/regex/blob/94ac45b2a6e7/regex-syntax/src/utf8.rs
 -/
 
-namespace Lexgen.Internal
+namespace Lexgen.Internal.UTF8
+
+/--
+A non-empty sequence of byte ranges: a byte string matches it if each byte lies in the
+corresponding range.
+-/
+abbrev Sequence := { ranges : List NFA.Range // ranges ≠ [] }
 
 /--
 Returns the largest code point that a UTF-8 sequence of `len` bytes encodes, for `len < 4`.
@@ -67,7 +75,7 @@ points from `lo` to `hi`, inclusive: a byte string encodes such a character if a
 matches exactly one of the sequences, each byte in the corresponding range.
 -/
 -- TODO: prove termination: every recursive call gets a smaller range.
-partial def UTF8.split (lo hi : UInt32) : List (List (UInt8 × UInt8)) :=
+partial def split (lo hi : UInt32) : List Sequence :=
   if lo > hi then
     []
   -- Split range at the surrogates, which have no UTF-8 encoding.
@@ -78,7 +86,7 @@ partial def UTF8.split (lo hi : UInt32) : List (List (UInt8 × UInt8)) :=
     split lo max ++ split (max + 1) hi
   -- ASCII range is always a special case.
   else if hi < 0x80 then
-    [[(lo.toUInt8, hi.toUInt8)]]
+    [⟨[⟨lo.toUInt8, hi.toUInt8⟩], List.cons_ne_nil _ _⟩]
   -- Split range into sections that agree on leading bytes.
   else if let some sep := [1, 2, 3].findSome? maskSplit? then
     split lo sep ++ split (sep + 1) hi
@@ -86,7 +94,10 @@ partial def UTF8.split (lo hi : UInt32) : List (List (UInt8 × UInt8)) :=
   else
     let ulo := String.utf8EncodeChar (Char.ofNat lo.toNat)
     let uhi := String.utf8EncodeChar (Char.ofNat hi.toNat)
-    [ulo.zip uhi]
+    [⟨
+      ulo.zipWith NFA.Range.mk uhi,
+      by simp [ulo, uhi, String.utf8EncodeChar_ne_nil]
+    ⟩]
 where
   /--
   Returns the largest code point with an `i`-byte encoding if the range also has longer ones, as
@@ -110,4 +121,4 @@ where
     else
       none
 
-end Lexgen.Internal
+end Lexgen.Internal.UTF8

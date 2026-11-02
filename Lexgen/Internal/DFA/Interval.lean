@@ -16,39 +16,17 @@ Defines `DFA.Interval`, the label type for `DFA` transitions.
 namespace Lexgen.Internal
 
 /--
-The label type for `DFA` transitions: an interval of characters, which is a single character or a
-range of characters.
+The label type for `DFA` transitions: an interval of bytes, from `lower` to `upper`, inclusive.
 -/
-inductive DFA.Interval where
+structure DFA.Interval where
   /--
-  Matches the literal character `character`.
+  The lower bound of the interval.
   -/
-  | single (character : Char)
+  lower : UInt8
   /--
-  Matches a character from `lower` to `upper`, inclusive.
+  The upper bound of the interval.
   -/
-  | range (lower upper : Char)
+  upper : UInt8
 deriving Repr, BEq
-
-/--
-Returns the interval of the characters from `lower` to `upper`, inclusive: a `single` if they are
-the same character.
--/
-def DFA.Interval.ofBounds (lower upper : Char) : DFA.Interval :=
-  if lower == upper then .single lower else .range lower upper
-
-/--
-Returns the first character of an interval.
--/
-def DFA.Interval.lower : DFA.Interval → Char
-  | .single character => character
-  | .range lower _    => lower
-
-/--
-Returns the last character of an interval.
--/
-def DFA.Interval.upper : DFA.Interval → Char
-  | .single character => character
-  | .range _ upper    => upper
 
 end Lexgen.Internal
