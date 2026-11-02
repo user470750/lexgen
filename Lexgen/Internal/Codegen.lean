@@ -89,21 +89,13 @@ packed longest match.
 private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
     (recursive : Bool) : m Command := do
   let funcName ← stateName state
-  let input ← `(ident| input)
-  let pos   ← `(ident| pos)
-  let best  ← `(ident| best)
-  let c     ← `(ident| c)
-  -- The proof that `pos` is not the end of `input`, needed to read and skip its character.
-  let h     ← `(ident| h)
-  let hi    ← `(ident| hi)
-
   -- The longest match so far, passed on to a non-accepting state and returned when there is nowhere
   -- to go.
   let found : Term ← if let some rule := dfa.accepting[state]? then
     -- The match of `rule` up to `pos` is longer than `best`, so it replaces `best`.
-    `(Lexgen.Internal.Packed.ofMatch $(quote rule) $pos $hi)
+    `(Lexgen.Internal.Packed.ofMatch $(quote rule) pos hi)
   else
-    pure best
+    `(best)
 
   -- No interval matched: the longest match is the one so far.
   let mut body ← trans.foldrM (init := found) fun (interval, next) rest => do
@@ -115,15 +107,15 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
     -- An accepting state replaces the match it gets with its own, so it gets `best`: building
     -- `found` for it is unnecessary.
     let target ← if let some _ := dfa.accepting[next]? then
-      `($(← stateName next) $input ($(pos).next $h) $best $hi)
+      `($(← stateName next) input (pos.next h) best hi)
     else
-      `($(← stateName next) $input ($(pos).next $h) $found $hi)
+      `($(← stateName next) input (pos.next h) $found hi)
     match interval with
     | .single character =>
-      `(if $c:ident = $(quote character) then $target else $rest)
+      `(if c = $(quote character) then $target else $rest)
     | .range lower upper =>
       `(
-        if Lexgen.Internal.inRange $c $(quote lower) $(quote upper) then
+        if Lexgen.Internal.inRange c $(quote lower) $(quote upper) then
           $target
         else
           $rest
@@ -131,18 +123,19 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
 
   -- At the end of the input, the longest match is also the one so far.
   body ← `(
-    if $h:ident : $pos ≠ $(input).endPos then
-      let $c:ident := $(pos).get $h
+    if h : pos ≠ input.endPos then
+      let c := pos.get h
       $body
     else
       $found
   )
+  let pos ← `(ident| pos)
   let termination? := if recursive then some pos else none
   `(
-    def $funcName ($input : String) ($pos : String.Pos $input)
-        ($best : Lexgen.Internal.Packed $input)
-        ($hi : $(input).utf8ByteSize < Lexgen.maxInputSize) :
-        Lexgen.Internal.Packed $input :=
+    def $funcName (input : String) (pos : String.Pos input)
+        (best : Lexgen.Internal.Packed input)
+        (hi : input.utf8ByteSize < Lexgen.maxInputSize) :
+        Lexgen.Internal.Packed input :=
       $body
     $[termination_by $termination?]?
   )
@@ -188,10 +181,9 @@ for a string.
 private def buildLexerFunc (typeName : Ident) : m Command := do
   -- `lexer` is called by the user, so its name is not hygienic.
   let lexerName := mkIdent (typeName.getId.str "lexer")
-  let source ← `(ident| source)
   `(
-    def $lexerName ($source : String) : Lexgen.Lexer $typeName :=
-      Lexgen.Lexer.new $source
+    def $lexerName (source : String) : Lexgen.Lexer $typeName :=
+      Lexgen.Lexer.new source
   )
 
 /--
@@ -199,14 +191,7 @@ Builds the `Lexable` instance of the type named `typeName`.
 -/
 private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Command := do
   let startState ← stateName DFA.start
-  let h          ← `(ident| h)
-  let hr         ← `(ident| hr)
-  let hi         ← `(ident| hi)
-  let input      ← `(ident| input)
-  let start      ← `(ident| start)
-  let packed     ← `(ident| packed)
-  let stopAt     ← `(ident| stopAt)
-  let slice      ← `($(input).slice $start $stopAt (String.Pos.le_of_lt $h))
+  let slice      ← `(input.slice start stopAt (String.Pos.le_of_lt h))
 
   -- The state functions return the rule of the longest match only as a number, packed, so the
   -- generated code acts on it with a `match`: `ruleNums` are the rule numbers as literals, and
@@ -214,30 +199,30 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
   let ruleNums : Array Term := rules.mapIdx fun i _ => quote i
   let mut branches ← rules.mapM fun
     | .simple name _ =>
-      `(Lexgen.Step.token .$name $stopAt $h)
+      `(Lexgen.Step.token .$name stopAt h)
     | .converted name valueType func _ => do
       -- The ascription takes the position of the function, so that a type error points at it.
       let typedFunc ← withRef func `(($func : String.Slice → $valueType))
       -- Only a converted token needs its slice here.
-      `(Lexgen.Step.token (.$name ($typedFunc $slice)) $stopAt $h)
-    | .skip => `(Lexgen.Step.skip $stopAt $h)
+      `(Lexgen.Step.token (.$name ($typedFunc $slice)) stopAt h)
+    | .skip => `(Lexgen.Step.skip stopAt h)
   branches ← branches.mapM fun step =>
     `(
-      let $stopAt:ident := $(packed).stop ($hr ▸ by decide)
-      if $h:ident : $start < $stopAt then $step else Lexgen.Step.error
+      let stopAt := packed.stop (hr ▸ by decide)
+      if h : start < stopAt then $step else Lexgen.Step.error
     )
 
   `(
     instance : Lexgen.Lexable $typeName where
-      next $input:ident $start:ident $hi:ident :=
-        let $packed:ident := $startState $input $start .noMatch $hi
-        match $hr:ident : $(packed).rule with
+      next input start hi :=
+        let packed := $startState input start .noMatch hi
+        match hr : packed.rule with
         $[| $ruleNums => $branches]*
         -- No match: `Packed.rule` returns a number that no rule has. No rule matches the empty
         -- string, so this is also the case at the end of the input, which is checked only here.
         | _ =>
-          if $h:ident : $start = $(input).endPos then
-            Lexgen.Step.done $h
+          if h : start = input.endPos then
+            Lexgen.Step.done h
           else
             Lexgen.Step.error
   )
