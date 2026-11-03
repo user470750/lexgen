@@ -55,4 +55,17 @@ theorem isValid_next {input : String} {pos : input.Pos} {h : pos ≠ input.endPo
     (⟨pos.offset.byteIdx + (n + 1)⟩ : String.Pos.Raw).IsValid input :=
   hn ▸ (pos.next h).isValid
 
+/--
+A byte below `0x80` is in the range `0x00` to `0x7F`.
+-/
+theorem inRange_of_lt_0x80 {b : UInt8} (hb : b < 0x80) : inRange b 0 0x7F :=
+  ⟨UInt8.zero_le, (Nat.le_sub_one_iff_lt (by decide)).mpr hb⟩
+
+/--
+The position after the character at `pos` is valid if its byte is below `0x80`.
+-/
+theorem isValid_next_ascii {input : String} {pos : input.Pos} {h : pos ≠ input.endPos}
+    (hc : pos.byte h < 0x80) : (⟨pos.offset.byteIdx + 1⟩ : String.Pos.Raw).IsValid input :=
+  isValid_next (utf8ByteSize_eq 0 (inRange_of_lt_0x80 hc))
+
 end Lexgen.Internal
