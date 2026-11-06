@@ -29,4 +29,10 @@ structure DFA.Interval where
   upper : UInt8
 deriving Repr, BEq
 
+/--
+Checks whether `b` lies in `interval`.
+-/
+def DFA.Interval.contains (interval : DFA.Interval) (b : UInt8) : Bool :=
+  interval.lower ≤ b && b ≤ interval.upper
+
 end Lexgen.Internal
