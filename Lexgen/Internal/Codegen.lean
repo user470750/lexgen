@@ -5,6 +5,10 @@ Authors: Oleg Shabanov
 -/
 module
 
+-- Public, although no public signature needs it: `buildLexer` takes the instances of its monad, so
+-- the compiler specializes it to the monad of each module that calls it, and rejects it if the
+-- `asciiTests` that it calls is not imported publicly.
+public import Lexgen.Internal.Codegen.Ascii
 public import Lexgen.Internal.DFA.Automaton
 
 import Lean
@@ -84,16 +88,46 @@ private def stateName (state : Nat) : m Ident := do
   return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"state{state}"))
 
 /--
+Returns the name of the generated lookup table numbered `table`.
+-/
+private def tableName (table : Nat) : m Ident := do
+  -- Hygienic, as the names of the states.
+  return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"table{table}"))
+
+/--
+Returns the name of the generated theorem that the size of the lookup table numbered `table` is
+`0x80`.
+-/
+private def tableSizeName (table : Nat) : m Ident := do
+  -- Hygienic, as the names of the states.
+  return mkIdent (← MonadQuotation.addMacroScope (Name.mkSimple s!"table{table}_size"))
+
+/--
+Builds the lookup tables `tables`: for every table, its definition and the theorem that its size is
+`0x80`, which `inTable` takes.
+-/
+private def buildTables (tables : Array ByteArray) : m (Array Command) :=
+  tables.zipIdx.flatMapM fun (table, i) => do
+    let entries : Array Term := table.data.map (quote ·.toNat)
+    return #[
+      ← `(def $(← tableName i) : ByteArray := ⟨#[$entries,*]⟩),
+      -- `rfl` as a term exceeds the maximum recursion depth on a table of 128 entries.
+      ← `(theorem $(← tableSizeName i) : ($(← tableName i)).size = 0x80 := by rfl)
+    ]
+
+/--
 Builds the function of state `state`. The generated function takes `input`, the current position in
 it, the packed longest match so far `best` (an older one for an accepting state, which ignores it)
 and the proof `hi` that `input` is short enough to lex, and returns the packed longest match.
 
-At a character boundary, the current position is `pos : input.Pos`. Inside a character, it is
-`pos : String.Pos.Raw`, followed by `hk : (⟨pos.byteIdx + count⟩ : String.Pos.Raw).IsValid input`,
-where `count` is the pending count of `state`.
+At a character boundary, the current position is `pos : input.Pos`, and the function tests an ASCII
+byte with `tests`. Inside a character, the current position is `pos : String.Pos.Raw`, followed by
+`hk : (⟨pos.byteIdx + count⟩ : String.Pos.Raw).IsValid input`, where `count` is the pending count of
+`state`.
 -/
 private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interval × Nat))
-    (recursive : Bool) (pendings : Std.HashMap Nat Nat) : m Command := do
+    (tests : Array (Nat × AsciiTest)) (recursive : Bool) (pendings : Std.HashMap Nat Nat) :
+    m Command := do
   let funcName ← stateName state
 
   let count := pendings[state]!
@@ -106,45 +140,60 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   else
     `(best)
 
+  -- No test passed: the longest match is the one so far.
+  let ascii ← tests.foldrM (init := found) fun (next, test) rest => do
+    let cond ← match test with
+    | .inRange interval =>
+      `(Lexgen.Internal.inRange c
+        $(quote interval.lower.toNat)
+        $(quote interval.upper.toNat))
+    | .inTable table mask =>
+      `(Lexgen.Internal.inTable c hc
+        $(← tableName table)
+        $(← tableSizeName table)
+        $(quote mask.toNat))
+    let target ← call count next found
+    `(if $cond then $target else $rest)
+
   -- No interval matched: the longest match is the one so far.
-  let mut body ← trans.foldrM (init := found) fun (interval, next) rest => do
-    -- The trap never leads to a match, so going there is the same as no transition.
-    if next == DFA.trap then
-      return rest
-    -- A byte of `interval` leads to a call of the function of state `next` on the position
-    -- after the byte.
-    let nextArgs : Array Term ← stateArgs count pendings[next]!
-    let target ← if let some _ := dfa.accepting[next]? then
-      -- An accepting state replaces the match it gets with its own, so it gets `best`: building
-      -- `found` for it is unnecessary.
-      `($(← stateName next) input $nextArgs* best hi)
-    else
-      `($(← stateName next) input $nextArgs* $found hi)
-    let lower := quote interval.lower.toNat
-    let upper := quote interval.upper.toNat
-    -- `stateArgs` refers to `hc` from a character boundary: the class of the first byte gives the
-    -- length of the character.
-    `(if hc : Lexgen.Internal.inRange c $lower $upper then $target else $rest)
+  let nonAscii ← (splitAscii trans).2.foldrM
+    (init := found)
+    fun (interval, next) rest => do
+      -- The trap never leads to a match, so going there is the same as no transition.
+      if next == DFA.trap then
+        return rest
+      let target ← call count next found
+      let lower := quote interval.lower.toNat
+      let upper := quote interval.upper.toNat
+      -- `stateArgs` refers to `hc` from a character boundary: the class of the first byte gives
+      -- the length of the character.
+      `(if hc : Lexgen.Internal.inRange c $lower $upper then $target else $rest)
 
   -- `hp` bounds `pos` for `decreasing_by`.
-  body ← if count == 0 then
+  let body ← if count == 0 then
     `(
       if h : pos ≠ input.endPos then
         have hp : pos.offset < input.rawEndPos := String.Pos.offset_lt_rawEndPos_iff.mpr h
         let c := pos.byte h
-        $body
+        if hc : c < 0x80 then
+          -- An ASCII byte is a whole character: one proof for all ASCII transitions.
+          let next := input.pos ⟨pos.offset.byteIdx + 1⟩ (Lexgen.Internal.isValid_next_ascii hc)
+          $ascii
+        else
+          $nonAscii
       else
         -- At the end of the input, the longest match is also the one so far.
         $found
     )
   else
     -- The input cannot end inside a character, so the byte at `pos` is read without checking for
-    -- the end of the input.
+    -- the end of the input. A byte inside a character is at least `0x80`, so only `nonAscii` can
+    -- match it.
     `(
       have hp : pos < input.rawEndPos :=
         Nat.lt_of_lt_of_le (Nat.lt_add_of_pos_right (by decide)) hk.le_rawEndPos
       let c := input.getUTF8Byte pos hp
-      $body
+      $nonAscii
     )
 
   let byteIdx : Term ← if count == 0 then `(pos.offset.byteIdx) else `(pos.byteIdx)
@@ -165,18 +214,31 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
   )
 where
   /--
+  Returns the call of the function of state `next` on the position after the byte.
+  -/
+  call (count next : Nat) (found : Term) : m Term := do
+    let nextArgs : Array Term ← stateArgs count pendings[next]!
+    if let some _ := dfa.accepting[next]? then
+      -- An accepting state replaces the match it gets with its own, so it gets `best`: building
+      -- `found` for it is unnecessary.
+      `($(← stateName next) input $nextArgs* best hi)
+    else
+      `($(← stateName next) input $nextArgs* $found hi)
+
+  /--
   Returns the position arguments that a state passes to the function of the next state, depending
   on the pending counts of the two states.
   -/
   stateArgs (count nextCount : Nat) : m (Array Term) := do
-    -- From a character boundary: the end of the character that the byte `c` starts is valid.
-    let valid ← `(
-      Lexgen.Internal.isValid_next (Lexgen.Internal.utf8ByteSize_eq $(quote nextCount) hc))
     match count, nextCount with
     -- From a character boundary to a character boundary.
-    | 0, 0 => return #[← `(input.pos ⟨pos.offset.byteIdx + 1⟩ $valid)]
+    | 0, 0 => return #[← `(next)]
     -- From a character boundary to inside a character.
-    | 0, _ => return #[← `(⟨pos.offset.byteIdx + 1⟩), valid]
+    | 0, _ => return #[
+      ← `(⟨pos.offset.byteIdx + 1⟩),
+      -- The end of the character that the byte `c` starts is valid.
+      ← `(Lexgen.Internal.isValid_next (Lexgen.Internal.utf8ByteSize_eq $(quote nextCount) hc))
+    ]
     -- From inside a character to a character boundary.
     | 1, _ => return #[← `(input.pos ⟨pos.byteIdx + 1⟩ hk)]
     -- From inside a character to inside the same character.
@@ -196,7 +258,8 @@ where
 Builds the functions of all states of `dfa` but the trap as one `mutual` block, since they call each
 other.
 -/
-private def buildStateFuncs (dfa : DFA) : m Command := do
+private def buildStateFuncs (dfa : DFA) (tests : Array (Array (Nat × AsciiTest))) :
+    m Command := do
   let recursiveStates := dfa.recursiveStates
   let pendings := dfa.pending
   -- The trap needs no function: no branch calls it. It comes before the start state, and every
@@ -204,7 +267,7 @@ private def buildStateFuncs (dfa : DFA) : m Command := do
   let stateFuncs ← (dfa.trans.extract DFA.start).mapIdxM
     fun i trans =>
       let state := DFA.start + i
-      buildStateFunc dfa state trans (recursiveStates.contains state) pendings
+      buildStateFunc dfa state trans tests[state]! (recursiveStates.contains state) pendings
   `(mutual $stateFuncs* end)
 
 /--
@@ -283,6 +346,7 @@ private def buildLexableImpl (typeName : Ident) (rules : Array RuleInfo) : m Com
 /--
 Generates the code of a lexer for `dfa`, as commands to elaborate in order:
 
+* the lookup tables, with the theorems of their sizes, hidden from the user;
 * an inductive type named `typeInfo.name`, with a constructor for each of `rules` but the skip
   rules, with their docstrings, if any, deriving the instances in `typeInfo.derivings?`, if any;
 * a `mutual` block with a function per `DFA` state but the trap, hidden from the user;
@@ -293,9 +357,10 @@ Tokens are matched to rules by position, so `rules` must be in the same order as
 built from.
 -/
 def buildLexer (typeInfo : TypeInfo) (rules : Array RuleInfo) (dfa : DFA) : m (Array Command) := do
-  return #[
+  let ascii := asciiTests dfa.trans
+  return (← buildTables ascii.tables) ++ #[
     ← buildTokenType typeInfo rules,
-    ← buildStateFuncs dfa,
+    ← buildStateFuncs dfa ascii.tests,
     ← buildLexableImpl typeInfo.name rules,
     ← buildLexerFunc typeInfo.name
   ]
