@@ -72,16 +72,16 @@ private theorem toNat_shiftLeft_or_shiftRight {rule pos : Nat} (hp : pos < 2 ^ 4
 A position packed into a `UInt64` stays valid after unpacking, as long as the position and the rule
 fit in their bits.
 -/
-private theorem packed_position_isValid {rule : Nat} {input : String} {stop : input.Pos}
-    (hp : input.utf8ByteSize < 2 ^ (64 - ruleBits)) (hr : rule + 1 < 2 ^ ruleBits) :
+private theorem packed_position_isValid {rule : Fin (2 ^ ruleBits - 1)} {input : String}
+    {stop : input.Pos} (hp : input.utf8ByteSize < 2 ^ (64 - ruleBits)) :
     String.Pos.Raw.IsValid
       input
-      ⟨((stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64 ||| (rule + 1).toUInt64) >>>
+      ⟨((stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64 ||| (rule.val + 1).toUInt64) >>>
         ruleBits.toUInt64).toNat⟩ := by
   rw [
     toNat_shiftLeft_or_shiftRight
       (Nat.lt_of_le_of_lt stop.byteIdx_offset_le_utf8ByteSize hp)
-      hr
+      (Nat.succ_lt_succ rule.isLt)
   ]
   exact stop.isValid
 
@@ -97,12 +97,12 @@ prove that the position and the rule fit in their bits.
 -- In the generated code `rule` is a literal, so `decide` proves `hr`. The `lexer` command rejects a
 -- lexer with more rules.
 @[inline]
-def Packed.ofMatch {input : String} (rule : Nat) (stop : input.Pos)
-    (hp : input.utf8ByteSize < 2 ^ (64 - ruleBits)) (hr : rule + 1 < 2 ^ ruleBits := by decide) :
+def Packed.ofMatch {input : String} (rule : Fin 65535) (stop : input.Pos)
+    (hp : input.utf8ByteSize < 2 ^ (64 - ruleBits)) :
     Packed input :=
   ⟨
-    (stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64) ||| (rule + 1).toUInt64,
-    Or.inr (packed_position_isValid hp hr)
+    (stop.offset.byteIdx.toUInt64 <<< ruleBits.toUInt64) ||| (rule.val + 1).toUInt64,
+    Or.inr (packed_position_isValid hp)
   ⟩
 
 /--
