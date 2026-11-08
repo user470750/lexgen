@@ -106,7 +106,7 @@ private def buildStateFunc (dfa : DFA) (state : Nat) (trans : Array (DFA.Interva
     -- after the character.
     -- An accepting state replaces the match it gets with its own, so it gets `best`: building
     -- `found` for it is unnecessary.
-    let target ← if let some _ := dfa.accepting[next]? then
+    let target ← if dfa.accepting.contains next then
       `($(← stateName next) input (pos.next h) best hi)
     else
       `($(← stateName next) input (pos.next h) $found hi)
