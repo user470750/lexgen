@@ -16,7 +16,7 @@ The lexical grammar of Zig after its own tokenizer, `lib/std/zig/tokenizer.zig` 
 camel case and the keywords prefixed with `kw`.
 -/
 
-set_option maxHeartbeats 500000 in
+set_option maxHeartbeats 400000 in
 lexer ZigToken where
   skip r"[ \t\n\r]+"
   -- A line comment that is not a doc comment: `//` followed by anything but `/` and `!`, or `////`.
