@@ -218,7 +218,7 @@ where
   -/
   call (count next : Nat) (found : Term) : m Term := do
     let nextArgs : Array Term ← stateArgs count pendings[next]!
-    if let some _ := dfa.accepting[next]? then
+    if dfa.accepting.contains next then
       -- An accepting state replaces the match it gets with its own, so it gets `best`: building
       -- `found` for it is unnecessary.
       `($(← stateName next) input $nextArgs* best hi)
